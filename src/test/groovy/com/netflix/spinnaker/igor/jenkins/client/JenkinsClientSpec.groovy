@@ -18,6 +18,8 @@ package com.netflix.spinnaker.igor.jenkins.client
 
 import com.netflix.spinnaker.igor.config.JenkinsConfig
 import com.netflix.spinnaker.igor.jenkins.client.model.Build
+import com.netflix.spinnaker.igor.jenkins.client.model.BuildArtifact
+import com.netflix.spinnaker.igor.jenkins.client.model.BuildArtifactList
 import com.netflix.spinnaker.igor.jenkins.client.model.Project
 import com.squareup.okhttp.mockwebserver.MockResponse
 import com.squareup.okhttp.mockwebserver.MockWebServer
@@ -63,7 +65,6 @@ class JenkinsClientSpec extends Specification {
         Build build = client.getBuild('SPINNAKER-igor-netflix', BUILD_NUMBER)
 
         expect:
-        build.artifacts.size() == 3
         build.number == BUILD_NUMBER
         build.result == 'SUCCESS'
     }
@@ -86,6 +87,23 @@ class JenkinsClientSpec extends Specification {
         expect:
         dependencies.size() == 1
         dependencies[0].name == 'SPINNAKER-volt-netflix'
+    }
+
+    void 'gets build artifacts'() {
+        given:
+        final BUILD_NUMBER = 24
+        setResponse '<freeStyleBuild><artifact><displayPath>api.txt</displayPath><fileName>api.txt</fileName><relativePath>project/build/api.txt</relativePath></artifact><artifact><displayPath>api.txt</displayPath><fileName>api.txt</fileName><relativePath>project/build/api.txt</relativePath></artifact><artifact><displayPath>deb.properties</displayPath><fileName>deb.properties</fileName><relativePath>project/build/deb.properties</relativePath></artifact><artifact><displayPath>api.deb</displayPath><fileName>api.deb</fileName><relativePath>project/build/distributions/api.deb</relativePath></artifact><artifact><displayPath>dependencies.lock</displayPath><fileName>dependencies.lock</fileName><relativePath>project/dependencies.lock</relativePath></artifact></freeStyleBuild>'
+        BuildArtifactList artifacts = client.getArtifacts('SPINNAKER-igor-netflix', BUILD_NUMBER)
+        List<BuildArtifact> artifactList = artifacts.artifactList
+        expect:
+        artifactList.size() == 5
+        artifactList[0].displayPath == 'api.txt'
+        artifactList[0].fileName == 'api.txt'
+        artifactList[0].relativePath == 'project/build/api.txt'
+
+        artifactList[4].displayPath == 'dependencies.lock'
+        artifactList[4].fileName == 'dependencies.lock'
+        artifactList[4].relativePath == 'project/dependencies.lock'
     }
 
     private void setResponse(String body) {
