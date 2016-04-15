@@ -153,7 +153,7 @@ class TravisBuildMonitor implements PollingMonitor{
         startTime = System.currentTimeMillis()
         Observable.from(cachedRepoSlugs).subscribe(
             { String repoSlug ->
-                if(!buildMasters.map[master].getRepo(repoSlug)) {
+                if(!buildMasters.map[master].hasRepo(repoSlug)) {
                     log.info "repositorySync: Removing ${master}:${repoSlug} from buildCache because it is not on ${master} anymore."
                         buildCache.remove(master, repoSlug)
                 }
