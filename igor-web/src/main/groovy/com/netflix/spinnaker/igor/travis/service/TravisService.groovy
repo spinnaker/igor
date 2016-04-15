@@ -70,6 +70,17 @@ class TravisService implements BuildService {
         return accounts
     }
 
+    void setAccounts() {
+        this.accounts = getAccounts()
+    }
+
+    void syncRepos() {
+        Response response = travisClient.usersSync(getAccessToken())
+        if (response.status != 200) {
+            log.warn "synchronizing travis repositories failed with status: ${response.status}"
+        }
+    }
+
     List<Build> getBuilds() {
         Builds builds = travisClient.builds(getAccessToken())
         log.debug "fetched " + builds.builds.size() + " builds"
