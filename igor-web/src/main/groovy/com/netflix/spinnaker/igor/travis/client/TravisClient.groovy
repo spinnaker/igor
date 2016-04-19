@@ -37,6 +37,9 @@ interface TravisClient {
     @POST('/auth/github')
     AccessToken accessToken(@Query('github_token') String githubToken)
 
+    @POST('/users/sync')
+    Response usersSync(@Header("Authorization") String accessToken)
+
     @GET('/accounts')
     Accounts accounts(@Header("Authorization") String accessToken)
 

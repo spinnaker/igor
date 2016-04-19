@@ -33,6 +33,7 @@ import com.netflix.spinnaker.igor.travis.client.model.Jobs
 import com.netflix.spinnaker.igor.travis.client.model.Repo
 import com.netflix.spinnaker.igor.travis.client.model.Repos
 import groovy.util.logging.Slf4j
+import retrofit.RetrofitError
 import retrofit.client.Response
 import retrofit.mime.TypedByteArray
 
@@ -68,6 +69,17 @@ class TravisService implements BuildService {
             log.debug "repos:" + it.reposCount
         }
         return accounts
+    }
+
+    void setAccounts() {
+        this.accounts = getAccounts()
+    }
+
+    void syncRepos() {
+        Response response = travisClient.usersSync(getAccessToken())
+        if (response.status >= 400) {
+            log.warn "synchronizing travis repositories failed with status: ${response.status}"
+        }
     }
 
     List<Build> getBuilds() {
@@ -172,6 +184,22 @@ class TravisService implements BuildService {
 
     Repo getRepo(String repoSlug) {
         return travisClient.repo(getAccessToken(), repoSlug)
+    }
+
+    boolean hasRepo(String repoSlug) {
+        try {
+            getRepo(repoSlug)
+        } catch (RetrofitError error) {
+            if (error.getResponse()) {
+                if (error.getResponse().status == 404) {
+                    log.debug "repo not found ${repoSlug}"
+                    return false
+                }
+            }
+            log.info "Error requesting repo ${repoSlug}: ${error.message}"
+            return true
+        }
+        return true
     }
 
     GenericBuild getGenericBuild(Build build, String repoSlug) {

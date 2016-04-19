@@ -56,6 +56,8 @@ class TravisBuildMonitor implements PollingMonitor{
 
     Scheduler.Worker worker = Schedulers.io().createWorker()
 
+    Scheduler.Worker repositorySyncWorker = Schedulers.io().createWorker()
+
     @Autowired
     BuildCache buildCache
 
@@ -70,11 +72,17 @@ class TravisBuildMonitor implements PollingMonitor{
 
     Long lastPoll
 
+    Long lastRepositorySync
+
     static final String BUILD_IN_PROGRESS = 'started'
 
     @SuppressWarnings('GStringExpressionWithinString')
     @Value('${spinnaker.build.pollInterval:60}')
     int pollInterval
+
+    @SuppressWarnings('GStringExpressionWithinString')
+    @Value('${spinnaker.build.travis.repositorySyncInterval:300}')
+    int repositorySyncInterval
 
     @Override
     void onApplicationEvent(ContextRefreshedEvent event) {
@@ -91,6 +99,19 @@ class TravisBuildMonitor implements PollingMonitor{
                     lastPoll = null
                 }
             } as Action0, 0, pollInterval, TimeUnit.SECONDS
+        )
+
+        worker.schedulePeriodically(
+            {
+                if (isInService()) {
+                    buildMasters.filteredMap(BuildServiceProvider.TRAVIS).keySet().each { master ->
+                        repositorySync(master)
+                    }
+                } else {
+                    log.info("not in service (lastRepositorySync: ${lastRepositorySync ?: 'n/a'})")
+                    lastRepositorySync = null
+                }
+            } as Action0, 0, repositorySyncInterval, TimeUnit.SECONDS
         )
     }
 
@@ -121,29 +142,41 @@ class TravisBuildMonitor implements PollingMonitor{
         return pollInterval
     }
 
+    def repositorySync(String master) {
+        log.info('repositorySync: Syncing repositories for ' + master)
+        lastRepositorySync = System.currentTimeMillis()
+        List<String> cachedRepoSlugs = buildCache.getJobNames(master)
+        buildMasters.map[master].setAccessToken()
+        def startTime = System.currentTimeMillis()
+        buildMasters.map[master].syncRepos()
+        log.info("repositorySync: Took ${System.currentTimeMillis() - startTime}ms to sync repositories for ${master}")
+        startTime = System.currentTimeMillis()
+        Observable.from(cachedRepoSlugs).subscribe(
+            { String repoSlug ->
+                if(!buildMasters.map[master].hasRepo(repoSlug)) {
+                    log.info "repositorySync: Removing ${master}:${repoSlug} from buildCache because it is not on ${master} anymore."
+                        buildCache.remove(master, repoSlug)
+                }
+            }, {
+            log.error("repositorySync: Error: ${it.message}")
+        }, {} as Action0
+        )
+        log.info("repositorySync: Took ${System.currentTimeMillis() - startTime}ms validate build cache for ${master}")
+        log.info("repositorySync: Last repositorySync took ${System.currentTimeMillis() - lastRepositorySync}ms (master: ${master})")
+
+    }
+
     List<Map> changedBuilds(String master) {
         log.info('Checking for new builds for ' + master)
         List<String> cachedRepoSlugs = buildCache.getJobNames(master)
         List<Map> results = []
         buildMasters.map[master].setAccessToken()
         lastPoll = System.currentTimeMillis()
-        buildMasters.map[master].getAccounts()
+        buildMasters.map[master].setAccounts()
         def startTime = System.currentTimeMillis()
         List<Repo> repos = buildMasters.map[master].getReposForAccounts()
         log.info("Took ${System.currentTimeMillis() - startTime}ms to retrieve ${repos.size()} repositories (master: ${master})")
-        List<String> repoSlugs = repos*.slug
-        Observable.from(cachedRepoSlugs).filter { String name ->
-            !(name in repoSlugs)
-        }.subscribe(
-            { String repoSlug ->
-                if (!buildMasters.map[master].getRepo(repoSlug)) {
-                    log.info "Removing ${master}:${repoSlug}"
-                    buildCache.remove(master, repoSlug)
-                }
-            }, {
-            log.error("Error: ${it.message}")
-        }, {} as Action0
-        )
+
         Observable.from(repos).subscribe(
             { Repo repo ->
                 boolean addToCache = false
