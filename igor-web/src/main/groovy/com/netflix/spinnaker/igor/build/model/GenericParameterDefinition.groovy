@@ -16,23 +16,14 @@
 
 package com.netflix.spinnaker.igor.build.model
 
-class GenericJobConfiguration {
-
-    String description
-    String displayName
+class GenericParameterDefinition {
     String name
-    boolean buildable
-    String url
-    boolean concurrentBuild
-    List<GenericParameterDefinition> parameterDefinitionList
+    String description
+    String defaultValue
 
-    GenericJobConfiguration(String description, String displayName, String name, boolean buildable, String url, boolean concurrentBuild, List<GenericParameterDefinition> genericParameterDefinition) {
-        this.description = description
-        this.displayName = displayName
+    GenericParameterDefinition(String name, String description, String defaultValue) {
         this.name = name
-        this.buildable = buildable
-        this.url = url
-        this.concurrentBuild = concurrentBuild
-        this.parameterDefinitionList = genericParameterDefinition
+        this.description = description
+        this.defaultValue = defaultValue
     }
 }

@@ -228,10 +228,10 @@ class TravisService implements BuildService {
         return genericBuild
     }
 
-    GenericJobConfiguration getJobConfig(String repoSlug) {
+    GenericJobConfiguration getJobConfig(String inputRepoSlug) {
+        String repoSlug = cleanRepoSlug(inputRepoSlug)
         Builds builds = travisClient.builds(getAccessToken(), repoSlug)
-        Job job = getJob(builds.builds.first().job_ids.first())
-        return new GenericJobConfiguration(job.repositorySlug.split('/').last(),job.repositorySlug.split('/').last(), job.repositorySlug ,false, getUrl(job.repositorySlug),false)
+        return new GenericJobConfiguration(repoSlug.split('/').last(), repoSlug.split('/').last(), repoSlug ,true, getUrl(repoSlug),false, builds.builds.first().config?.getParameterDefinitionList())
     }
 
     String getUrl(String repoSlug) {
