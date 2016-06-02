@@ -18,12 +18,12 @@ package com.netflix.spinnaker.igor.build.model
 
 class GenericParameterDefinition {
     String name
-    String description
     String defaultValue
+    String description
 
-    GenericParameterDefinition(String name, String description, String defaultValue) {
+    GenericParameterDefinition(String name, String defaultValue, String description = "") {
         this.name = name
-        this.description = description
         this.defaultValue = defaultValue
+        this.description = description
     }
 }

@@ -231,7 +231,7 @@ class TravisService implements BuildService {
     GenericJobConfiguration getJobConfig(String inputRepoSlug) {
         String repoSlug = cleanRepoSlug(inputRepoSlug)
         Builds builds = travisClient.builds(getAccessToken(), repoSlug)
-        return new GenericJobConfiguration(repoSlug.split('/').last(), repoSlug.split('/').last(), repoSlug ,true, getUrl(repoSlug),false, builds.builds.first().config?.getParameterDefinitionList())
+        return new GenericJobConfiguration(extractRepoFromRepoSlug(repoSlug), extractRepoFromRepoSlug(repoSlug), repoSlug ,true, getUrl(repoSlug),false, builds.builds.first().config?.parameterDefinitionList)
     }
 
     String getUrl(String repoSlug) {
@@ -327,6 +327,10 @@ class TravisService implements BuildService {
 
     private static String extractBranchFromRepoSlug(String inputRepoSlug) {
         inputRepoSlug.tokenize('/').drop(2).join('/')
+    }
+
+    private static String extractRepoFromRepoSlug(String repoSlug) {
+        return repoSlug.tokenize('/').get(1)
     }
 
     private void setAccessToken() {

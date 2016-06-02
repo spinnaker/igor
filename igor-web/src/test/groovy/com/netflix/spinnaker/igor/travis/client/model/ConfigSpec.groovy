@@ -20,9 +20,9 @@ import com.netflix.spinnaker.igor.build.model.GenericParameterDefinition
 import spock.lang.Specification
 
 
-class ConfigTest extends Specification {
+class ConfigSpec extends Specification {
 
-    def "getGenericParameterDefinitionList"() {
+    def "getGenericParameterDefinitionList extracts travis environment variables"() {
         given:
         Config config = new Config()
         config.env = [ "FOO=bar", "BAR=foo"]

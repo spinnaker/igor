@@ -31,7 +31,7 @@ class Config {
     public List<GenericParameterDefinition> getParameterDefinitionList() {
         env? env.collect {
             def parts = it.tokenize('=')
-            new GenericParameterDefinition(parts[0], parts[0], parts[1])
+            new GenericParameterDefinition(parts[0], parts[1])
         } : []
     }
 }
