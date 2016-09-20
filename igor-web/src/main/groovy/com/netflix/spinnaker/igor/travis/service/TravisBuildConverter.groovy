@@ -19,6 +19,7 @@ package com.netflix.spinnaker.igor.travis.service
 import com.netflix.spinnaker.igor.build.model.GenericBuild
 import com.netflix.spinnaker.igor.travis.client.model.Build
 import com.netflix.spinnaker.igor.travis.client.model.Repo
+import com.netflix.spinnaker.igor.travis.client.model.v3.V3Build
 import groovy.transform.CompileStatic
 
 @CompileStatic
@@ -35,6 +36,14 @@ class TravisBuildConverter {
         GenericBuild genericBuild = new GenericBuild((repo.lastBuildState == 'started'), repo.lastBuildNumber, repo.lastBuildDuration, TravisResultConverter.getResultFromTravisState(repo.lastBuildState), repo.slug, url(repo.slug, baseUrl, repo.lastBuildId))
         if (repo.lastBuildFinishedAt) {
             genericBuild.timestamp = repo.timestamp()
+        }
+        return genericBuild
+    }
+
+    static GenericBuild genericBuild(V3Build build, String baseUrl) {
+        GenericBuild genericBuild = new GenericBuild(build.state == 'started', build.number, build.duration,TravisResultConverter.getResultFromTravisState(build.state), build.repository.slug, url(build.repository.slug, baseUrl, build.id))
+        if (build.finishedAt) {
+            genericBuild.timestamp = build.timestamp()
         }
         return genericBuild
     }
