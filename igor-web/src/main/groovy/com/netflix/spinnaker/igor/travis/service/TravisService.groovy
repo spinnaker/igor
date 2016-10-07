@@ -154,7 +154,7 @@ class TravisService implements BuildService {
 
     List<V3Build> getBuilds(Repo repo, int limit) {
         V3Builds builds = travisClient.builds(getAccessToken(), repo.id, limit)
-        log.debug "fetched " + builds.builds.size() + " builds"
+        log.debug "fetched ${builds.builds.size()} builds"
         return builds.builds
     }
 

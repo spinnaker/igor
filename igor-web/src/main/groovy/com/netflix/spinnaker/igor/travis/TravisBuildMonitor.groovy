@@ -147,7 +147,7 @@ class TravisBuildMonitor implements PollingMonitor{
             { Repo repo ->
 
                 List<V3Build> builds = travisService.getBuilds(repo, 5)
-                for(V3Build build : builds){
+                for (V3Build build : builds) {
                     boolean addToCache = false
                     Map cachedBuild = null
                     String branchedRepoSlug = build.branchedRepoSlug()

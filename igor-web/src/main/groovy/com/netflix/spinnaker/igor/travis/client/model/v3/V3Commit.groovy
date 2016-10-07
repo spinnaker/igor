@@ -39,14 +39,14 @@ class V3Commit {
     String compareUrl
 
     boolean isTag(){
-        if(ref) {
+        if (ref) {
             return ref.split("/")[1] == "tags"
         }
         return false
     }
 
     boolean isPullRequest(){
-        if(ref) {
+        if (ref) {
             return ref.split("/")[1] == "pull"
         }
         return false

@@ -27,5 +27,4 @@ class V3Repository {
     int id
     String name
     String slug
-
 }
