@@ -19,6 +19,7 @@ package com.netflix.spinnaker.igor.travis.client.model
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.annotations.SerializedName
+import com.netflix.spinnaker.igor.travis.client.model.v3.TravisBuildState
 import groovy.transform.CompileStatic
 import org.simpleframework.xml.Default
 import org.simpleframework.xml.Root
@@ -35,7 +36,7 @@ class Build {
     @SerializedName("repository_id")
     int repositoryId
     int number
-    String state
+    TravisBuildState state
     @SerializedName("finished_at")
     Date finishedAt
     @SerializedName("pull_request")

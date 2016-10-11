@@ -42,7 +42,7 @@ class V3Build {
     @SerializedName("repository_id")
     int repositoryId
     int number
-    String state
+    TravisBuildState state
     @SerializedName("finished_at")
     Date finishedAt
     @JsonProperty(value = "job_ids")
