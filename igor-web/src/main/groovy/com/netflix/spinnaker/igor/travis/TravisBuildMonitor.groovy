@@ -19,6 +19,7 @@ package com.netflix.spinnaker.igor.travis
 import com.netflix.appinfo.InstanceInfo
 import com.netflix.discovery.DiscoveryClient
 import com.netflix.spinnaker.igor.build.BuildCache
+import com.netflix.spinnaker.igor.build.model.GenericBuild
 import com.netflix.spinnaker.igor.build.model.GenericProject
 import com.netflix.spinnaker.igor.history.EchoService
 import com.netflix.spinnaker.igor.history.model.GenericBuildContent

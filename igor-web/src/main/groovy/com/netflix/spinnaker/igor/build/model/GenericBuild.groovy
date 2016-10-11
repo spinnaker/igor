@@ -35,24 +35,4 @@ class GenericBuild {
     @JsonProperty("scm")
     List<GenericGitRevision> genericGitRevisions
 
-    GenericBuild(boolean building, int number) {
-        this.building = building
-        this.number = number
-    }
-
-    GenericBuild(boolean building, int number, int duration, Result result, String name, String url) {
-        this(building, number)
-        this.duration = duration
-        this.name = name
-        this.result = result
-        this.fullDisplayName = "${name} #${number}"
-        this.url = url
-    }
-
-    GenericBuild(boolean building, int number, int duration, Result result, String name, String url, String timestamp, String fullDisplayName) {
-        this(building, number, duration, result, name, url)
-        this.timestamp = timestamp
-        this.fullDisplayName = fullDisplayName
-    }
-
 }

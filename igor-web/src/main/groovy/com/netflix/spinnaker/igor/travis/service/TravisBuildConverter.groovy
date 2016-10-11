@@ -25,23 +25,15 @@ import groovy.transform.CompileStatic
 @CompileStatic
 class TravisBuildConverter {
     static GenericBuild genericBuild(Build build, String repoSlug, String baseUrl) {
-        GenericBuild genericBuild = new GenericBuild(build.state == 'started', build.number, build.duration, TravisResultConverter.getResultFromTravisState(build.state), repoSlug, url(repoSlug, baseUrl, build.id))
+        GenericBuild genericBuild = new GenericBuild(building: build.state == 'started', number: build.number, duration: build.duration, result: TravisResultConverter.getResultFromTravisState(build.state), name: repoSlug, url: url(repoSlug, baseUrl, build.id))
         if (build.finishedAt) {
             genericBuild.timestamp = build.timestamp()
         }
         return genericBuild
     }
 
-    static GenericBuild genericBuild(Repo repo, String baseUrl) {
-        GenericBuild genericBuild = new GenericBuild((repo.lastBuildState == 'started'), repo.lastBuildNumber, repo.lastBuildDuration, TravisResultConverter.getResultFromTravisState(repo.lastBuildState), repo.slug, url(repo.slug, baseUrl, repo.lastBuildId))
-        if (repo.lastBuildFinishedAt) {
-            genericBuild.timestamp = repo.timestamp()
-        }
-        return genericBuild
-    }
-
     static GenericBuild genericBuild(V3Build build, String baseUrl) {
-        GenericBuild genericBuild = new GenericBuild(build.state == 'started', build.number, build.duration,TravisResultConverter.getResultFromTravisState(build.state), build.repository.slug, url(build.repository.slug, baseUrl, build.id))
+        GenericBuild genericBuild = new GenericBuild(building: build.state == 'started', number: build.number, duration: build.duration,result: TravisResultConverter.getResultFromTravisState(build.state),name: build.repository.slug,url: url(build.repository.slug, baseUrl, build.id))
         if (build.finishedAt) {
             genericBuild.timestamp = build.timestamp()
         }
