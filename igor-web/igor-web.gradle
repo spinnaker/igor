@@ -121,4 +121,8 @@ buildDeb {
   dependsOn installDist
 }
 
+buildRpm {
+  dependsOn installDist
+}
+
 tasks.bootRepackage.enabled = project.repackage
