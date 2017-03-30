@@ -145,7 +145,7 @@ class TravisService implements BuildService {
         String repoSlug = cleanRepoSlug(inputRepoSlug)
 
         Build build = getBuild(repoSlug, buildNumber)
-        return PropertyParser.extractPropertiesFromLog(getLog(build))
+        return PropertyParser.extractPropertiesFromLog(getLog(build.job_ids))
     }
 
     List<Build> getBuilds(Repo repo) {
@@ -227,9 +227,9 @@ class TravisService implements BuildService {
         return jobs.job
     }
 
-    String getLog(Build build) {
+    String getLog(List<Integer> jobIds) {
         String buildLog = ""
-        build.job_ids.each {
+        jobIds.each {
             Job job = getJob(it.intValue())
             buildLog += getLog(job.logId)
         }
@@ -253,7 +253,7 @@ class TravisService implements BuildService {
 
     GenericBuild getGenericBuild(Build build, String repoSlug) {
         GenericBuild genericBuild = TravisBuildConverter.genericBuild(build, repoSlug, baseUrl)
-        genericBuild.artifacts = ArtifactParser.getArtifactsFromLog(getLog(build))
+        genericBuild.artifacts = ArtifactParser.getArtifactsFromLog(getLog(build.job_ids))
         return genericBuild
     }
 

@@ -20,6 +20,7 @@ import com.netflix.appinfo.InstanceInfo
 import com.netflix.discovery.DiscoveryClient
 import com.netflix.spinnaker.igor.IgorConfigurationProperties
 import com.netflix.spinnaker.igor.build.BuildCache
+import com.netflix.spinnaker.igor.build.model.GenericBuild
 import com.netflix.spinnaker.igor.build.model.GenericProject
 import com.netflix.spinnaker.igor.config.TravisProperties
 import com.netflix.spinnaker.igor.history.EchoService
@@ -28,6 +29,7 @@ import com.netflix.spinnaker.igor.history.model.GenericBuildEvent
 import com.netflix.spinnaker.igor.model.BuildServiceProvider
 import com.netflix.spinnaker.igor.polling.PollingMonitor
 import com.netflix.spinnaker.igor.service.BuildMasters
+import com.netflix.spinnaker.igor.travis.client.logparser.ArtifactParser
 import com.netflix.spinnaker.igor.travis.client.model.Repo
 import com.netflix.spinnaker.igor.travis.client.model.v3.V3Build
 import com.netflix.spinnaker.igor.travis.service.TravisBuildConverter
@@ -190,12 +192,14 @@ class TravisBuildMonitor implements PollingMonitor{
     private void sendEventForBuild(V3Build build, String branchedSlug, String master, TravisService travisService) {
         if (echoService) {
             log.info "pushing event for ${master}:${build.repository.slug}:${build.number}"
-            GenericProject project = new GenericProject(build.repository.slug, TravisBuildConverter.genericBuild(build, travisService.baseUrl))
+            GenericBuild genericBuild = TravisBuildConverter.genericBuild(build, travisService.baseUrl)
+            genericBuild.artifacts = ArtifactParser.getArtifactsFromLog(travisService.getLog(build.job_ids))
+            GenericProject project = new GenericProject(build.repository.slug, genericBuild)
             echoService.postEvent(
                 new GenericBuildEvent(content: new GenericBuildContent(project: project, master: master, type: 'travis'))
             )
             log.info "pushing event for ${master}:${branchedSlug}:${build.number}"
-            project = new GenericProject(branchedSlug, TravisBuildConverter.genericBuild(build, travisService.baseUrl))
+            project = new GenericProject(branchedSlug, genericBuild)
             echoService.postEvent(
                 new GenericBuildEvent(content: new GenericBuildContent(project: project, master: master, type: 'travis'))
             )
