@@ -88,6 +88,10 @@ interface TravisClient {
     @GET('/jobs/{job_id}')
     Jobs jobs(@Header("Authorization") String accessToken , @Path('job_id') int jobId)
 
+    @Headers("Accept: text/plain")
+    @GET('/jobs/{job_id}/log')
+    String logForJob(@Header("Authorization") String accessToken , @Path('job_id') int jobId)
+
     @Streaming
     @Headers("Accept: text/plain")
     @GET('/logs/{logId}')
