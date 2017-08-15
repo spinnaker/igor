@@ -43,6 +43,8 @@ import rx.schedulers.Schedulers
 import javax.annotation.PreDestroy
 import java.util.concurrent.TimeUnit
 
+import static net.logstash.logback.argument.StructuredArguments.kv
+
 /**
  * Monitors new jenkins builds
  */
@@ -152,11 +154,11 @@ class JenkinsBuildMonitor implements PollingMonitor {
         try {
             JenkinsService jenkinsService = buildMasters.map[master] as JenkinsService
             List<Project> jobs = jenkinsService.getProjects()?.getList() ?:[]
-            log.debug("Jobs on master: ${master} ${jobs.size()}")
+            log.debug("Jobs on master: {} ${jobs.size()}", kv("master", master))
 
             for (Project job : jobs) {
                 if (!job.lastBuild) {
-                    log.debug("[${master}:${job.name}] has no builds skipping...")
+                    log.debug("[{}:{}] has no builds skipping...", kv("master", master), kv("job", job.name))
                     continue
                 }
 
@@ -164,14 +166,14 @@ class JenkinsBuildMonitor implements PollingMonitor {
                 Long lastBuildStamp = job.lastBuild.timestamp as Long
                 Date upperBound = new Date(lastBuildStamp)
 
-                log.debug("[${master}:${job.name}] last cursor was ${cursor}, last build on this job was at ${upperBound}")
+                log.debug("[{}:{}] last cursor was ${cursor}, last build on this job was at ${upperBound}", kv("master", master), kv("job", job.name))
 
                 if (!cursor) {
-                    log.debug("[${master}:${job.name}] setting new cursor to ${lastBuildStamp}")
+                    log.debug("[{}:{}] setting new cursor to ${lastBuildStamp}", kv("master", master), kv("job", job.name))
                     cache.setLastPollCycleTimestamp(master, job.name, lastBuildStamp);
                 } else {
                     if (cursor == lastBuildStamp) {
-                        log.debug("[${master}:${job.name}] is up to date. skipping")
+                        log.debug("[{}:{}] is up to date. skipping", kv("master", master), kv("job", job.name))
                         continue
                     }
 
@@ -185,7 +187,7 @@ class JenkinsBuildMonitor implements PollingMonitor {
                     List<Build> completedBuilds = allBuilds.findAll { !it.building }
                     Date lowerBound = new Date(cursor)
 
-                    log.info("[${master}:${job.name}] ${allBuilds.size()} builds between [$lowerBound} - ${upperBound}], currently running builds -> ${currentlyBuilding*.number}")
+                    log.info("[{}:{}] ${allBuilds.size()} builds between [$lowerBound} - ${upperBound}], currently running builds -> ${currentlyBuilding*.number}", kv("master", master), kv("job", job.name))
 
                     // 2. post events for finished builds
                     completedBuilds.forEach { build ->
@@ -199,17 +201,17 @@ class JenkinsBuildMonitor implements PollingMonitor {
 
                     // 3. advance cursor when all builds have completed in the interval
                     if (currentlyBuilding.isEmpty()) {
-                        log.info("[${master}:${job.name}] has no other builds between [${lowerBound} - ${upperBound}], advancing cursor to ${lastBuildStamp}")
+                        log.info("[{}:{}] has no other builds between [${lowerBound} - ${upperBound}], advancing cursor to ${lastBuildStamp}", kv("master", master), kv("job", job.name))
                         cache.pruneOldMarkers(master, job.name, cursor)
                         cache.setLastPollCycleTimestamp(master, job.name, lastBuildStamp)
                     }
                 }
             }
         } catch (e) {
-            log.error("Error processing builds for ${master}", e)
+            log.error("Error processing builds for {}", kv("master", master), e)
         }
 
-        log.debug("Took ${System.currentTimeMillis() - startTime}ms to retrieve projects (master: ${master})")
+        log.debug("Took ${System.currentTimeMillis() - startTime}ms to retrieve projects (master: {})", kv("master", master))
     }
 
     static void postEvent(EchoService echoService,  Project project, String master) {
