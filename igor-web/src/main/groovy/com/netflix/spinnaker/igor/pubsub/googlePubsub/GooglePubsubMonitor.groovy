@@ -28,7 +28,6 @@ import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 
 import javax.annotation.PreDestroy
-import java.util.concurrent.TimeUnit
 
 /**
  * Monitors Google Cloud Pubsub subscriptions.
@@ -36,7 +35,7 @@ import java.util.concurrent.TimeUnit
 @Slf4j
 @Service
 @Async
-@ConditionalOnProperty('googlePubsub.enabled')
+@ConditionalOnProperty('pubsub.google.enabled')
 class GooglePubsubMonitor implements PollingMonitor {
 
   Long lastPoll
@@ -57,6 +56,7 @@ class GooglePubsubMonitor implements PollingMonitor {
 
   @Override
   void onApplicationEvent(ContextRefreshedEvent event) {
+    // TODO(jacobkiefer): Register Igor as enabled on startup.
     log.info('Starting async connections for Google Pubsub subscribers')
     pubsubSubscribers.filteredMap(PubsubType.GOOGLE).keySet().parallelStream().forEach(
         { subscription -> openConnection(subscription) }
@@ -68,12 +68,12 @@ class GooglePubsubMonitor implements PollingMonitor {
     def startTime = System.currentTimeMillis()
     lastPoll = startTime
 
-    GooglePubsubSubscriber subscriber = pubsubSubscribers.map[subscription] as GooglePubsubSubscriber
+    GooglePubsubSubscriber subscriber = pubsubSubscribers.get(subscription) as GooglePubsubSubscriber
     subscriber.subscriber.startAsync()
   }
 
   void closeConnection(String subscription) {
-    GooglePubsubSubscriber subscriber = pubsubSubscribers.map[subscription] as GooglePubsubSubscriber
+    GooglePubsubSubscriber subscriber = pubsubSubscribers.get(subscription) as GooglePubsubSubscriber
     subscriber.subscriber.stopAsync()
   }
 

@@ -31,12 +31,14 @@ import com.netflix.spinnaker.igor.history.model.PubsubEvent
 import com.netflix.spinnaker.igor.model.PubsubType
 import com.netflix.spinnaker.igor.pubsub.PubsubMessageCache
 import com.netflix.spinnaker.igor.pubsub.PubsubSubscriber
+import com.netflix.spinnaker.igor.utils.NodeIdentity
 import groovy.util.logging.Slf4j
+import org.threeten.bp.Duration
 
-import java.security.MessageDigest
+import java.util.concurrent.TimeUnit
 
 @Slf4j
-class GooglePubsubSubscriber implements PubsubSubscriber {
+class GooglePubsubSubscriber extends PubsubSubscriber {
   String name
   String project
   Subscriber subscriber
@@ -44,7 +46,7 @@ class GooglePubsubSubscriber implements PubsubSubscriber {
 
 
   @Override
-  PubsubType pubsubType() {
+  static PubsubType pubsubType() {
     return PubsubType.GOOGLE
   }
 
@@ -67,6 +69,7 @@ class GooglePubsubSubscriber implements PubsubSubscriber {
       subscriber = Subscriber
           .defaultBuilder(SubscriptionName.create(project, name), messageReceiver)
           .setCredentialsProvider(FixedCredentialsProvider.create(credentials))
+          .setMaxAckExtensionPeriod(Duration.ofSeconds(0)) // Disables automatic deadline extensions for liveness.
           .build()
     } else {
       subscriber = Subscriber
@@ -85,6 +88,7 @@ class GooglePubsubSubscriber implements PubsubSubscriber {
   }
 
   static class GooglePubsubMessageReceiver implements MessageReceiver {
+
     EchoService echoService
 
     PubsubMessageCache pubsubMessageCache
@@ -93,34 +97,32 @@ class GooglePubsubSubscriber implements PubsubSubscriber {
 
     String subscriptionName
 
-    private MessageDigest digest = MessageDigest.getInstance("SHA-256")
+    NodeIdentity identity = new NodeIdentity()
 
     @Override
     void receiveMessage(PubsubMessage message, AckReplyConsumer consumer) {
       String messagePayload = message.data.toStringUtf8()
       log.debug("Received message with payload: ${messagePayload}")
-      String messageKey = makeKey(pubsubMessageCache.prefix, messagePayload)
-      if (pubsubMessageCache.handleMessage(messageKey)) {
-        consumer.ack()
-        postEvent(message)
-      } else {
+      String messageKey = pubsubMessageCache.makeKey(messagePayload, pubsubType(), subscriptionName)
+      // Acquire lock and set a high upper bound on message processing time.
+      if (!pubsubMessageCache.acquireMessageLock(messageKey, identity.identity, 5 * TimeUnit.SECONDS.toMillis(ackDeadlineSeconds))) {
         consumer.nack()
+        return
       }
-    }
 
-    private String makeKey(String prefix, String messagePayload) {
-      digest.reset()
-      digest.update(messagePayload.bytes)
-      String messageHash = new String(digest.digest())
-      return "${prefix}:googlePubsub:${subscriptionName}:${messageHash}"
+      consumer.ack()
+      postEvent(message)
+      // Expire key after max retention time, which is 7 days.
+      // See https://cloud.google.com/pubsub/docs/subscriber for details.
+      pubsubMessageCache.setMessageHandled(messageKey, identity.identity, TimeUnit.DAYS.toMillis(7))
     }
 
     void postEvent(PubsubMessage message) {
       if (echoService) {
-        log.info("Posted message: ${message.data.toStringUtf8()} to Echo")
-//        echoService.postEvent(
-//            new PubsubEvent(payload: message.data.toStringUtf8())
-//        )
+        log.info("Posted message: ${message.data.toStringUtf8()} as an Event to Echo")
+        echoService.postEvent(
+            new PubsubEvent(payload: message.data.toStringUtf8())
+        )
       }
     }
   }

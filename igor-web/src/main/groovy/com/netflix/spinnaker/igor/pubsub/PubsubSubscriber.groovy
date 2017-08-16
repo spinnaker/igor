@@ -18,6 +18,10 @@ package com.netflix.spinnaker.igor.pubsub
 
 import com.netflix.spinnaker.igor.model.PubsubType
 
-interface PubsubSubscriber {
-  PubsubType pubsubType()
+import javax.naming.OperationNotSupportedException
+
+abstract class PubsubSubscriber {
+  static PubsubType pubsubType() {
+    throw new OperationNotSupportedException('Static function "pubsubType()" not implemented for abstract class')
+  }
 }

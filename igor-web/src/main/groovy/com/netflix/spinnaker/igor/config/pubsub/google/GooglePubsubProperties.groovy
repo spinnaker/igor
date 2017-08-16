@@ -22,7 +22,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 import javax.validation.Valid
 import javax.validation.constraints.NotNull
 
-@ConfigurationProperties(prefix = 'googlePubsub')
+@ConfigurationProperties(prefix = 'pubsub.google')
 class GooglePubsubProperties {
   @Valid
   List<GooglePubsubSubscription> subscriptions
@@ -40,5 +40,4 @@ class GooglePubsubProperties {
     // Not required since topics can be public.
     String jsonPath
   }
-
 }

@@ -19,9 +19,9 @@ package com.netflix.spinnaker.igor.pubsub.kafka
 import com.netflix.spinnaker.igor.model.PubsubType
 import com.netflix.spinnaker.igor.pubsub.PubsubSubscriber
 
-class KafkaPubsubSubscriber implements PubsubSubscriber {
+class KafkaPubsubSubscriber extends PubsubSubscriber {
   @Override
-  PubsubType pubsubType() {
+  static PubsubType pubsubType() {
     return PubsubType.KAFKA
   }
 }

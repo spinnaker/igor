@@ -19,9 +19,17 @@ package com.netflix.spinnaker.igor.pubsub
 import com.netflix.spinnaker.igor.model.PubsubType
 
 class PubsubSubscribers {
-  Map<String, PubsubSubscriber> map = new HashMap<String, PubsubSubscriber>()
+  private Map<String, PubsubSubscriber> subscriberByName = new HashMap<String, PubsubSubscriber>()
+
+  void putAll(Map<String, PubsubSubscriber> newEntries) {
+    subscriberByName.putAll(newEntries)
+  }
 
   Map<String, PubsubSubscriber> filteredMap(PubsubType pubsubType) {
-    map.findAll { it.value.pubsubType() ==  pubsubType }
+    subscriberByName.findAll { it.value.pubsubType() ==  pubsubType }
+  }
+
+  PubsubSubscriber get(String topic) {
+    return subscriberByName[topic]
   }
 }

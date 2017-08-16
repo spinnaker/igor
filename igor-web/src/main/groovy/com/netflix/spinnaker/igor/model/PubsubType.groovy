@@ -17,6 +17,17 @@
 package com.netflix.spinnaker.igor.model
 
 enum PubsubType {
-  GOOGLE,
-  KAFKA
+  GOOGLE('googlePubsub'),
+  KAFKA('kafka')
+
+  String type
+
+  PubsubType(String type) {
+    this.type = type
+  }
+
+  @Override
+  String toString() {
+    type
+  }
 }

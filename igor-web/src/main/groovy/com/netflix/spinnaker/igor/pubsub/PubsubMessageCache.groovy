@@ -17,9 +17,13 @@
 package com.netflix.spinnaker.igor.pubsub
 
 import com.netflix.spinnaker.igor.IgorConfigurationProperties
+import com.netflix.spinnaker.igor.model.PubsubType
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
+import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
+
+import java.util.concurrent.TimeUnit
 
 /**
  * Shared cache of received and handled pubsub message to synchronize clients.
@@ -32,21 +36,39 @@ class PubsubMessageCache {
   @Autowired
   IgorConfigurationProperties igorConfigurationProperties
 
-  // TODO(jacobkiefer): This is a temporary in-memory store for handled
-  // messages before we implement the distributed Redis solution.
-  // This will function properly only with exactly one Igor instance.
-  private HashSet<String> handledMessages = new HashSet<String>()
+  private static final SET_IF_NOT_EXIST = 'NX'
+  private static final SET_EXPIRE_TIME_MILLIS = 'PX'
+  private static final SUCCESS = 'OK'
 
   String getPrefix() {
     igorConfigurationProperties.spinnaker.jedis.prefix
   }
 
-  Boolean handleMessage(String messageKey) {
-    if (handledMessages.contains(messageKey)) {
-      // Message has already been processed.
-      return false
-    } else {
-      return handledMessages.add(messageKey)
+  Boolean acquireMessageLock(String messageKey, String identifier, Long ackDeadlineMillis) {
+    Jedis resource = jedisPool.getResource()
+    resource.withCloseable {
+      String response = resource.set(messageKey, identifier, SET_IF_NOT_EXIST, SET_EXPIRE_TIME_MILLIS, ackDeadlineMillis)
+      return SUCCESS == response
     }
+  }
+
+  void setMessageHandled(String messageKey, String identifier, Long retentionDeadlineMillis) {
+    Jedis resource = jedisPool.getResource()
+    resource.withCloseable {
+      resource.psetex(messageKey, retentionDeadlineMillis, identifier)
+    }
+  }
+
+  String makeKey(String messagePayload, PubsubType pubsubType, String subscription) {
+    // NOTE: hashCode() translates a String into a 32-bit integer.
+    // This is relatively small space; however, we are assuming a low
+    // message influx -- tens a minute, which translates to ~10^4 per day.
+    // We persist handled messages for a week maximally, so we assume 7x10^4 messages
+    // accrued per week. However -- 7x10^4 / 2^32 ~ 10^-5 which is sufficiently small
+    // for a collision probability. We can strengthen the hash function if
+    // this becomes an issue.
+
+    String messageHash = messagePayload.hashCode() + ""
+    return "${prefix}:${pubsubType.toString()}:${subscription}:${messageHash}"
   }
 }

@@ -18,6 +18,7 @@ package com.netflix.spinnaker.igor.config.pubsub.google
 
 import com.netflix.spinnaker.igor.history.EchoService
 import com.netflix.spinnaker.igor.pubsub.PubsubMessageCache
+import com.netflix.spinnaker.igor.pubsub.PubsubSubscriber
 import com.netflix.spinnaker.igor.pubsub.PubsubSubscribers
 import com.netflix.spinnaker.igor.pubsub.googlePubsub.GooglePubsubSubscriber
 import groovy.transform.CompileStatic
@@ -25,32 +26,41 @@ import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
+import javax.annotation.PostConstruct
 import javax.validation.Valid
 
 @Configuration
 @Slf4j
 @CompileStatic
-@ConditionalOnProperty("googlePubsub.enabled")
+@ConditionalOnProperty("pubsub.google.enabled")
 @EnableConfigurationProperties(GooglePubsubProperties)
 class GooglePubsubConfig {
 
-  @Bean
-  Map<String, GooglePubsubSubscriber> googlePubsubSubscribers(PubsubSubscribers pubsubSubscribers,
-                                                              EchoService echoService,
-                                                              PubsubMessageCache pubsubMessageCache,
-                                                              @Valid GooglePubsubProperties googlePubsubProperties) {
+  @Autowired
+  PubsubSubscribers pubsubSubscribers
+
+  @Autowired
+  EchoService echoService
+
+  @Autowired
+  PubsubMessageCache pubsubMessageCache
+
+  @Valid
+  @Autowired
+  GooglePubsubProperties googlePubsubProperties
+
+  @PostConstruct
+  void googlePubsubSubscribers() {
     log.info("Creating Google Pubsub Subscribers")
-    Map<String, GooglePubsubSubscriber> subscriberMap = googlePubsubProperties?.subscriptions?.collectEntries { GooglePubsubProperties.GooglePubsubSubscription subscription ->
+    Map<String, PubsubSubscriber> subscriberMap = googlePubsubProperties.subscriptions?.collectEntries { GooglePubsubProperties.GooglePubsubSubscription subscription ->
       log.info "Bootstrapping Google Pubsub Subscriber listening to topic: ${subscription.name} in project: ${subscription.project}"
       GooglePubsubSubscriber subscriber = GooglePubsubSubscriber
           .buildSubscriber(subscription.name, subscription.project, subscription.jsonPath, subscription.ackDeadlineSeconds, echoService, pubsubMessageCache)
       [("projects/${subscription.project}/topics/${subscription.name}".toString()): subscriber]
     }
 
-    pubsubSubscribers.map.putAll subscriberMap
-    subscriberMap
+    pubsubSubscribers.putAll subscriberMap
   }
 }
