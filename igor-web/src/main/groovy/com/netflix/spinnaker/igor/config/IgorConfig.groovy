@@ -18,6 +18,7 @@ package com.netflix.spinnaker.igor.config
 
 import com.netflix.hystrix.exception.HystrixRuntimeException
 import com.netflix.spectator.api.Registry
+import com.netflix.spinnaker.igor.pubsub.PubsubSubscribers
 import com.netflix.spinnaker.igor.service.ArtifactDecorator
 import com.netflix.spinnaker.igor.service.BuildMasters
 import com.netflix.spinnaker.kork.web.interceptors.MetricsInterceptor
@@ -63,6 +64,11 @@ class IgorConfig extends WebMvcConfigurerAdapter {
     @Bean
     BuildMasters buildMasters() {
         new BuildMasters()
+    }
+
+    @Bean
+    PubsubSubscribers pubsubSubscribers() {
+        new PubsubSubscribers()
     }
 
     @Bean

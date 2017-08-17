@@ -1,10 +1,12 @@
 ext {
   springConfigLocation = System.getProperty('spring.config.location', "${System.getProperty('user.home')}/.spinnaker/")
+  springProfiles = System.getProperty('spring.profiles.active', "test,local")
   repackage = System.getProperty('springBoot.repackage', "false")
 }
 
 tasks.withType(org.springframework.boot.gradle.run.BootRunTask) {
   systemProperty('spring.config.location', project.springConfigLocation)
+  systemProperty('spring.profiles.active', project.springProfiles)
 }
 
 apply plugin: 'org.springframework.boot'
@@ -30,13 +32,14 @@ dependencies {
 
     compile 'org.yaml:snakeyaml:1.15'
     compile 'com.squareup.retrofit:converter-simplexml:1.9.0'
+    compile 'com.google.cloud:google-cloud-pubsub:0.21.1-beta'
     testCompile 'com.squareup.okhttp:mockwebserver:2.7.0'
 }
 
 configurations.all {
     resolutionStrategy {
         force 'org.apache.log4j:log4j:1.2.17'
-        force 'com.google.guava:guava:14.0.1'
+        force 'com.google.guava:guava:20.0'
         force 'commons-codec:commons-codec:1.7'
     }
     exclude group: 'javax.servlet', module: 'servlet-api'
