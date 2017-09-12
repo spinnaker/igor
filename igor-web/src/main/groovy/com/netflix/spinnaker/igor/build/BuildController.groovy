@@ -252,6 +252,18 @@ class BuildController {
 
     }
 
+    @RequestMapping(value = '/masters/{name}/jobs/{jobName}/{buildNumber}/logs')
+    String getLogs(@PathVariable("name") String master,
+                   @PathVariable String jobName,
+                   @PathVariable Integer buildNumber) {
+        if (!buildMasters.map.containsKey(master)) {
+            throw new MasterNotFoundException("Master '${master}' not found")
+        }
+
+        def buildService = buildMasters.map[master]
+        return buildService.getLog(jobName, buildNumber)
+    }
+
     @ExceptionHandler(BuildJobError.class)
     void handleBuildJobError(HttpServletResponse response, BuildJobError e) throws IOException {
         log.error(e.getMessage())

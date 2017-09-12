@@ -257,6 +257,13 @@ class TravisService implements BuildService {
         return buildLog
     }
 
+    String getLog(String jobName, int jobId) {
+        log.debug "fetching job log for ${jobId}"
+        Response response = travisClient.logForJob(getAccessToken(), jobId)
+        String job_log = new String(((TypedByteArray) response.getBody()).getBytes());
+        return job_log
+    }
+
     String getLog(int logId) {
         log.debug "fetching log by logId ${logId}"
         Response response = travisClient.log(getAccessToken(), logId)

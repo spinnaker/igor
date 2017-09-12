@@ -35,8 +35,9 @@ import com.netflix.spinnaker.igor.model.BuildServiceProvider
 import com.netflix.spinnaker.igor.service.BuildService
 import org.springframework.web.util.UriUtils
 import retrofit.client.Response
+import retrofit.mime.TypedByteArray
 
-class JenkinsService implements BuildService{
+class JenkinsService implements BuildService {
     final String groupKey
     final JenkinsClient jenkinsClient
 
@@ -97,6 +98,12 @@ class JenkinsService implements BuildService{
 
     Build getBuild(String jobName, Integer buildNumber) {
         return jenkinsClient.getBuild(encode(jobName), buildNumber)
+    }
+
+    @Override
+    String getLog(String jobName, int buildNumber) {
+        Response response = jenkinsClient.getLog(encode(jobName), buildNumber)
+        return new String(((TypedByteArray) response.getBody()).getBytes())
     }
 
     @Override

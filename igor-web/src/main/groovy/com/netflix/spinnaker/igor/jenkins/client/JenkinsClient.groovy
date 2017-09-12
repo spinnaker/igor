@@ -83,6 +83,9 @@ interface JenkinsClient {
     @GET('/job/{jobName}/api/xml?exclude=/*/action&exclude=/*/build&exclude=/*/property[not(parameterDefinition)]')
     JobConfig getJobConfig(@EncodedPath('jobName') String jobName)
 
+    @GET('/job/{jobName}/{buildNumber}/consoleText')
+    Response getLog(@EncodedPath('jobName') String jobName, @Path('buildNumber') Integer buildNumber)
+
     @Streaming
     @GET('/job/{jobName}/{buildNumber}/artifact/{fileName}')
     Response getPropertyFile(
