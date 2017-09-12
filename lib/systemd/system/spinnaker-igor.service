@@ -1,0 +1,18 @@
+[Unit]
+Description=Spinnaker Igor
+After=network.target
+
+[Service]
+Type=simple
+GuessMainPID=yes
+Environment=logfile=/var/log/spinnaker/igor/igor.log
+ExecStartPre=/usr/bin/touch /etc/default/spinnaker
+ExecStartPre=/bin/bash -c '. /etc/default/spinnaker'
+ExecStart=/opt/igor/bin/igor 2>&1 ${logfile} &
+ExecStop=/bin/kill $MAINPID
+ExecReload=/bin/kill -HUP $MAINPID
+StandardOutput=journal+console
+WorkingDirectory=/opt/igor
+
+[Install]
+WantedBy=multi-user.target
