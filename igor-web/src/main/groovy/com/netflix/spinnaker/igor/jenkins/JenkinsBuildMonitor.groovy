@@ -147,15 +147,13 @@ class JenkinsBuildMonitor implements PollingMonitor {
      */
 
     void changedBuilds(String master) {
-        log.info("Checking for new builds for ${master}")
+        log.debug("Checking for new builds for ${master}")
         def startTime = System.currentTimeMillis()
         lastPoll = startTime
 
         try {
             JenkinsService jenkinsService = buildMasters.map[master] as JenkinsService
             List<Project> jobs = jenkinsService.getProjects()?.getList() ?:[]
-            log.debug("Jobs on master: {} ${jobs.size()}", kv("master", master))
-
             for (Project job : jobs) {
                 if (!job.lastBuild) {
                     log.debug("[{}:{}] has no builds skipping...", kv("master", master), kv("job", job.name))
@@ -165,29 +163,25 @@ class JenkinsBuildMonitor implements PollingMonitor {
                 Long cursor = cache.getLastPollCycleTimestamp(master, job.name)
                 Long lastBuildStamp = job.lastBuild.timestamp as Long
                 Date upperBound = new Date(lastBuildStamp)
-
-                log.debug("[{}:{}] last cursor was ${cursor}, last build on this job was at ${upperBound}", kv("master", master), kv("job", job.name))
-
-                if (!cursor) {
-                    log.debug("[{}:{}] setting new cursor to ${lastBuildStamp}", kv("master", master), kv("job", job.name))
-                    cache.setLastPollCycleTimestamp(master, job.name, lastBuildStamp);
+                if (cursor == lastBuildStamp) {
+                    log.debug("[${master}:${job.name}] is up to date. skipping")
                 } else {
-                    if (cursor == lastBuildStamp) {
-                        log.debug("[{}:{}] is up to date. skipping", kv("master", master), kv("job", job.name))
-                        continue
-                    }
-
-                    // 1. get all builds between last poll and jenkins last build included
-                    List<Build> allBuilds = (jenkinsService.getBuilds(job.name).getList() ?: []).findAll { build ->
-                        Long buildStamp = build.timestamp as Long
-                        return buildStamp <= lastBuildStamp && buildStamp > cursor
+                    // 1. get builds
+                    List<Build> allBuilds = (jenkinsService.getBuilds(job.name).getList() ?: [])
+                    if (!cursor) {
+                        log.debug("[${master}:${job.name}] setting new cursor to ${lastBuildStamp}")
+                        cursor = lastBuildStamp
+                    } else {
+                        // filter between last poll and jenkins last build included
+                        allBuilds = (jenkinsService.getBuilds(job.name).getList() ?: []).findAll { build ->
+                            Long buildStamp = build.timestamp as Long
+                            return buildStamp <= lastBuildStamp && buildStamp > cursor
+                        }
                     }
 
                     List<Build> currentlyBuilding = allBuilds.findAll { it.building }
                     List<Build> completedBuilds = allBuilds.findAll { !it.building }
                     Date lowerBound = new Date(cursor)
-
-                    log.info("[{}:{}] ${allBuilds.size()} builds between [$lowerBound} - ${upperBound}], currently running builds -> ${currentlyBuilding*.number}", kv("master", master), kv("job", job.name))
 
                     // 2. post events for finished builds
                     completedBuilds.forEach { build ->
