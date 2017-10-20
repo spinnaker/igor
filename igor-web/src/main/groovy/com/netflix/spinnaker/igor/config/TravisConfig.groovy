@@ -16,7 +16,9 @@
 
 package com.netflix.spinnaker.igor.config
 
+import com.google.gson.GsonBuilder
 import com.netflix.spinnaker.igor.IgorConfigurationProperties
+import com.netflix.spinnaker.igor.converters.InstantTypeConverter
 import com.netflix.spinnaker.igor.service.BuildMasters
 import com.netflix.spinnaker.igor.travis.TravisCache
 import com.netflix.spinnaker.igor.travis.client.TravisClient
@@ -32,8 +34,10 @@ import retrofit.Endpoints
 import retrofit.RequestInterceptor
 import retrofit.RestAdapter
 import retrofit.client.OkClient
+import retrofit.converter.GsonConverter
 
 import javax.validation.Valid
+import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 
@@ -79,6 +83,10 @@ class TravisConfig {
             .setClient(new OkClient(client))
             .setLog(fooLog)
             .setLogLevel(RestAdapter.LogLevel.FULL)
+            .setConverter(new GsonConverter(new GsonBuilder()
+                .registerTypeAdapter(Instant.class, new InstantTypeConverter())
+                .registerTypeAdapter(Instant.class, new InstantTypeConverter())
+                .create()))
             .build()
             .create(TravisClient)
     }

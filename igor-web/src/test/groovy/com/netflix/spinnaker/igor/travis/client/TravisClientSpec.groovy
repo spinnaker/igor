@@ -37,6 +37,10 @@ import retrofit.mime.TypedByteArray
 import spock.lang.Shared
 import spock.lang.Specification
 
+import java.time.LocalDateTime
+import java.time.Month
+import java.time.ZoneOffset
+
 class TravisClientSpec extends Specification {
 
     @Shared
@@ -383,6 +387,45 @@ class TravisClientSpec extends Specification {
 
         then:
         builds.commits.first().isTag()
+    }
+
+    def "commits, parse committed_at"() {
+        given:
+        setResponse '''{
+            "builds": [{
+                "id": 281721,
+                "repository_id": 1993,
+                "commit_id": 156529,
+                "number": "39",
+                "pull_request": false,
+                "pull_request_title": null,
+                "pull_request_number": null,
+                "state": "passed",
+                "started_at": "2016-04-19T09:19:25Z",
+                "finished_at": "2016-04-19T09:23:08Z",
+                "duration": 223,
+                "job_ids": [281722]
+           }],
+            "commits": [{
+                "id": 38108155,
+                "sha": "f290f2af03826999c6004404378a5bc750e834b0",
+                "branch": "master",
+                "message": "Update README.md",
+                "committed_at": "2016-06-01T18:57:48Z",
+                "author_name": "Gard Rimestad",
+                "author_email": "gardalize@gurters.com",
+                "committer_name": "Gard Rimestad",
+                "committer_email": "gardalize@gurters.com",
+                "compare_url": "https://github.com/gardalize/travis-trigger-test/compare/bd005f51cb1e...f290f2af0382",
+                "pull_request_number": null
+            }]
+        }'''
+
+        when:
+        Builds builds = client.builds("someToken", "org/repo", 31)
+
+        then:
+        builds.commits.first().timestamp == LocalDateTime.of(2016, Month.JUNE, 1, 18, 57, 48).toInstant(ZoneOffset.UTC)
 
     }
 

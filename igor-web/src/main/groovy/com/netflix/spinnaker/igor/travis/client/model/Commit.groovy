@@ -22,6 +22,8 @@ import groovy.transform.CompileStatic
 import org.simpleframework.xml.Default
 import org.simpleframework.xml.Root
 
+import java.time.Instant
+
 @Default
 @CompileStatic
 @Root(name = 'commits')
@@ -37,8 +39,11 @@ class Commit {
     @SerializedName("compare_url")
     String compareUrl
 
+    @SerializedName("committed_at")
+    Instant timestamp
+
     GenericGitRevision genericGitRevision() {
-        return new GenericGitRevision(branch, branch, sha, authorName, compareUrl, message)
+        return new GenericGitRevision(branch, branch, sha, authorName, compareUrl, message, timestamp)
     }
 
     boolean isTag(){
