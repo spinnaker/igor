@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.igor.travis.client
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.igor.config.TravisConfig
 import com.netflix.spinnaker.igor.travis.client.model.AccessToken
 import com.netflix.spinnaker.igor.travis.client.model.Account
@@ -41,6 +42,8 @@ import java.time.LocalDateTime
 import java.time.Month
 import java.time.ZoneOffset
 
+import static com.netflix.spinnaker.igor.helpers.TestUtils.createObjectMapper
+
 class TravisClientSpec extends Specification {
 
     @Shared
@@ -49,8 +52,12 @@ class TravisClientSpec extends Specification {
     @Shared
     MockWebServer server
 
+    @Shared
+    ObjectMapper mapper
+
     void setup() {
         server = new MockWebServer()
+        mapper = createObjectMapper()
     }
 
     void cleanup() {
@@ -285,7 +292,7 @@ class TravisClientSpec extends Specification {
         Build build = builds.builds.first()
         build.number == 31
         build.duration == 8
-        build.finishedAt.getTime() == 1458051084000
+        build.finishedAt.toEpochMilli() == 1458051084000
     }
 
     def "extract config from getBuild(accessToken, repoSlug)"() {
@@ -624,7 +631,7 @@ class TravisClientSpec extends Specification {
                 .setHeader('Content-Type', 'application/json;charset=utf-8')
         )
         server.start()
-        client = new TravisConfig().travisClient(server.getUrl('/').toString())
+        client = new TravisConfig().travisClient(server.getUrl('/').toString(), 3000, mapper)
     }
 
     private void setPlainTextResponse(String body) {
@@ -634,7 +641,7 @@ class TravisClientSpec extends Specification {
                 .setHeader('Content-Type', 'text/plain;charset=utf-8')
         )
         server.start()
-        client = new TravisConfig().travisClient(server.getUrl('/').toString())
+        client = new TravisConfig().travisClient(server.getUrl('/').toString(), 3000, mapper)
 
     }
 }
