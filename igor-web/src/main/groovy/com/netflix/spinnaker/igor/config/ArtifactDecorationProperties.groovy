@@ -27,7 +27,7 @@ import javax.validation.Valid
 @CompileStatic
 @ConfigurationProperties(prefix = 'artifact.decorator')
 class ArtifactDecorationProperties {
-    boolean enabled = false
+    boolean enabled = true
 
     @Valid
     List<FileDecorator> fileDecorators
