@@ -37,11 +37,11 @@ import com.netflix.spinnaker.igor.travis.client.model.GithubAuth
 import com.netflix.spinnaker.igor.travis.client.model.Job
 import com.netflix.spinnaker.igor.travis.client.model.Jobs
 import com.netflix.spinnaker.igor.travis.client.model.Repo
-import com.netflix.spinnaker.igor.travis.client.model.RepoRequest
 import com.netflix.spinnaker.igor.travis.client.model.Repos
+import com.netflix.spinnaker.igor.travis.client.model.RepoRequest
 import com.netflix.spinnaker.igor.travis.client.model.TriggerResponse
-import com.netflix.spinnaker.igor.travis.client.model.v3.TravisBuildType
 import com.netflix.spinnaker.igor.travis.client.model.v3.Request
+import com.netflix.spinnaker.igor.travis.client.model.v3.TravisBuildType
 import com.netflix.spinnaker.igor.travis.client.model.v3.V3Build
 import com.netflix.spinnaker.igor.travis.client.model.v3.V3Builds
 import groovy.util.logging.Slf4j
@@ -49,25 +49,29 @@ import retrofit.RetrofitError
 import retrofit.client.Response
 import retrofit.mime.TypedByteArray
 
+import static net.logstash.logback.argument.StructuredArguments.kv
+
 @Slf4j
 class TravisService implements BuildService {
     public static final int TRAVIS_BUILD_RESULT_LIMIT = 25
     final String baseUrl
     final String groupKey
     final GithubAuth gitHubAuth
+    final int numberOfRepositories
     final TravisClient travisClient
     final TravisCache travisCache
     final private Set<String> artifactRegexes
     protected AccessToken accessToken
     private Accounts accounts
 
-    TravisService(String travisHostId, String baseUrl, String githubToken, TravisClient travisClient, TravisCache travisCache, Iterable<String> artifactRegexes) {
-        this.groupKey     = "${travisHostId}"
-        this.gitHubAuth   = new GithubAuth(githubToken)
-        this.travisClient = travisClient
-        this.baseUrl      = baseUrl
-        this.travisCache  = travisCache
-        this.artifactRegexes = artifactRegexes == null ? Collections.EMPTY_LIST : new HashSet<>(artifactRegexes)
+    TravisService(String travisHostId, String baseUrl, String githubToken, int numberOfRepositories, TravisClient travisClient, TravisCache travisCache, Iterable<String> artifactRegexes) {
+        this.numberOfRepositories = numberOfRepositories
+        this.groupKey             = "${travisHostId}"
+        this.gitHubAuth           = new GithubAuth(githubToken)
+        this.travisClient         = travisClient
+        this.baseUrl              = baseUrl
+        this.travisCache          = travisCache
+        this.artifactRegexes      = artifactRegexes ?: []
     }
 
     @Override
@@ -107,9 +111,8 @@ class TravisService implements BuildService {
         repoRequest.config = new Config(queryParameters)
         TriggerResponse triggerResponse = travisClient.triggerBuild(getAccessToken(), repoSlug, repoRequest)
         if (triggerResponse.remainingRequests) {
-            log.debug "${groupKey}: remaining requests: ${triggerResponse.remainingRequests}"
-            log.debug "${groupKey}: request id: ${triggerResponse.request.id}"
-            log.debug "${groupKey}: repository id: ${triggerResponse.request.repository.id}"
+            log.debug("{}: remaining requests: ${triggerResponse.remainingRequests}", kv("group", groupKey))
+            log.info("{}: Triggered build of ${inputRepoSlug}, requestId: ${triggerResponse.request.id}", kv("group", groupKey))
         }
         return travisCache.setQueuedJob(groupKey, triggerResponse.request.repository.id, triggerResponse.request.id)
     }
@@ -210,12 +213,12 @@ class TravisService implements BuildService {
             {
                 log.debug "fetching repos for relevant accounts only"
                 List<Repo> repos = []
-                getAccounts().accounts.each { account ->
-                    Repos accountRepos = travisClient.repos(getAccessToken(), account.login)
-                    accountRepos.repos.each { repo ->
-                        log.debug "[${account.login}] [${repo.slug}]"
+
+                getAccounts().accounts.findAll({ it.isUser() }).each { account ->
+                    calculatePagination(numberOfRepositories).times { page ->
+                        Repos accountRepos = travisClient.repos(getAccessToken(), account.login, true, TRAVIS_BUILD_RESULT_LIMIT, page * TRAVIS_BUILD_RESULT_LIMIT)
+                        repos.addAll accountRepos.repos
                     }
-                    repos.addAll accountRepos.repos
                 }
                 return repos
             },
@@ -305,7 +308,7 @@ class TravisService implements BuildService {
         Map queuedJob = travisCache.getQueuedJob(groupKey, queueId)
         Request requestResponse = travisClient.request(getAccessToken(), queuedJob.repositoryId, queuedJob.requestId)
         if (requestResponse.builds.size() > 0) {
-            log.info "removing ${queueId} from ${groupKey} travisCache"
+            log.info("{}: Build found: [${requestResponse.repository.slug}:${requestResponse.builds.first().number}] . Removing ${queueId} from ${groupKey} travisCache.", kv("group", groupKey))
             travisCache.remove(groupKey, queueId)
             return ["number":requestResponse.builds.first().number]
         }
@@ -388,6 +391,14 @@ class TravisService implements BuildService {
         }
 
         return TravisBuildType.unknown
+    }
+
+    protected int calculatePagination(int numberOfBuilds) {
+        int intermediate =  numberOfBuilds / TRAVIS_BUILD_RESULT_LIMIT
+        if (numberOfBuilds % TRAVIS_BUILD_RESULT_LIMIT > 0) {
+            intermediate += 1
+        }
+        return intermediate
     }
 
     private static String extractBranchFromRepoSlug(String inputRepoSlug) {
