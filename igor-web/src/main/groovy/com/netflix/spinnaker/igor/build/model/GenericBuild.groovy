@@ -25,7 +25,7 @@ class GenericBuild {
     boolean building
     String fullDisplayName
     String name
-    int number
+    long number
     Integer duration
     String timestamp
     Result result

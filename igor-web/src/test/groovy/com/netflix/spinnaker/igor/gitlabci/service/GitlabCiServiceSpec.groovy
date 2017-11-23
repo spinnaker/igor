@@ -14,13 +14,13 @@ class GitlabCiServiceSpec extends Specification {
 
     void setup() {
         client = Mock(GitlabCiClient)
-        service = new GitlabCiService(client, false, false)
+        service = new GitlabCiService(client, null, false, false)
     }
 
     def "verify project pagination"() {
         given:
-        client.getProjects(_, _, 1) >> [new Project(name_with_namespace: "project1")]
-        client.getProjects(_, _, 2) >> [new Project(name_with_namespace: "project2")]
+        client.getProjects(_, _, 1) >> [new Project(path_with_namespace: "project1")]
+        client.getProjects(_, _, 2) >> [new Project(path_with_namespace: "project2")]
         client.getProjects(_, _, 3) >> []
 
         when:

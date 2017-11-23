@@ -12,6 +12,8 @@ import javax.validation.Valid
 @Validated
 class GitlabCiProperties {
 
+    int cachedJobTTLDays = 60
+
     @Valid
     List<GitlabCiHost> masters
 
@@ -20,8 +22,6 @@ class GitlabCiProperties {
         String name
         @NotEmpty
         String address
-        // TODO should this field be also not empty?
-        // TODO Set proper token (reuse from the ci settings?)
         String privateToken
         boolean limitByMembership = false
         boolean limitByOwnership = true

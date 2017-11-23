@@ -54,14 +54,14 @@ class BuildCache {
         results
     }
 
-    int getLastBuild(String master, String job, boolean running) {
+    long getLastBuild(String master, String job, boolean running) {
         Jedis resource = jedisPool.resource
         def key = makeKey(master, job, running)
         if (!resource.exists(key)) {
             jedisPool.returnResource(resource)
             return -1
         }
-        int buildNumber = resource.get(key) as Integer
+        int buildNumber = resource.get(key) as Long
 
         jedisPool.returnResource(resource)
         buildNumber
@@ -80,7 +80,7 @@ class BuildCache {
         jedisPool.returnResource(resource)
     }
 
-    void setLastBuild(String master, String job, int lastBuild, boolean building, int ttl) {
+    void setLastBuild(String master, String job, long lastBuild, boolean building, int ttl) {
         if(!building) {
             // This is here to support rollback to igor versions
             setBuild(makeKey(master, job), lastBuild, building, master, job, ttl)
@@ -112,7 +112,7 @@ class BuildCache {
 
 
 
-    private void setBuild(String key, int lastBuild, boolean building, String master, String job, int ttl) {
+    private void setBuild(String key, long lastBuild, boolean building, String master, String job, int ttl) {
         Jedis resource = jedisPool.resource
         resource.hset(key, 'lastBuildLabel', lastBuild as String)
         resource.hset(key, 'lastBuildBuilding', building as String)
@@ -120,7 +120,7 @@ class BuildCache {
         setTTL(key, ttl)
     }
 
-    private void storeLastBuild(String key, int lastBuild, int ttl) {
+    private void storeLastBuild(String key, long lastBuild, int ttl) {
         Jedis resource = jedisPool.resource
         resource.set(key, lastBuild as String)
         jedisPool.returnResource(resource)
