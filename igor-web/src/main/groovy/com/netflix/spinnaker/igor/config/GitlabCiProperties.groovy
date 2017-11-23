@@ -21,6 +21,9 @@ class GitlabCiProperties {
         @NotEmpty
         String address
         // TODO should this field be also not empty?
-        String token
+        // TODO Set proper token (reuse from the ci settings?)
+        String privateToken
+        boolean limitByMembership = false
+        boolean limitByOwnership = true
     }
 }
