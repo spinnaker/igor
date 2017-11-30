@@ -62,11 +62,9 @@ class GitlabCiBuildMonitor extends CommonPollingMonitor {
 
         try {
             List<Project> projects = gitlabCiService.getProjects()
-            // TODO filter out projects with too old builds?
-//        List<Repo> repos = filterOutOldBuilds(gitlabCiService.getReposForAccounts())
             log.info("Took ${System.currentTimeMillis() - startTime}ms to retrieve ${projects.size()} repositories (master: {})", kv("master", master))
             Observable.from(projects).subscribe({ Project project ->
-                List<Pipeline> pipelines = gitlabCiService.getPipelines(project, MAX_NUMBER_OF_PIPELINES)
+                List<Pipeline> pipelines = filterOldPipelines(gitlabCiService.getPipelines(project, MAX_NUMBER_OF_PIPELINES))
                 for (Pipeline pipeline : pipelines) {
                     boolean addToCache = false
                     String branchedRepoSlug = gitlabCiService.getBranchedPipelineSlug(project, pipeline)
@@ -100,6 +98,14 @@ class GitlabCiBuildMonitor extends CommonPollingMonitor {
         } catch (Exception e) {
             log.error("Failed to obtain the list of projects", e)
         }
+    }
+
+    // TODO double check this method
+    List<Pipeline> filterOldPipelines(List<Pipeline> pipelines) {
+        Long threshold = new Date().getTime() - TimeUnit.DAYS.toMillis(gitlabCiProperties.cachedJobTTLDays)
+        return pipelines.findAll({
+            it.finished_at?.getTime() > threshold
+        })
     }
 
     @Override
