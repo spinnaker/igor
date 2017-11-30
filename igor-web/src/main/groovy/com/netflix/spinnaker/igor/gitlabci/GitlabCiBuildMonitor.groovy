@@ -60,44 +60,46 @@ class GitlabCiBuildMonitor extends CommonPollingMonitor {
 
         def startTime = System.currentTimeMillis()
 
-        // TODO what if this method throws an exception?
-        List<Project> projects = gitlabCiService.getProjects()
-        // TODO filter out projects with too old builds?
+        try {
+            List<Project> projects = gitlabCiService.getProjects()
+            // TODO filter out projects with too old builds?
 //        List<Repo> repos = filterOutOldBuilds(gitlabCiService.getReposForAccounts())
-        log.info("Took ${System.currentTimeMillis() - startTime}ms to retrieve ${projects.size()} repositories (master: {})", kv("master", master))
-        // TODO do we really need to use the Observable here?
-        Observable.from(projects).subscribe({ Project project ->
-            List<Pipeline> pipelines = gitlabCiService.getPipelines(project, MAX_NUMBER_OF_PIPELINES)
-            for (Pipeline pipeline : pipelines) {
-                boolean addToCache = false
-                String branchedRepoSlug = gitlabCiService.getBranchedPipelineSlug(project, pipeline)
+            log.info("Took ${System.currentTimeMillis() - startTime}ms to retrieve ${projects.size()} repositories (master: {})", kv("master", master))
+            Observable.from(projects).subscribe({ Project project ->
+                List<Pipeline> pipelines = gitlabCiService.getPipelines(project, MAX_NUMBER_OF_PIPELINES)
+                for (Pipeline pipeline : pipelines) {
+                    boolean addToCache = false
+                    String branchedRepoSlug = gitlabCiService.getBranchedPipelineSlug(project, pipeline)
 
-                if (cachedRepoSlugs.contains(branchedRepoSlug)) {
-                    def cachedBuildId = buildCache.getLastBuild(master, branchedRepoSlug, GitlabCiResultConverter.running(pipeline.status))
-                    // In case of Gitlab CI the pipeline ids are increasing so we can use it for ordering
-                    if (pipeline.id > cachedBuildId) {
-                        addToCache = true
-                        log.info("New build: {}: ${branchedRepoSlug} : ${pipeline.id}", kv("master", master))
+                    if (cachedRepoSlugs.contains(branchedRepoSlug)) {
+                        def cachedBuildId = buildCache.getLastBuild(master, branchedRepoSlug, GitlabCiResultConverter.running(pipeline.status))
+                        // In case of Gitlab CI the pipeline ids are increasing so we can use it for ordering
+                        if (pipeline.id > cachedBuildId) {
+                            addToCache = true
+                            log.info("New build: {}: ${branchedRepoSlug} : ${pipeline.id}", kv("master", master))
+                        }
+                    } else {
+                        addToCache = !GitlabCiResultConverter.running(pipeline.status)
                     }
-                } else {
-                    addToCache = !GitlabCiResultConverter.running(pipeline.status)
-                }
 
-                if (addToCache) {
-                    updatedBuilds += 1
-                    log.info("Build update [${branchedRepoSlug}:${pipeline.id}] [status:${pipeline.status}] [running:${GitlabCiResultConverter.running(pipeline.status)}]")
-                    buildCache.setLastBuild(master, branchedRepoSlug, pipeline.id, GitlabCiResultConverter.running(pipeline.status), buildCacheJobTTLSeconds())
-                    buildCache.setLastBuild(master, pipeline.ref, pipeline.id, GitlabCiResultConverter.running(pipeline.status), buildCacheJobTTLSeconds())
-                    sendEventForPipeline(project, pipeline, gitlabCiService.getAddress(), branchedRepoSlug, master)
+                    if (addToCache) {
+                        updatedBuilds += 1
+                        log.info("Build update [${branchedRepoSlug}:${pipeline.id}] [status:${pipeline.status}] [running:${GitlabCiResultConverter.running(pipeline.status)}]")
+                        buildCache.setLastBuild(master, branchedRepoSlug, pipeline.id, GitlabCiResultConverter.running(pipeline.status), buildCacheJobTTLSeconds())
+                        buildCache.setLastBuild(master, pipeline.ref, pipeline.id, GitlabCiResultConverter.running(pipeline.status), buildCacheJobTTLSeconds())
+                        sendEventForPipeline(project, pipeline, gitlabCiService.getAddress(), branchedRepoSlug, master)
+                    }
                 }
+            }, {
+                log.error("Error: ${it.message} (master: {})", kv("master", master))
+            })
+            if (updatedBuilds) {
+                log.info("Found {} new builds (master: {})", updatedBuilds, kv("master", master))
             }
-        }, {
-            log.error("Error: ${it.message} (master: {})", kv("master", master))
-        })
-        if (updatedBuilds) {
-            log.info("Found {} new builds (master: {})", updatedBuilds, kv("master", master))
+            log.info("Last poll took ${System.currentTimeMillis() - startTime}ms (master: {})", kv("master", master))
+        } catch (Exception e) {
+            log.error("Failed to obtain the list of projects", e)
         }
-        log.info("Last poll took ${System.currentTimeMillis() - startTime}ms (master: {})", kv("master", master))
     }
 
     @Override
