@@ -29,4 +29,6 @@ interface BuildService {
 
     int triggerBuildWithParameters(String job, Map<String, String> queryParameters)
 
+    Object getJobConfig(String jobName)
+
 }

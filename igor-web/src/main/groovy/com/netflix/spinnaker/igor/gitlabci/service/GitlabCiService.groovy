@@ -2,6 +2,7 @@ package com.netflix.spinnaker.igor.gitlabci.service
 
 import com.netflix.spinnaker.igor.build.model.GenericBuild
 import com.netflix.spinnaker.igor.build.model.GenericGitRevision
+import com.netflix.spinnaker.igor.build.model.GenericJobConfiguration
 import com.netflix.spinnaker.igor.gitlabci.client.GitlabCiClient
 import com.netflix.spinnaker.igor.gitlabci.client.model.Pipeline
 import com.netflix.spinnaker.igor.gitlabci.client.model.PipelineSummary
@@ -42,6 +43,11 @@ class GitlabCiService implements BuildService {
 
     @Override
     int triggerBuildWithParameters(String job, Map<String, String> queryParameters) {
+        throw new NotImplementedException()
+    }
+
+    @Override
+    GenericJobConfiguration getJobConfig(String jobName) {
         throw new NotImplementedException()
     }
 
