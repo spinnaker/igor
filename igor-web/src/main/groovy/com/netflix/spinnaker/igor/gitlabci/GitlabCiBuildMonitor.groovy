@@ -84,7 +84,7 @@ class GitlabCiBuildMonitor extends CommonPollingMonitor {
                         updatedBuilds += 1
                         log.info("Build update [${branchedRepoSlug}:${pipeline.id}] [status:${pipeline.status}] [running:${GitlabCiResultConverter.running(pipeline.status)}]")
                         buildCache.setLastBuild(master, branchedRepoSlug, pipeline.id, GitlabCiResultConverter.running(pipeline.status), buildCacheJobTTLSeconds())
-                        buildCache.setLastBuild(master, pipeline.ref, pipeline.id, GitlabCiResultConverter.running(pipeline.status), buildCacheJobTTLSeconds())
+                        buildCache.setLastBuild(master, project.path_with_namespace, pipeline.id, GitlabCiResultConverter.running(pipeline.status), buildCacheJobTTLSeconds())
                         sendEventForPipeline(project, pipeline, gitlabCiService.getAddress(), branchedRepoSlug, master)
                     }
                 }
