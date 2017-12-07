@@ -62,10 +62,10 @@ interface TravisClient {
     Build build(@Header("Authorization") String accessToken, @Path('build_id') int buildId)
 
     @GET('/builds')
-    Build build(@Header("Authorization") String accessToken, @Query('repository_id') int repositoryId, @Query('number') int buildNumber)
+    Build build(@Header("Authorization") String accessToken, @Query('repository_id') int repositoryId, @Query('number') long buildNumber)
 
     @GET('/builds')
-    Builds builds(@Header("Authorization") String accessToken, @Query('slug') String repoSlug, @Query('number') int buildNumber)
+    Builds builds(@Header("Authorization") String accessToken, @Query('slug') String repoSlug, @Query('number') long buildNumber)
 
     @GET('/repos')
     Repos repos(@Header("Authorization") String accessToken , @Query('member') String login, @Query('active') boolean active,  @Query('limit') int limit, @Query('offset') int offset)

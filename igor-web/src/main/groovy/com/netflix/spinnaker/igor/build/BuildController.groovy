@@ -60,7 +60,7 @@ class BuildController {
     ArtifactDecorator artifactDecorator
 
     @RequestMapping(value = '/builds/status/{buildNumber}/{master:.+}/**')
-    GenericBuild getJobStatus(@PathVariable String master, @PathVariable Integer buildNumber, HttpServletRequest request) {
+    GenericBuild getJobStatus(@PathVariable String master, @PathVariable Long buildNumber, HttpServletRequest request) {
         def job = (String) request.getAttribute(
             HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).split('/').drop(5).join('/')
         if (buildMasters.map.containsKey(master)) {

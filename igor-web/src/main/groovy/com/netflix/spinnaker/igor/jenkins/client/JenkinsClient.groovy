@@ -57,10 +57,10 @@ interface JenkinsClient {
     BuildDependencies getDependencies(@EncodedPath('jobName') String jobName)
 
     @GET('/job/{jobName}/{buildNumber}/api/xml?exclude=/*/action[not(totalCount)]&tree=actions[failCount,skipCount,totalCount,urlName],duration,number,timestamp,result,building,url,fullDisplayName,artifacts[displayPath,fileName,relativePath]')
-    Build getBuild(@EncodedPath('jobName') String jobName, @Path('buildNumber') Integer buildNumber)
+    Build getBuild(@EncodedPath('jobName') String jobName, @Path('buildNumber') long buildNumber)
 
     @GET('/job/{jobName}/{buildNumber}/api/xml?exclude=/*/action[not(lastBuiltRevision)]&tree=actions[remoteUrl,lastBuiltRevision[branch[name,SHA1]]]')
-    ScmDetails getGitDetails(@EncodedPath('jobName') String jobName, @Path('buildNumber') Integer buildNumber)
+    ScmDetails getGitDetails(@EncodedPath('jobName') String jobName, @Path('buildNumber') Long buildNumber)
 
     @GET('/job/{jobName}/lastCompletedBuild/api/xml')
     Build getLatestBuild(@EncodedPath('jobName') String jobName)

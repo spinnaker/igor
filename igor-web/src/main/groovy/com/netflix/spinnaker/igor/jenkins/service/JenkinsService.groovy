@@ -99,12 +99,12 @@ class JenkinsService implements BuildService{
         }).execute()
     }
 
-    Build getBuild(String jobName, Integer buildNumber) {
+    Build getBuild(String jobName, long buildNumber) {
         return jenkinsClient.getBuild(encode(jobName), buildNumber)
     }
 
     @Override
-    GenericBuild getGenericBuild(String jobName, int buildNumber) {
+    GenericBuild getGenericBuild(String jobName, long buildNumber) {
         return getBuild(jobName, buildNumber).genericBuild(jobName)
     }
 
@@ -125,7 +125,7 @@ class JenkinsService implements BuildService{
         return queuedLocation.split('/')[-1].toInteger()
     }
 
-    ScmDetails getGitDetails(String jobName, Integer buildNumber) {
+    ScmDetails getGitDetails(String jobName, Long buildNumber) {
         new SimpleHystrixCommand<ScmDetails>(
             groupKey, buildCommandKey("getGitDetails"), {
             return jenkinsClient.getGitDetails(encode(jobName), buildNumber)
@@ -180,7 +180,7 @@ class JenkinsService implements BuildService{
     }
 
     @Override
-    List<GenericGitRevision> getGenericGitRevisions(String job, int buildNumber) {
+    List<GenericGitRevision> getGenericGitRevisions(String job, long buildNumber) {
         ScmDetails scmDetails = getGitDetails(job, buildNumber)
         if (scmDetails?.action?.lastBuiltRevision?.branch?.name) {
             return scmDetails.genericGitRevisions()

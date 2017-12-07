@@ -33,14 +33,14 @@ class GitlabCiConfig {
             String hostName = "gitlab-ci-${host.name}"
             log.info "bootstrapping ${host.address} as ${hostName}"
 
-            [(hostName): gitlabCiService(igorConfigurationProperties, host)]
+            [(hostName): gitlabCiService(igorConfigurationProperties, host, hostName)]
         })
         buildMasters.map.putAll gitlabCiMasters
         return gitlabCiMasters
     }
 
-    static GitlabCiService gitlabCiService(IgorConfigurationProperties igorConfigurationProperties, GitlabCiProperties.GitlabCiHost host) {
-        return new GitlabCiService(gitlabCiClient(host.address, host.privateToken, igorConfigurationProperties.client.timeout), host.address, host.limitByMembership, host.limitByOwnership)
+    static GitlabCiService gitlabCiService(IgorConfigurationProperties igorConfigurationProperties, GitlabCiProperties.GitlabCiHost host, String hostName) {
+        return new GitlabCiService(hostName, gitlabCiClient(host.address, host.privateToken, igorConfigurationProperties.client.timeout), host.address, host.limitByMembership, host.limitByOwnership)
     }
 
     static GitlabCiClient gitlabCiClient(String address, String privateToken, int timeout = 30000) {

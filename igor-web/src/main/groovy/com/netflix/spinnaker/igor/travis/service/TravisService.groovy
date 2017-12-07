@@ -80,7 +80,7 @@ class TravisService implements BuildService {
     }
 
     @Override
-    List<GenericGitRevision> getGenericGitRevisions(String inputRepoSlug, int buildNumber) {
+    List<GenericGitRevision> getGenericGitRevisions(String inputRepoSlug, long buildNumber) {
         new SimpleHystrixCommand<List<GenericGitRevision>>(
             groupKey, buildCommandKey("getGenericGitRevisions"),
             {
@@ -92,7 +92,7 @@ class TravisService implements BuildService {
     }
 
     @Override
-    GenericBuild getGenericBuild(String inputRepoSlug, int buildNumber) {
+    GenericBuild getGenericBuild(String inputRepoSlug, long buildNumber) {
         new SimpleHystrixCommand<GenericBuild>(
             groupKey, buildCommandKey("getGenericBuild"),
             {
@@ -123,7 +123,7 @@ class TravisService implements BuildService {
         return builds.builds
     }
 
-    Build getBuild(Repo repo, int buildNumber) {
+    Build getBuild(Repo repo, long buildNumber) {
         new SimpleHystrixCommand<Build>(
             groupKey, buildCommandKey("getBuild"),
             {
@@ -132,7 +132,7 @@ class TravisService implements BuildService {
         ).execute()
     }
 
-    Builds getBuilds(String repoSlug, int buildNumber) {
+    Builds getBuilds(String repoSlug, long buildNumber) {
         new SimpleHystrixCommand<Builds>(
             groupKey, buildCommandKey("getBuilds"),
             {
@@ -141,7 +141,7 @@ class TravisService implements BuildService {
         ).execute()
     }
 
-    Build getBuild(String repoSlug, int buildNumber) {
+    Build getBuild(String repoSlug, long buildNumber) {
         Builds builds = getBuilds(repoSlug, buildNumber)
         return builds.builds.size() > 0 ? builds.builds.first() : null
     }

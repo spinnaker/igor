@@ -23,9 +23,9 @@ import com.netflix.spinnaker.igor.model.BuildServiceProvider
 interface BuildService {
     BuildServiceProvider buildServiceProvider()
 
-    List<GenericGitRevision> getGenericGitRevisions(String job, int buildNumber)
+    List<GenericGitRevision> getGenericGitRevisions(String job, long buildNumber)
 
-    GenericBuild getGenericBuild(String job, int buildNumber)
+    GenericBuild getGenericBuild(String job, long buildNumber)
 
     int triggerBuildWithParameters(String job, Map<String, String> queryParameters)
 
