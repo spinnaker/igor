@@ -48,7 +48,7 @@ class GitlabCiService implements BuildService {
 
     @Override
     GenericJobConfiguration getJobConfig(String jobName) {
-        throw new NotImplementedException()
+        return new GenericJobConfiguration(jobName, jobName, jobName, true, "$address/$jobName/pipelines", true, [])
     }
 
     List<Project> getProjects() {
