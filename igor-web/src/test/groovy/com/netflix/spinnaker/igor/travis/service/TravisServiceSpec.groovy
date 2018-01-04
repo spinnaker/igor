@@ -28,6 +28,8 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import java.time.Instant
+
 
 class TravisServiceSpec extends Specification{
     @Shared
@@ -38,7 +40,7 @@ class TravisServiceSpec extends Specification{
 
     void setup() {
         client = Mock(TravisClient)
-        service = new TravisService('travis-ci', 'http://my.travis.ci', 'someToken', client, null, Collections.emptyList())
+        service = new TravisService('travis-ci', 'http://my.travis.ci', 'someToken', 25, client, null, [])
 
         AccessToken accessToken = new AccessToken()
         accessToken.accessToken = "someToken"
@@ -61,7 +63,7 @@ class TravisServiceSpec extends Specification{
         1 * build.number >> 1337
         2 * build.state >> 'passed'
         1 * build.duration >> 32
-        1 * build.finishedAt >> new Date()
+        1 * build.finishedAt >> Instant.now()
         1 * build.timestamp() >> 1458051084000
     }
 
@@ -178,6 +180,21 @@ class TravisServiceSpec extends Specification{
 
         then:
         branchedRepoSlug == "my/slug"
+    }
+
+    @Unroll
+    def "calculate pagination correctly"() {
+        expect:
+        service.calculatePagination(buildsToTrack) == pages
+
+        where:
+        buildsToTrack || pages
+        75            || 3
+        79            || 4
+        2             || 1
+        15            || 1
+        26            || 2
+        25            || 1
     }
 
     @Unroll

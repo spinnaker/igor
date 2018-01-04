@@ -25,7 +25,8 @@ import com.netflix.spinnaker.igor.travis.client.model.v3.V3Repository
 import com.netflix.spinnaker.igor.travis.service.TravisService
 import spock.lang.Specification
 
-import java.util.concurrent.TimeUnit
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 class TravisBuildMonitorSpec extends Specification {
     BuildCache buildCache = Mock(BuildCache)
@@ -46,13 +47,10 @@ class TravisBuildMonitorSpec extends Specification {
         repo.slug = "test-org/test-repo"
         repo.lastBuildNumber = 4
         repo.lastBuildState = "passed"
-        repo.lastBuildStartedAt = new Date()
+        repo.lastBuildStartedAt = Instant.now()
         List<Repo> repos = [repo]
         V3Build build = Mock(V3Build)
         V3Repository repository = Mock(V3Repository)
-
-        given:
-        1 * buildCache.getJobNames(MASTER) >> ['test-org/test-repo/master']
 
         when:
         List<Map> receivedBuilds = travisBuildMonitor.changedBuilds(MASTER)
@@ -62,36 +60,32 @@ class TravisBuildMonitorSpec extends Specification {
         1 * travisService.getBuilds(repo, 5) >> [ build ]
         build.branchedRepoSlug() >> "test-org/test-repo/master"
         build.getNumber() >> 4
-        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/master') >> [lastBuildLabel: 3]
+        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/master', false) >> 3
         1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo/master', 4, false, CACHED_JOB_TTL_SECONDS)
         1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo', 4, false, CACHED_JOB_TTL_SECONDS)
 
         build.repository >> repository
         repository.slug >> 'test-org/test-repo'
         receivedBuilds.size() == 1
-        receivedBuilds[0].current.slug == 'test-org/test-repo'
-        receivedBuilds[0].current.lastBuildNumber == 4
-        receivedBuilds[0].previous.lastBuildLabel == 3
+        receivedBuilds[0].slug == 'test-org/test-repo/master'
+        receivedBuilds[0].current == 4
+        receivedBuilds[0].previous == 3
     }
 
     void 'ignore old build not found in the cache'() {
         Repo oldRepo = new Repo()
-        Date now = new Date()
-        oldRepo.lastBuildStartedAt = new Date(now.getTime() - TimeUnit.DAYS.toMillis(travisBuildMonitor.travisProperties.cachedJobTTLDays))
+        Instant now = Instant.now()
+        oldRepo.lastBuildStartedAt = now.minus(travisBuildMonitor.travisProperties.cachedJobTTLDays, ChronoUnit.DAYS)
         Repo noLastBuildStartedAtRepo = new Repo()
         noLastBuildStartedAtRepo.lastBuildStartedAt = null
         Repo repo = new Repo()
         repo.slug = "test-org/test-repo"
         repo.lastBuildNumber = 4
         repo.lastBuildState = "passed"
-        repo.lastBuildStartedAt = new Date(now.getTime() - TimeUnit.DAYS.toMillis(travisBuildMonitor.travisProperties.cachedJobTTLDays-1))
+        repo.lastBuildStartedAt = now.minus(travisBuildMonitor.travisProperties.cachedJobTTLDays-1, ChronoUnit.DAYS)
         List<Repo> repos = [oldRepo, repo, noLastBuildStartedAtRepo]
         V3Build build = Mock(V3Build)
         V3Repository repository = Mock(V3Repository)
-
-
-        given:
-        1 * buildCache.getJobNames(MASTER) >> ['test-org/test-repo/master']
 
         when:
         List<Map> builds = travisBuildMonitor.changedBuilds(MASTER)
@@ -103,7 +97,7 @@ class TravisBuildMonitorSpec extends Specification {
         build.getNumber() >> 4
 
 
-        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/master') >> [lastBuildLabel: 3]
+        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/master', false) >> 3
         1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo/master', 4, false, CACHED_JOB_TTL_SECONDS)
         1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo', 4, false, CACHED_JOB_TTL_SECONDS)
 
@@ -112,9 +106,9 @@ class TravisBuildMonitorSpec extends Specification {
 
         expect:
         builds.size() == 1
-        builds[0].current.slug == 'test-org/test-repo'
-        builds[0].current.lastBuildNumber == 4
-        builds[0].previous.lastBuildLabel == 3
+        builds[0].slug == 'test-org/test-repo/master'
+        builds[0].current == 4
+        builds[0].previous == 3
     }
 
     void 'send events for build both on branch and on repository'() {
@@ -124,13 +118,10 @@ class TravisBuildMonitorSpec extends Specification {
         repo.slug = "test-org/test-repo"
         repo.lastBuildNumber = 4
         repo.lastBuildState = "passed"
-        repo.lastBuildStartedAt = new Date()
+        repo.lastBuildStartedAt = Instant.now()
         List<Repo> repos = [repo]
         V3Build build = Mock(V3Build)
         V3Repository repository = Mock(V3Repository)
-
-        given:
-        1 * buildCache.getJobNames(MASTER) >> ['test-org/test-repo/my_branch']
 
         when:
         travisBuildMonitor.changedBuilds(MASTER)
@@ -141,7 +132,7 @@ class TravisBuildMonitorSpec extends Specification {
         build.branchedRepoSlug() >> "test-org/test-repo/my_branch"
         build.getNumber() >> 4
 
-        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/my_branch') >> [lastBuildLabel: 3]
+        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/my_branch', false) >> 3
         1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo/my_branch', 4, false, CACHED_JOB_TTL_SECONDS)
         1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo', 4, false, CACHED_JOB_TTL_SECONDS)
 
@@ -167,15 +158,11 @@ class TravisBuildMonitorSpec extends Specification {
         repo.slug = "test-org/test-repo"
         repo.lastBuildNumber = 4
         repo.lastBuildState = "passed"
-        repo.lastBuildStartedAt = new Date()
+        repo.lastBuildStartedAt = Instant.now()
         List<Repo> repos = [repo]
         V3Build build = Mock(V3Build)
         V3Build buildDifferentBranch = Mock(V3Build)
         V3Repository repository = Mock(V3Repository)
-
-
-        given:
-        1 * buildCache.getJobNames(MASTER) >> ['test-org/test-repo/my_branch', 'test-org/test-repo/different_branch']
 
         when:
         travisBuildMonitor.changedBuilds(MASTER)
@@ -187,12 +174,12 @@ class TravisBuildMonitorSpec extends Specification {
         build.getNumber() >> 4
         buildDifferentBranch.branchedRepoSlug() >> "test-org/test-repo/different_branch"
         buildDifferentBranch.getNumber() >> 3
-        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/my_branch') >> [lastBuildLabel: 2]
+        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/my_branch', false) >> 2
         1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo/my_branch', 4, false, CACHED_JOB_TTL_SECONDS)
         1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo', 4, false, CACHED_JOB_TTL_SECONDS)
         1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo', 3, false, CACHED_JOB_TTL_SECONDS)
 
-        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/different_branch') >> [lastBuildLabel: 1]
+        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/different_branch', false) >> 1
         1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo/different_branch', 3, false, CACHED_JOB_TTL_SECONDS)
 
         build.repository >> repository
@@ -211,6 +198,10 @@ class TravisBuildMonitorSpec extends Specification {
                 it.content.project.lastBuild.number == 4
         })
 
+        1 * travisBuildMonitor.echoService.postEvent({
+            it.content.project.name == "test-org/test-repo" &&
+                it.content.project.lastBuild.number == 3
+        })
         1 * travisBuildMonitor.echoService.postEvent({
             it.content.project.name == "test-org/test-repo/different_branch" &&
                 it.content.project.lastBuild.number == 3

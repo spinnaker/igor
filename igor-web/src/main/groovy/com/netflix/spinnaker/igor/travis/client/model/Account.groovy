@@ -16,8 +16,9 @@
 
 package com.netflix.spinnaker.igor.travis.client.model
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonInclude
-import com.google.gson.annotations.SerializedName
+import com.fasterxml.jackson.annotation.JsonProperty
 import groovy.transform.CompileStatic
 import org.simpleframework.xml.Default
 import org.simpleframework.xml.Root
@@ -25,12 +26,17 @@ import org.simpleframework.xml.Root
 @Default
 @CompileStatic
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Root(name = 'accounts')
 class Account {
-    @SerializedName("repos_count")
+    @JsonProperty("repos_count")
     int reposCount
     String name
     String type
     int id
     String login
+
+    boolean isUser() {
+        return type == "user"
+    }
 }

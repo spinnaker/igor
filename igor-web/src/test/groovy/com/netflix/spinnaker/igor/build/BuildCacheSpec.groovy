@@ -17,123 +17,95 @@
 package com.netflix.spinnaker.igor.build
 
 import com.netflix.spinnaker.igor.IgorConfigurationProperties
-import com.netflix.spinnaker.igor.config.IgorConfig
-import com.netflix.spinnaker.igor.config.JedisConfig
-import com.netflix.spinnaker.igor.config.JenkinsConfig
-import groovy.util.logging.Slf4j
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration
-import org.springframework.boot.autoconfigure.groovy.template.GroovyTemplateAutoConfiguration
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Import
-import org.springframework.test.context.ContextConfiguration
-import org.springframework.test.context.web.WebAppConfiguration
+import com.netflix.spinnaker.kork.jedis.EmbeddedRedis
+import com.netflix.spinnaker.kork.jedis.JedisClientDelegate
+import com.netflix.spinnaker.kork.jedis.RedisClientDelegate
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
-import spock.lang.IgnoreIf
 import spock.lang.Specification
+import spock.lang.Subject
 import spock.lang.Unroll
 
-import static com.netflix.spinnaker.igor.jenkins.network.Network.isReachable
-
-@WebAppConfiguration
-@ContextConfiguration(classes = [TestConfiguration])
-@SuppressWarnings(['DuplicateNumberLiteral', 'UnnecessaryBooleanExpression', 'DuplicateListLiteral'])
-@Slf4j
-@IgnoreIf( {!isReachable('redis://localhost:6379')} )
 class BuildCacheSpec extends Specification {
 
-    @Autowired
-    BuildCache cache
+    EmbeddedRedis embeddedRedis = EmbeddedRedis.embed()
 
-    @Autowired
-    JedisPool jedisPool
+    RedisClientDelegate redisClientDelegate = new JedisClientDelegate(embeddedRedis.pool as JedisPool)
+
+    @Subject
+    BuildCache cache = new BuildCache(redisClientDelegate, new IgorConfigurationProperties())
 
     final master = 'master'
     final test = 'test'
-
-    void setupSpec() {
-        System.setProperty('netflix.environment', 'test')
-        System.setProperty('services.echo.baseUrl', 'none')
-    }
+    final int TTL = 42
 
     void cleanup() {
-        jedisPool.resource.withCloseable { Jedis resource ->
+        embeddedRedis.pool.resource.withCloseable { Jedis resource ->
             resource.flushDB()
         }
     }
 
     void 'new build numbers get overridden'() {
         when:
-        cache.setLastBuild(master, 'job1', 78, true)
+        cache.setLastBuild(master, 'job1', 78, true, TTL)
 
         then:
-        cache.getLastBuild(master, 'job1').lastBuildLabel == 78
+        cache.getLastBuild(master, 'job1', true) == 78
 
         when:
-        cache.setLastBuild(master, 'job1', 80, false)
+        cache.setLastBuild(master, 'job1', 80, true, TTL)
 
         then:
-        cache.getLastBuild(master, 'job1').lastBuildLabel == 80
+        cache.getLastBuild(master, 'job1', true) == 80
     }
 
-    void 'statuses get overridden'() {
+    void 'running and completed builds are handled separately'() {
         when:
-        cache.setLastBuild(master, 'job1', 78, true)
+        cache.setLastBuild(master, 'job1', 78, true, TTL)
 
         then:
-        cache.getLastBuild(master, 'job1').lastBuildBuilding == true
+        cache.getLastBuild(master, 'job1', true) == 78
 
         when:
-        cache.setLastBuild(master, 'job1', 78, false)
+        cache.setLastBuild(master, 'job1', 80, false, TTL)
 
         then:
-        cache.getLastBuild(master, 'job1').lastBuildBuilding == false
-
+        cache.getLastBuild(master, 'job1', false) == 80
+        cache.getLastBuild(master, 'job1', true) == 78
     }
 
-    void 'when value is not found, an empty collection is returned'() {
+    void 'when value is not found, -1 is returned'() {
         expect:
-        cache.getLastBuild('notthere', 'job1') == [:]
+        cache.getLastBuild('notthere', 'job1', true) == -1
     }
 
     void 'can set builds for multiple masters'() {
         when:
-        cache.setLastBuild(master, 'job1', 78, true)
-        cache.setLastBuild('example2', 'job1', 88, true)
+        cache.setLastBuild(master, 'job1', 78, true, TTL)
+        cache.setLastBuild('example2', 'job1', 88, true, TTL)
 
         then:
-        cache.getLastBuild(master, 'job1').lastBuildLabel == 78
-        cache.getLastBuild('example2', 'job1').lastBuildLabel == 88
+        cache.getLastBuild(master, 'job1', true) == 78
+        cache.getLastBuild('example2', 'job1', true) == 88
     }
 
     void 'correctly retrieves all jobsNames for a master'() {
         when:
-        cache.setLastBuild(master, 'job1', 78, true)
-        cache.setLastBuild(master, 'job2', 11, false)
-        cache.setLastBuild(master, 'blurb', 1, false)
+        cache.setLastBuild(master, 'job1', 78, true, TTL)
+        cache.setLastBuild(master, 'job2', 11, false, TTL)
+        cache.setLastBuild(master, 'blurb', 1, false, TTL)
 
         then:
-        cache.getJobNames(master) == ['blurb', 'job1', 'job2']
-    }
-
-    void 'can remove details for a build'() {
-        when:
-        cache.setLastBuild(master, 'job1', 78, true)
-        cache.remove(master, 'job1')
-
-        then:
-        cache.getLastBuild(master, 'job1') == [:]
+        cache.getJobNames(master) == ['blurb', 'job2']
     }
 
     @Unroll
     void 'retrieves all matching jobs for typeahead #query'() {
         when:
-        cache.setLastBuild(master, 'job1', 1, true)
-        cache.setLastBuild(test, 'job1', 1, false)
-        cache.setLastBuild(master, 'job2', 1, false)
-        cache.setLastBuild(test, 'job3', 1, false)
+        cache.setLastBuild(master, 'job1', 1, true, TTL)
+        cache.setLastBuild(test, 'job1', 1, false, TTL)
+        cache.setLastBuild(master, 'job2', 1, false, TTL)
+        cache.setLastBuild(test, 'job3', 1, false, TTL)
 
         then:
         cache.getTypeaheadResults(query) == expected
@@ -149,30 +121,49 @@ class BuildCacheSpec extends Specification {
     }
 
     void 'a cache with another prefix does not pollute the current cache'() {
-        when:
-        BuildCache secondInstance = new BuildCache(jedisPool: jedisPool)
+        given:
         def altCfg = new IgorConfigurationProperties()
         altCfg.spinnaker.jedis.prefix = 'newPrefix'
-        secondInstance.igorConfigurationProperties = altCfg
-        secondInstance.setLastBuild(master, 'job1', 1, false)
+        BuildCache secondInstance = new BuildCache(redisClientDelegate, altCfg)
+
+        when:
+        secondInstance.setLastBuild(master, 'job1', 1, false, TTL)
 
         then:
         secondInstance.getJobNames(master) == ['job1']
         cache.getJobNames(master) == []
 
         when:
-        cache.remove(master, 'job1')
+        embeddedRedis.pool.resource.withCloseable {
+            it.del(cache.makeKey(master, 'job1'))
+        }
 
         then:
         secondInstance.getJobNames(master) == ['job1']
     }
 
-    @Configuration
-    @EnableAutoConfiguration(exclude = [GroovyTemplateAutoConfiguration])
-    @EnableConfigurationProperties(IgorConfigurationProperties)
-    @Import([BuildCache, JenkinsConfig, IgorConfig, JedisConfig])
-    static class TestConfiguration {
+    void 'should generate nice keys for completed jobs'() {
+        when:
+        String key = cache.makeKey("travis-ci", "myorg/myrepo", false)
 
+        then:
+        key == "igor:builds:completed:travis-ci:MYORG/MYREPO:myorg/myrepo"
     }
 
+    void 'should generate nice keys for running jobs'() {
+        when:
+        String key = cache.makeKey("travis-ci", "myorg/myrepo", true)
+
+        then:
+        key == "igor:builds:running:travis-ci:MYORG/MYREPO:myorg/myrepo"
+    }
+
+    void 'completed and running jobs should live in separate key space'() {
+        when:
+        def masterKey = 'travis-ci'
+        def slug      = 'org/repo'
+
+        then:
+        cache.makeKey(masterKey, slug, false) != cache.makeKey(masterKey, slug, true)
+    }
 }

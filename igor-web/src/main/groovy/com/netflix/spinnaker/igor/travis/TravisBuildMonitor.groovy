@@ -16,9 +16,6 @@
 
 package com.netflix.spinnaker.igor.travis
 
-import com.netflix.appinfo.InstanceInfo
-import com.netflix.discovery.DiscoveryClient
-import com.netflix.spinnaker.igor.IgorConfigurationProperties
 import com.netflix.spinnaker.igor.build.BuildCache
 import com.netflix.spinnaker.igor.build.model.GenericProject
 import com.netflix.spinnaker.igor.config.TravisProperties
@@ -26,36 +23,33 @@ import com.netflix.spinnaker.igor.history.EchoService
 import com.netflix.spinnaker.igor.history.model.GenericBuildContent
 import com.netflix.spinnaker.igor.history.model.GenericBuildEvent
 import com.netflix.spinnaker.igor.model.BuildServiceProvider
-import com.netflix.spinnaker.igor.polling.PollingMonitor
+import com.netflix.spinnaker.igor.polling.CommonPollingMonitor
 import com.netflix.spinnaker.igor.service.BuildMasters
 import com.netflix.spinnaker.igor.travis.client.model.Repo
 import com.netflix.spinnaker.igor.travis.client.model.v3.V3Build
 import com.netflix.spinnaker.igor.travis.service.TravisBuildConverter
 import com.netflix.spinnaker.igor.travis.service.TravisResultConverter
 import com.netflix.spinnaker.igor.travis.service.TravisService
-import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
-import org.springframework.context.event.ContextRefreshedEvent
 import org.springframework.stereotype.Service
 import rx.Observable
 import rx.Scheduler
-import rx.functions.Action0
 import rx.schedulers.Schedulers
 
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
 import static net.logstash.logback.argument.StructuredArguments.kv
 
-
 /**
  * Monitors new travis builds
  */
-@Slf4j
 @Service
 @SuppressWarnings('CatchException')
 @ConditionalOnProperty('travis.enabled')
-class TravisBuildMonitor implements PollingMonitor{
+class TravisBuildMonitor extends CommonPollingMonitor {
 
     Scheduler.Worker worker = Schedulers.io().createWorker()
 
@@ -65,40 +59,25 @@ class TravisBuildMonitor implements PollingMonitor{
     @Autowired(required = false)
     EchoService echoService
 
-    @Autowired(required = false)
-    DiscoveryClient discoveryClient
-
     @Autowired
     BuildMasters buildMasters
 
-    Long lastPoll
-
-    static final int NEW_BUILD_EVENT_THRESHOLD = 1
-
     static final long BUILD_STARTED_AT_THRESHOLD = TimeUnit.SECONDS.toMillis(30)
-
-    @Autowired
-    IgorConfigurationProperties igorConfigurationProperties
 
     @Autowired
     TravisProperties travisProperties
 
     @Override
-    void onApplicationEvent(ContextRefreshedEvent event) {
-        log.info('Started')
+    void initialize() {
         setBuildCacheTTL()
-        worker.schedulePeriodically(
-            {
-                if (isInService()) {
-                    buildMasters.filteredMap(BuildServiceProvider.TRAVIS).keySet().each { master ->
-                        changedBuilds(master)
-                    }
-                } else {
-                    log.info("not in service (lastPoll: ${lastPoll ?: 'n/a'})")
-                    lastPoll = null
-                }
-            } as Action0, 0, pollInterval, TimeUnit.SECONDS
-        )
+        migrateToNewBuildCache()
+    }
+
+    @Override
+    void poll() {
+        buildMasters.filteredMap(BuildServiceProvider.TRAVIS).keySet().each { master ->
+            changedBuilds(master)
+        }
     }
 
     @Override
@@ -106,75 +85,46 @@ class TravisBuildMonitor implements PollingMonitor{
         return "travisBuildMonitor"
     }
 
-    @Override
-    boolean isInService() {
-        if (discoveryClient == null) {
-            log.info("no DiscoveryClient, assuming InService")
-            true
-        } else {
-            def remoteStatus = discoveryClient.instanceRemoteStatus
-            log.info("current remote status ${remoteStatus}")
-            remoteStatus == InstanceInfo.InstanceStatus.UP
-        }
-    }
-
-    @Override
-    Long getLastPoll() {
-        return lastPoll
-    }
-
-    @Override
-    int getPollInterval() {
-        return igorConfigurationProperties.spinnaker.build.pollInterval
-    }
-
     List<Map> changedBuilds(String master) {
         log.info('Checking for new builds for {}', kv("master", master))
-        List<String> cachedRepoSlugs = buildCache.getJobNames(master)
         List<Map> results = []
+        int updatedBuilds = 0
 
-        TravisService travisService = buildMasters.map[master]
+        TravisService travisService = buildMasters.map[master] as TravisService
 
-        lastPoll = System.currentTimeMillis()
         def startTime = System.currentTimeMillis()
         List<Repo> repos = filterOutOldBuilds(travisService.getReposForAccounts())
         log.info("Took ${System.currentTimeMillis() - startTime}ms to retrieve ${repos.size()} repositories (master: {})", kv("master", master))
-
         Observable.from(repos).subscribe(
             { Repo repo ->
-
                 List<V3Build> builds = travisService.getBuilds(repo, 5)
                 for (V3Build build : builds) {
                     boolean addToCache = false
-                    Map cachedBuild = null
                     String branchedRepoSlug = build.branchedRepoSlug()
-                    if (cachedRepoSlugs.contains(branchedRepoSlug)) {
-                        cachedBuild = buildCache.getLastBuild(master, branchedRepoSlug)
-                        if (build.number > Integer.valueOf(cachedBuild.lastBuildLabel)) {
-                            addToCache = true
-                            log.info("New build: {}: ${branchedRepoSlug} : ${build.number}", kv("master", master))
-                        }
-                        if (buildStateHasChanged(build, cachedBuild)) {
-                            addToCache = true
-                        }
-                    } else {
+                    def cachedBuild = buildCache.getLastBuild(master, branchedRepoSlug, TravisResultConverter.running(build.state))
+                    if (build.number > cachedBuild) {
                         addToCache = true
+                        log.info("New build: {}: ${branchedRepoSlug} : ${build.number}", kv("master", master))
                     }
                     if (addToCache) {
+                        updatedBuilds += 1
                         log.info("Build update [${branchedRepoSlug}:${build.number}] [status:${build.state}] [running:${TravisResultConverter.running(build.state)}]")
                         buildCache.setLastBuild(master, branchedRepoSlug, build.number, TravisResultConverter.running(build.state), buildCacheJobTTLSeconds())
                         buildCache.setLastBuild(master, build.repository.slug, build.number, TravisResultConverter.running(build.state), buildCacheJobTTLSeconds())
-                        if(!build.spinnakerTriggered()) {
+                        if (!build.spinnakerTriggered()) {
                             sendEventForBuild(build, branchedRepoSlug, master, travisService)
                         }
-                        results << [previous: cachedBuild, current: repo]
+                        results << [slug: branchedRepoSlug, previous: cachedBuild, current: build.number]
                     }
                 }
             }, {
             log.error("Error: ${it.message} (master: {})", kv("master", master))
         }
         )
-        log.info("Last poll took ${System.currentTimeMillis() - lastPoll}ms (master: {})", kv("master", master))
+        if (updatedBuilds) {
+            log.info("Found {} new builds (master: {})", updatedBuilds, kv("master", master))
+        }
+        log.info("Last poll took ${System.currentTimeMillis() - startTime}ms (master: {})", kv("master", master))
         if (travisProperties.repositorySyncEnabled) {
             startTime = System.currentTimeMillis()
             travisService.syncRepos()
@@ -182,11 +132,6 @@ class TravisBuildMonitor implements PollingMonitor{
         }
         results
 
-    }
-
-    private boolean buildStateHasChanged(V3Build build, Map cachedBuild) {
-        (TravisResultConverter.running(build.state) != cachedBuild.lastBuildBuilding) &&
-            (build.number == Integer.valueOf(cachedBuild.lastBuildLabel))
     }
 
     private void sendEventForBuild(V3Build build, String branchedSlug, String master, TravisService travisService) {
@@ -222,6 +167,26 @@ class TravisBuildMonitor implements PollingMonitor{
         }
     }
 
+    private void migrateToNewBuildCache(){
+        buildMasters.filteredMap(BuildServiceProvider.TRAVIS).keySet().each { master ->
+            log.info "Getting all builds from old cache representation"
+            buildCache.getDeprecatedJobNames(master).each { job ->
+                Map oldBuild = buildCache.getDeprecatedLastBuild(master, job)
+                if (oldBuild) {
+                    int oldBuildNumber = (int) oldBuild.get("lastBuildLabel")
+
+                    boolean oldBuildBuilding = (boolean) oldBuild.get("lastBuildBuilding")
+                    int currentBuild = buildCache.getLastBuild(master, job, oldBuildBuilding)
+                    if (currentBuild < oldBuildNumber) {
+                        log.info("BuildCache migration {}:{}:{}:{}", kv("master", master), kv("job", job), kv("building", oldBuildBuilding), kv("buildNumber", oldBuildNumber))
+                        buildCache.setLastBuild(master, job, oldBuildNumber, oldBuildBuilding, buildCacheJobTTLSeconds())
+                    }
+                }
+
+            }
+        }
+    }
+
     private int buildCacheJobTTLSeconds() {
         return TimeUnit.DAYS.toSeconds(travisProperties.cachedJobTTLDays)
     }
@@ -233,9 +198,9 @@ class TravisBuildMonitor implements PollingMonitor{
         grace threshold so that we don't resend the event to echo. The value of the threshold assumes that travis
         will set the lastBuildStartedAt within 30 seconds.
          */
-        Long threshold = new Date().getTime() - TimeUnit.DAYS.toMillis(travisProperties.cachedJobTTLDays) + BUILD_STARTED_AT_THRESHOLD
+        Instant threshold = Instant.now().minus(travisProperties.cachedJobTTLDays, ChronoUnit.DAYS).plusMillis(BUILD_STARTED_AT_THRESHOLD)
         return repos.findAll({ repo ->
-            repo.lastBuildStartedAt?.getTime() > threshold
+            repo.lastBuildStartedAt?.isAfter(threshold)
         })
     }
 }

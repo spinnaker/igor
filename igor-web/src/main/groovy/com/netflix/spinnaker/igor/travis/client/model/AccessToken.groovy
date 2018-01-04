@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.igor.travis.client.model
 
 import com.fasterxml.jackson.annotation.JsonInclude
-import com.google.gson.annotations.SerializedName
+import com.fasterxml.jackson.annotation.JsonProperty
 import groovy.transform.CompileStatic
 import org.simpleframework.xml.Default
 import org.simpleframework.xml.Root
@@ -28,7 +28,7 @@ import org.simpleframework.xml.Root
 @Root(strict = false)
 class AccessToken {
 
-    @SerializedName("access_token")
+    @JsonProperty("access_token")
     String accessToken
 
 }
