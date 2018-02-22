@@ -20,6 +20,7 @@ import com.netflix.discovery.DiscoveryClient
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.igor.IgorConfigurationProperties
 import com.netflix.spinnaker.igor.build.BuildCache
+import com.netflix.spinnaker.igor.build.model.GenericBuild
 import com.netflix.spinnaker.igor.build.model.GenericProject
 import com.netflix.spinnaker.igor.config.TravisProperties
 import com.netflix.spinnaker.igor.history.EchoService
@@ -32,6 +33,7 @@ import com.netflix.spinnaker.igor.polling.PollContext
 import com.netflix.spinnaker.igor.polling.PollingDelta
 import com.netflix.spinnaker.igor.service.BuildMasters
 import com.netflix.spinnaker.igor.travis.client.model.Repo
+import com.netflix.spinnaker.igor.travis.client.model.v3.TravisBuildState
 import com.netflix.spinnaker.igor.travis.client.model.v3.V3Build
 import com.netflix.spinnaker.igor.travis.service.TravisBuildConverter
 import com.netflix.spinnaker.igor.travis.service.TravisResultConverter
@@ -103,7 +105,6 @@ class TravisBuildMonitor extends CommonPollingMonitor<BuildDelta, BuildPollingDe
     @Override
     protected void commitDelta(BuildPollingDelta delta) {
         String master = delta.master
-        TravisService travisService = buildMasters.map[master] as TravisService
 
         delta.items.parallelStream().forEach { item ->
             V3Build build = item.build
@@ -111,9 +112,9 @@ class TravisBuildMonitor extends CommonPollingMonitor<BuildDelta, BuildPollingDe
             buildCache.setLastBuild(master, item.branchedRepoSlug, build.number, TravisResultConverter.running(build.state), buildCacheJobTTLSeconds())
             if(build.number > buildCache.getLastBuild(master, build.repository.slug, TravisResultConverter.running(build.state))) {
                 buildCache.setLastBuild(master, build.repository.slug, build.number, TravisResultConverter.running(build.state), buildCacheJobTTLSeconds())
-                sendEventForBuild(build, build.repository.slug, master, travisService)
+                sendEventForBuild(item, build.repository.slug, master)
             }
-            sendEventForBuild(build, item.branchedRepoSlug, master, travisService)
+            sendEventForBuild(item, item.branchedRepoSlug, master)
         }
     }
 
@@ -165,17 +166,19 @@ class TravisBuildMonitor extends CommonPollingMonitor<BuildDelta, BuildPollingDe
     private List<BuildDelta> processBuilds(List<V3Build> builds, String master, TravisService travisService) {
         List<BuildDelta> results = []
         for (V3Build build : builds) {
-            boolean addToCache = false
             String branchedRepoSlug = build.branchedRepoSlug()
             def cachedBuild = buildCache.getLastBuild(master, branchedRepoSlug, TravisResultConverter.running(build.state))
-            if (build.number > cachedBuild && !build.spinnakerTriggered()) {
-                addToCache = true
-                log.debug("({}) New build: {}", kv("master", master), build.toString())
+            def genericBuild
+            if (build.state == TravisBuildState.passed) {
+                genericBuild = travisService.getGenericBuild(build) // This also parses the log for artifacts
+            } else {
+                genericBuild = TravisBuildConverter.genericBuild(build, travisService.baseUrl)
             }
-            if (addToCache) {
+            if (build.number > cachedBuild && !build.spinnakerTriggered()) {
                 results.add(new BuildDelta(
                     branchedRepoSlug: branchedRepoSlug,
                     build: build,
+                    genericBuild: genericBuild,
                     travisBaseUrl: travisService.baseUrl,
                     currentBuildNum: build.number,
                     previousBuildNum: cachedBuild
@@ -196,11 +199,11 @@ class TravisBuildMonitor extends CommonPollingMonitor<BuildDelta, BuildPollingDe
         }
     }
 
-    private void sendEventForBuild(V3Build build, String branchedSlug, String master, TravisService travisService) {
+    private void sendEventForBuild(BuildDelta buildDelta, String branchedSlug, String master) {
         if (echoService.isPresent()) {
-            if (!build.spinnakerTriggered()) {
-                log.info("({}) pushing event for :${branchedSlug}:${build.number}", kv("master", master))
-                GenericProject project = new GenericProject(branchedSlug, TravisBuildConverter.genericBuild(build, travisService.baseUrl))
+            if (!buildDelta.build.spinnakerTriggered()) {
+                log.info("({}) pushing event for :${branchedSlug}:${buildDelta.build.number}", kv("master", master))
+                GenericProject project = new GenericProject(branchedSlug, buildDelta.genericBuild)
                 echoService.get().postEvent(
                     new GenericBuildEvent(content: new GenericBuildContent(project: project, master: master, type: 'travis'))
                 )
@@ -260,6 +263,7 @@ class TravisBuildMonitor extends CommonPollingMonitor<BuildDelta, BuildPollingDe
     static class BuildDelta implements DeltaItem {
         String branchedRepoSlug
         V3Build build
+        GenericBuild genericBuild
         String travisBaseUrl
         int currentBuildNum
         int previousBuildNum
