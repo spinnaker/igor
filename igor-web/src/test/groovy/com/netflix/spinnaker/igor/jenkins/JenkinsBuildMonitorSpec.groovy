@@ -58,7 +58,7 @@ class JenkinsBuildMonitorSpec extends Specification {
         jenkinsService.getProjects().getList() >> new Exception("failed")
 
         when:
-        monitor.changedBuilds(MASTER)
+        monitor.processProjectsOfMaster(MASTER)
 
         then:
         notThrown(Exception)
@@ -69,7 +69,7 @@ class JenkinsBuildMonitorSpec extends Specification {
         jenkinsService.getProjects() >> new ProjectsList(list: [new Project(name: 'job2', lastBuild: null)])
 
         when:
-        monitor.changedBuilds(MASTER)
+        monitor.processProjectsOfMaster(MASTER)
 
         then:
         0 * cache.getLastPollCycleTimestamp(MASTER, 'job2')
@@ -89,7 +89,7 @@ class JenkinsBuildMonitorSpec extends Specification {
         jenkinsService.getBuilds('job') >> new BuildsList(list: [ lastBuild ])
 
         when:
-        monitor.changedBuilds(MASTER)
+        monitor.processProjectsOfMaster(MASTER)
 
         then:
         1 * monitor.echoService.postEvent({ it.content.project.lastBuild.number == 1 && it.content.project.lastBuild.result == 'SUCCESS'} as Event)
@@ -125,7 +125,7 @@ class JenkinsBuildMonitorSpec extends Specification {
         )
 
         when:
-        monitor.changedBuilds(MASTER)
+        monitor.processProjectsOfMaster(MASTER)
 
         then: 'only builds between lowerBound(previousCursor) and upperbound(stamp3) will fire events'
         1 * monitor.echoService.postEvent({ it.content.project.lastBuild.number == 1 && it.content.project.lastBuild.result == 'SUCCESS'} as Event)
@@ -161,7 +161,7 @@ class JenkinsBuildMonitorSpec extends Specification {
         )
 
         when:
-        monitor.changedBuilds(MASTER)
+        monitor.processProjectsOfMaster(MASTER)
 
         then: 'only builds between lowerBound(previousCursor) and upperbound(stamp3) will fire events'
         1 * monitor.echoService.postEvent({ it.content.project.lastBuild.number == 1 && it.content.project.lastBuild.result == 'SUCCESS'} as Event)
@@ -210,7 +210,7 @@ class JenkinsBuildMonitorSpec extends Specification {
         )
 
         when:
-        monitor.changedBuilds(MASTER)
+        monitor.processProjectsOfMaster(MASTER)
 
         then: 'build #3 only will be processed'
         0 * monitor.echoService.postEvent({ it.content.project.lastBuild.number == 1 && it.content.project.lastBuild.result == 'SUCCESS'} as Event)
@@ -250,7 +250,7 @@ class JenkinsBuildMonitorSpec extends Specification {
         monitor.log = Mock(Logger);
 
         when:
-        monitor.changedBuilds(MASTER)
+        monitor.processProjectsOfMaster(MASTER)
 
         then: 'Builds are processed for job1'
         1 * monitor.echoService.postEvent({ it.content.project.name == 'job1'} as Event)
