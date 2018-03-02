@@ -35,10 +35,9 @@ import rx.schedulers.Schedulers;
 
 import javax.annotation.PostConstruct;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static java.lang.String.format;
@@ -57,19 +56,23 @@ public class DockerRegistryCacheV2KeysMigration {
     private final RedisClientDelegate redis;
     private final IgorConfigurationProperties properties;
     private final Scheduler scheduler;
+    private final DockerRegistryKeyFactory keyFactory;
 
     private final AtomicBoolean running = new AtomicBoolean();
 
     @Autowired
     public DockerRegistryCacheV2KeysMigration(RedisClientDelegate redis,
+                                              DockerRegistryKeyFactory keyFactory,
                                               IgorConfigurationProperties properties) {
-        this(redis, properties, Schedulers.io());
+        this(redis, keyFactory, properties, Schedulers.io());
     }
 
     public DockerRegistryCacheV2KeysMigration(RedisClientDelegate redis,
+                                              DockerRegistryKeyFactory keyFactory,
                                               IgorConfigurationProperties properties,
                                               Scheduler scheduler) {
         this.redis = redis;
+        this.keyFactory = keyFactory;
         this.properties = properties;
         this.scheduler = scheduler;
     }
@@ -88,59 +91,77 @@ public class DockerRegistryCacheV2KeysMigration {
         }
     }
 
-    private void migrate() {
-        log.info("Starting migration");
+    void migrate() {
+        log.debug("Starting migration");
 
-        List<String> oldKeys = redis.withMultiClient(this::getV1Keys);
+        long startTime = System.currentTimeMillis();
+        List<DockerRegistryV1Key> oldKeys = redis.withMultiClient(this::getV1Keys);
         log.info("Migrating {} v1 keys", oldKeys.size());
 
         int batchSize = properties.getRedis().getDockerV1KeyMigration().getBatchSize();
-        for (List<String> oldKeyBatch : Iterables.partition(oldKeys, batchSize)) {
+        for (List<DockerRegistryV1Key> oldKeyBatch : Iterables.partition(oldKeys, batchSize)) {
             // For each key: Check if old exists, if so, copy to new key, set ttl on old key, remove ttl on new key
             migrateBatch(oldKeyBatch);
         }
+
+        log.info("Migrated {} v1 keys in {}ms", oldKeys, System.currentTimeMillis() - startTime);
     }
 
-    private void migrateBatch(List<String> oldKeys) {
+    private void migrateBatch(List<DockerRegistryV1Key> oldKeys) {
         int expireSeconds = (int) Duration.ofDays(properties.getRedis().getDockerV1KeyMigration().getTtlDays()).getSeconds();
         redis.withCommandsClient(c -> {
-            for (String oldKey : oldKeys) {
-                String newKey = convertToNewFormat(oldKey);
+            for (DockerRegistryV1Key oldKey : oldKeys) {
+                String newKey = keyFactory.convert(oldKey).toString();
                 if (c.exists(newKey)) {
                     // Nothing to do here, just move on with life
                     continue;
                 }
 
-                Map<String, String> value = c.hgetAll(oldKey);
+                // Copy contents of v1 to v2
+                String v1Key = oldKey.toString();
+                Map<String, String> value = c.hgetAll(v1Key);
                 c.hmset(newKey, value);
-                c.expire(oldKey, expireSeconds);
+                c.expire(v1Key, expireSeconds);
             }
         });
     }
 
-    private List<String> getV1Keys(MultiKeyCommands client) {
-        // TODO rz - dyno does not yet support `scan` interface; exposed as `dyno_scan`
+    /**
+     * Dynomite does not yet support the `scan` interface method; instead exposed as `dyno_scan`, so we have two
+     * different methods that are the same thing until this is fixed.
+     * TODO rz - switch to common `scan` command
+     */
+    private List<DockerRegistryV1Key> getV1Keys(MultiKeyCommands client) {
         if (redis instanceof DynomiteClientDelegate) {
-            return keys((DynoJedisClient) client);
+            return v1Keys((DynoJedisClient) client);
         }
-        return keys((Jedis) client);
+        return v1Keys((Jedis) client);
     }
 
-    private List<String> keys(DynoJedisClient dyno) {
-        List<String> keys = new ArrayList<>();
+    private Function<List<String>, List<DockerRegistryV1Key>> oldKeysCallback =
+        (keys) -> keys.stream().map(this::readV1Key).filter(Objects::nonNull).collect(Collectors.toList());
+
+    /**
+     * Dynomite-compat v1keys
+     */
+    private List<DockerRegistryV1Key> v1Keys(DynoJedisClient dyno) {
+        List<DockerRegistryV1Key> keys = new ArrayList<>();
 
         String pattern = oldIndexPattern();
         CursorBasedResult<String> result;
         do {
             result = dyno.dyno_scan(pattern);
-            keys.addAll(result.getResult().stream().filter(this::isOldKey).collect(Collectors.toList()));
+            keys.addAll(oldKeysCallback.apply(result.getResult()));
         } while (!result.isComplete());
 
         return keys;
     }
 
-    private List<String> keys(Jedis jedis) {
-        List<String> keys = new ArrayList<>();
+    /**
+     * Redis-compat v1keys
+     */
+    private List<DockerRegistryV1Key> v1Keys(Jedis jedis) {
+        List<DockerRegistryV1Key> keys = new ArrayList<>();
 
         ScanParams params = new ScanParams().match(oldIndexPattern()).count(1000);
         String cursor = ScanParams.SCAN_POINTER_START;
@@ -148,26 +169,18 @@ public class DockerRegistryCacheV2KeysMigration {
         ScanResult<String> result;
         do {
             result = jedis.scan(cursor, params);
-            keys.addAll(result.getResult().stream().filter(this::isOldKey).collect(Collectors.toList()));
+            keys.addAll(oldKeysCallback.apply(result.getResult()));
         } while (!result.getStringCursor().equals("0"));
 
         return keys;
     }
 
-    private boolean isOldKey(String key) {
-        // Target v1 keys. They include repository URLs, which can include ports, so eq/gt 6 parts.
-        return key.split(":").length >= 6;
-    }
-
-    private String convertToNewFormat(String oldKey) {
-        String[] tagParts = oldKey.split("/");
-        String[] parts = tagParts[0].split(":");
-
-        String account = parts[0];
-        String registry = parts[1];
-        String tag = tagParts[1];
-
-        return DockerRegistryCache.makeKey(prefix(), account, registry, tag);
+    private DockerRegistryV1Key readV1Key(String key) {
+        try {
+            return keyFactory.parseV1Key(key, true);
+        } catch (DockerRegistryKeyFormatException e) {
+            return null;
+        }
     }
 
     private String oldIndexPattern() {

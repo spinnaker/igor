@@ -51,7 +51,7 @@ public class DockerRegistryCache {
     }
 
     public String getLastDigest(String account, String registry, String repository, String tag) {
-        String key = makeKey(prefix(), account, registry, tag);
+        String key = new DockerRegistryV2Key(prefix(), ID, account, registry, tag).toString();
         return redisClientDelegate.withCommandsClient(c -> {
             Map<String, String> res = c.hgetAll(key);
             if (res.get("digest").equals(EMPTY_DIGEST)) {
@@ -62,7 +62,7 @@ public class DockerRegistryCache {
     }
 
     public void setLastDigest(String account, String registry, String repository, String tag, String digest) {
-        String key = makeKey(prefix(), account, registry, tag);
+        String key = new DockerRegistryV2Key(prefix(), ID, account, registry, tag).toString();
         String d = digest == null ? EMPTY_DIGEST : digest;
         redisClientDelegate.withCommandsClient(c -> {
             c.hset(key, "digest", d);
@@ -70,11 +70,7 @@ public class DockerRegistryCache {
     }
 
     static String makeIndexPattern(String prefix, String account) {
-        return format("%s:v2:%s:%s:*", prefix, ID, account);
-    }
-
-    static String makeKey(String prefix, String account, String registry, String tag) {
-        return format("%s:v2:%s:%s:%s:%s", prefix, ID, account, registry, tag);
+        return format("%s:%s:v2:%s:*", prefix, ID, account);
     }
 
     private String prefix() {
