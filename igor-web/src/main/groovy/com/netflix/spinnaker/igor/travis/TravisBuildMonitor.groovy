@@ -105,12 +105,15 @@ class TravisBuildMonitor extends CommonPollingMonitor<BuildDelta, BuildPollingDe
     @Override
     protected void commitDelta(BuildPollingDelta delta) {
         String master = delta.master
+        TravisService travisService = buildMasters.map[master] as TravisService
 
         delta.items.parallelStream().forEach { item ->
             V3Build build = item.build
             log.info("({}) Build update {} [running:{}]", kv("master", master), build.toString(), TravisResultConverter.running(build.state))
-            buildCache.setLastBuild(master, item.branchedRepoSlug, build.number, TravisResultConverter.running(build.state), buildCacheJobTTLSeconds())
-            if(build.number > buildCache.getLastBuild(master, build.repository.slug, TravisResultConverter.running(build.state))) {
+            if (build.state == TravisBuildState.passed) {
+                item.genericBuild = travisService.getGenericBuild(build) // This also parses the log for artifacts
+            }
+            if (build.number > buildCache.getLastBuild(master, build.repository.slug, TravisResultConverter.running(build.state))) {
                 buildCache.setLastBuild(master, build.repository.slug, build.number, TravisResultConverter.running(build.state), buildCacheJobTTLSeconds())
                 sendEventForBuild(item, build.repository.slug, master)
             }
@@ -168,12 +171,7 @@ class TravisBuildMonitor extends CommonPollingMonitor<BuildDelta, BuildPollingDe
         for (V3Build build : builds) {
             String branchedRepoSlug = build.branchedRepoSlug()
             def cachedBuild = buildCache.getLastBuild(master, branchedRepoSlug, TravisResultConverter.running(build.state))
-            def genericBuild
-            if (build.state == TravisBuildState.passed) {
-                genericBuild = travisService.getGenericBuild(build) // This also parses the log for artifacts
-            } else {
-                genericBuild = TravisBuildConverter.genericBuild(build, travisService.baseUrl)
-            }
+            def genericBuild = TravisBuildConverter.genericBuild(build, travisService.baseUrl)
             if (build.number > cachedBuild && !build.spinnakerTriggered()) {
                 results.add(new BuildDelta(
                     branchedRepoSlug: branchedRepoSlug,
@@ -183,6 +181,7 @@ class TravisBuildMonitor extends CommonPollingMonitor<BuildDelta, BuildPollingDe
                     currentBuildNum: build.number,
                     previousBuildNum: cachedBuild
                 ))
+                buildCache.setLastBuild(master, branchedRepoSlug, build.number, TravisResultConverter.running(build.state), buildCacheJobTTLSeconds())
             }
             setTracking(build, master)
         }
