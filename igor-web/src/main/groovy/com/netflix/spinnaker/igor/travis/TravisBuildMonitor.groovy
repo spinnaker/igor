@@ -200,17 +200,17 @@ class TravisBuildMonitor extends CommonPollingMonitor<BuildDelta, BuildPollingDe
     }
 
     private void sendEventForBuild(BuildDelta buildDelta, String branchedSlug, String master) {
-        if (echoService.isPresent()) {
-            if (!buildDelta.build.spinnakerTriggered()) {
+        if (!buildDelta.build.spinnakerTriggered()) {
+            if (echoService.isPresent()) {
                 log.info("({}) pushing event for :${branchedSlug}:${buildDelta.build.number}", kv("master", master))
                 GenericProject project = new GenericProject(branchedSlug, buildDelta.genericBuild)
                 echoService.get().postEvent(
                     new GenericBuildEvent(content: new GenericBuildContent(project: project, master: master, type: 'travis'))
                 )
+            } else {
+                log.warn("Cannot send build event notification: Echo is not configured")
+                registry.counter(missedNotificationId.withTag("monitor", getClass().simpleName)).increment()
             }
-        } else {
-            log.warn("Cannot send build event notification: Echo is not configured")
-            registry.counter(missedNotificationId.withTag("monitor", getClass().simpleName)).increment()
         }
     }
 
