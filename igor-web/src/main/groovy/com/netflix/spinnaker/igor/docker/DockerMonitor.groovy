@@ -42,6 +42,7 @@ class DockerMonitor extends CommonPollingMonitor<ImageDelta, DockerPollingDelta>
     private final DockerRegistryCache cache
     private final DockerRegistryAccounts dockerRegistryAccounts
     private final Optional<EchoService> echoService
+    private final Optional<DockerRegistryCacheV2KeysMigration> keysMigration;
 
     @Autowired
     DockerMonitor(IgorConfigurationProperties properties,
@@ -49,11 +50,13 @@ class DockerMonitor extends CommonPollingMonitor<ImageDelta, DockerPollingDelta>
                   Optional<DiscoveryClient> discoveryClient,
                   DockerRegistryCache cache,
                   DockerRegistryAccounts dockerRegistryAccounts,
-                  Optional<EchoService> echoService) {
+                  Optional<EchoService> echoService,
+                  Optional<DockerRegistryCacheV2KeysMigration> keysMigration) {
         super(properties, registry, discoveryClient)
         this.cache = cache
         this.dockerRegistryAccounts = dockerRegistryAccounts
         this.echoService = echoService
+        this.keysMigration = keysMigration;
     }
 
     @Override
@@ -61,11 +64,24 @@ class DockerMonitor extends CommonPollingMonitor<ImageDelta, DockerPollingDelta>
     }
 
     @Override
-    void poll() {
+    void poll(boolean sendEvents) {
+        if (keysMigration.isPresent() && keysMigration.get().running) {
+            log.warn("Skipping poll cycle: Keys migration is in progress")
+            return
+        }
         dockerRegistryAccounts.updateAccounts()
         dockerRegistryAccounts.accounts.forEach({ account ->
-            internalPoll(new PollContext((String) account.name, account))
+            pollSingle(new PollContext((String) account.name, account, sendEvents))
         })
+    }
+
+    @Override
+    PollContext getPollContext(String partition) {
+        Map account = dockerRegistryAccounts.accounts.find { it.name == partition }
+        if (account == null) {
+            throw new IllegalStateException("Cannot find account named '$partition'")
+        }
+        return new PollContext((String) account.name, account)
     }
 
     @Override
@@ -114,10 +130,12 @@ class DockerMonitor extends CommonPollingMonitor<ImageDelta, DockerPollingDelta>
      * incomplete reads from clouddriver or Redis.
      */
     @Override
-    void commitDelta(DockerPollingDelta delta) {
+    void commitDelta(DockerPollingDelta delta, boolean sendEvents) {
         delta.items.parallelStream().forEach({ ImageDelta item ->
             cache.setLastDigest(item.image.account, item.image.registry, item.image.repository, item.image.tag, item.image.digest)
-            postEvent(delta.cachedImages, item.image, item.imageId)
+            if (sendEvents) {
+                postEvent(delta.cachedImages, item.image, item.imageId)
+            }
         })
     }
 
