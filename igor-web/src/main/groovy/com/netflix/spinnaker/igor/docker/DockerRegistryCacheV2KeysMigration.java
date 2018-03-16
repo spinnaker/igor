@@ -96,15 +96,26 @@ public class DockerRegistryCacheV2KeysMigration {
 
         long startTime = System.currentTimeMillis();
         List<DockerRegistryV1Key> oldKeys = redis.withMultiClient(this::getV1Keys);
-        log.info("Migrating {} v1 keys", oldKeys.size());
 
-        int batchSize = properties.getRedis().getDockerV1KeyMigration().getBatchSize();
-        for (List<DockerRegistryV1Key> oldKeyBatch : Iterables.partition(oldKeys, batchSize)) {
-            // For each key: Check if old exists, if so, copy to new key, set ttl on old key, remove ttl on new key
-            migrateBatch(oldKeyBatch);
+        if (oldKeys.isEmpty()) {
+            log.info("No keys to migrate");
+            return;
         }
 
-        log.info("Migrated {} v1 keys in {}ms", oldKeys, System.currentTimeMillis() - startTime);
+        int oldKeysSize = oldKeys.size();
+        int batchSize = properties.getRedis().getDockerV1KeyMigration().getBatchSize();
+        double numBatches = Math.ceil(oldKeysSize / batchSize);
+        log.info("Migrating {} v1 keys over {} batches", oldKeysSize, numBatches);
+
+        int i = 1;
+        for (List<DockerRegistryV1Key> oldKeyBatch : Iterables.partition(oldKeys, batchSize)) {
+            // For each key: Check if old exists, if so, copy to new key, set ttl on old key, remove ttl on new key
+            log.debug("Migrating batch {}/{}", i, numBatches);
+            migrateBatch(oldKeyBatch);
+            i++;
+        }
+
+        log.info("Migrated {} v1 keys in {}ms", oldKeysSize, System.currentTimeMillis() - startTime);
     }
 
     private void migrateBatch(List<DockerRegistryV1Key> oldKeys) {
