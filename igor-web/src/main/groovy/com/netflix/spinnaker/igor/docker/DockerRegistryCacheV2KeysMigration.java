@@ -146,7 +146,6 @@ public class DockerRegistryCacheV2KeysMigration {
 
             int size = keys.size();
 
-            log.info("Migrating {} v1 keys", size);
             migrateBatch(v1Keys);
 
             return size;
