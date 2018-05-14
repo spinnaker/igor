@@ -142,6 +142,7 @@ class InfoControllerSpec extends Specification {
 
         then:
         1 * buildMasters.filteredMap(BuildServiceProvider.JENKINS) >> ["travis-master1": []]
+        1 * buildMasters.filteredMap(BuildServiceProvider.WERCKER) >> ["travis-master1": []]
         1 * buildMasters.map >> ["travis-master1": []]
         1 * cache.getJobNames('travis-master1') >> ["some-job"]
         response.contentAsString == '["some-job"]'
