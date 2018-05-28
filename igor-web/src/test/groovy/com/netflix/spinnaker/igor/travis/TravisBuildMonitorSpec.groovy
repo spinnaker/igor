@@ -48,6 +48,7 @@ class TravisBuildMonitorSpec extends Specification {
             new IgorConfigurationProperties(),
             new NoopRegistry(),
             Optional.empty(),
+            Optional.empty(),
             buildCache,
             new BuildMasters(map: [MASTER : travisService]),
             travisProperties,
