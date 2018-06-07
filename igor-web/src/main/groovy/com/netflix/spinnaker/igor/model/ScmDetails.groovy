@@ -47,6 +47,9 @@ class ScmDetails {
 class Action{
     @Element(required = false)
     LastBuiltRevision lastBuiltRevision
+
+    @Element(required = false)
+    String remoteUrl
 }
 
 @Root(strict=false)
