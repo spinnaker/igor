@@ -127,7 +127,7 @@ class JenkinsService implements BuildService{
         }
 
         log.info("Submitted build job '{}'", kv("job", job))
-        def locationHeader = response.headers.find { it.name == "Location" }
+        def locationHeader = response.headers.find { it.name.toLowerCase() == "location" }
         if (!locationHeader) {
             throw new BuildController.QueuedJobDeterminationError("Could not find Location header for job '${job}'")
         }
@@ -196,9 +196,7 @@ class JenkinsService implements BuildService{
     @Override
     List<GenericGitRevision> getGenericGitRevisions(String job, int buildNumber) {
         ScmDetails scmDetails = getGitDetails(job, buildNumber)
-        if (scmDetails?.action?.lastBuiltRevision?.branch?.name) {
-            return scmDetails.genericGitRevisions()
-        }
-        return null
+        return scmDetails.genericGitRevisions()
+
     }
 }
