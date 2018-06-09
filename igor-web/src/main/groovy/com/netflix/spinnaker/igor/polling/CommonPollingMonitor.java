@@ -92,7 +92,11 @@ public abstract class CommonPollingMonitor<I extends DeltaItem, T extends Pollin
                 log.info("not in service (lastPoll: {})", (lastPoll == null) ? "n/a" : lastPoll.toString());
                 lastPoll.set(0);
             }
-        }, 0, getPollInterval(), TimeUnit.SECONDS);
+        }, getInitialDelayWithJitter(), getPollInterval(), TimeUnit.SECONDS);
+    }
+
+    private int getInitialDelayWithJitter() {
+        return (int) (Math.random() * getPollInitialDelay() + 1); // x in [0, delay] inclusive
     }
 
     protected abstract void initialize();

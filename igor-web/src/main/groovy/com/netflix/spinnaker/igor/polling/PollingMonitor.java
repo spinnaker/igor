@@ -28,4 +28,8 @@ public interface PollingMonitor extends ApplicationListener<RemoteStatusChangedE
     Long getLastPoll();
 
     int getPollInterval();
+
+    default int getPollInitialDelay() {
+        return 3;
+    }
 }
