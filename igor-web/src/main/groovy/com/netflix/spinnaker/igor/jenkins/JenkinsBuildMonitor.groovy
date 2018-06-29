@@ -39,8 +39,6 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Service
 import retrofit.RetrofitError
-
-import javax.annotation.PreDestroy
 import java.util.stream.Collectors
 
 import static net.logstash.logback.argument.StructuredArguments.kv
@@ -94,18 +92,10 @@ class JenkinsBuildMonitor extends CommonPollingMonitor<JobDelta, JobPollingDelta
     void poll(boolean sendEvents) {
         long startTime = System.currentTimeMillis()
         log.info "Polling cycle started: ${new Date()}"
-        buildMasters.filteredMap(BuildServiceProvider.JENKINS).keySet().parallelStream().forEach(
+        buildMasters.filteredMap(BuildServiceProvider.JENKINS).keySet().stream().forEach(
             { master -> pollSingle(new PollContext(master, !sendEvents)) }
         )
         log.info "Polling cycle done in ${System.currentTimeMillis() - startTime}ms"
-    }
-
-    @PreDestroy
-    void stop() {
-        log.info('Stopped')
-        if (!worker.isUnsubscribed()) {
-            worker.unsubscribe()
-        }
     }
 
     /**
@@ -206,22 +196,23 @@ class JenkinsBuildMonitor extends CommonPollingMonitor<JobDelta, JobPollingDelta
     protected void commitDelta(JobPollingDelta delta, boolean sendEvents) {
         String master = delta.master
 
-        delta.items.parallelStream().forEach { job ->
+        delta.items.stream().forEach { job ->
             // post events for finished builds
             job.completedBuilds.forEach { build ->
                 Boolean eventPosted = cache.getEventPosted(master, job.name, job.cursor, build.number)
                 if (!eventPosted) {
-                    log.debug("[${master}:${job.name}]:${build.number} event posted")
-                    cache.setEventPosted(master, job.name, job.cursor, build.number)
                     if (sendEvents) {
                         postEvent(new Project(name: job.name, lastBuild: build), master)
+                        log.debug("[${master}:${job.name}]:${build.number} event posted")
+                        cache.setEventPosted(master, job.name, job.cursor, build.number)
                     }
                 }
             }
 
             // advance cursor when all builds have completed in the interval
             if (job.runningBuilds.isEmpty()) {
-                log.info("[{}:{}] has no other builds between [${job.lowerBound} - ${job.upperBound}], advancing cursor to ${job.lastBuildStamp}", kv("master", master), kv("job", job.name))
+                log.info("[{}:{}] has no other builds between [${job.lowerBound} - ${job.upperBound}], " +
+                    "advancing cursor to ${job.lastBuildStamp}", kv("master", master), kv("job", job.name))
                 cache.pruneOldMarkers(master, job.name, job.cursor)
                 cache.setLastPollCycleTimestamp(master, job.name, job.lastBuildStamp)
             }
