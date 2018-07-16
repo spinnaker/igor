@@ -56,6 +56,7 @@ class WerckerBuildMonitorSchedulingSpec extends Specification {
             buildMasters,
             true,
             Optional.empty(),
+			Optional.empty(),
             new WerckerProperties()
         )
         monitor.worker = scheduler.createWorker()
@@ -110,6 +111,7 @@ class WerckerBuildMonitorSchedulingSpec extends Specification {
             buildMasters,
             false,
             Optional.empty(),
+			Optional.empty(),
             new WerckerProperties()
         )
         monitor.worker = scheduler.createWorker()

@@ -84,17 +84,25 @@ class WerckerServiceSpec extends Specification {
 		service.getBuilds(pipeline) == runs
 	}
 	
-	void 'categorize runs since _'() {
+	void 'categorize runs with pipelineQName'() {
 		setup:
 		long now = System.currentTimeMillis();
 		long since = now-1000
+		def app1 = appOf('app1', 'org1', [])
+		def app2 = appOf('app2', 'org1', [])
+		def pipe1 = pipeOf('p1', 'git', 'a', app1);
+		def pipe2 = pipeOf('p2', 'git', 'b', app2);
+		def pipe3 = pipeOf('p3', 'git', 'c', app1);
 		List<Run> runs1 = [
-			runOf('1', now-10, appOf('app1', 'org1', []), pipeOf('p1', 'git')),
-			runOf('2', now-10, appOf('app2', 'org1', []), pipeOf('p2', 'git')),
-			runOf('3', now-10, appOf('app1', 'org1', []), pipeOf('p3', 'git')),
-			runOf('4', now-10, appOf('app2', 'org1', []), pipeOf('p2', 'git')),
+			runOf('1', now-10, app1, pipe1, 'a'),
+			runOf('2', now-10, app2, pipe2, 'b'),
+			runOf('3', now-10, app1, pipe3, 'c'),
+			runOf('4', now-10, app2, pipe2, 'b'),
 		]
-		client.getRunsSince(_,_,_,since) >> runs1
+		client.getRunsSince(_,_,_,_,since) >> runs1
+		client.getPipeline(_, 'a') >> pipe1
+		client.getPipeline(_, 'b') >> pipe2
+		client.getPipeline(_, 'c') >> pipe3
 		
 		expect:
 		service.getRunsSince(since).size() == 3
@@ -141,7 +149,11 @@ class WerckerServiceSpec extends Specification {
 		return new Pipeline(id: id, name: name, type: type)
 	}
 	
-	Run runOf(String id, long startedAt, Application app, Pipeline pipe) {
-		return new Run(id: id, startedAt: new Date(startedAt), application: app, pipeline: pipe)
+	Pipeline pipeOf(String name, String type, String id=name, Application app) {
+		return new Pipeline(id: id, name: name, type: type, application: app)
+	}
+	
+	Run runOf(String id, long startedAt, Application app, Pipeline pipe, String pid=null) {
+		return new Run(id: id, startedAt: new Date(startedAt), application: app, pipeline: pipe, pipelineId: pid)
 	}
 }

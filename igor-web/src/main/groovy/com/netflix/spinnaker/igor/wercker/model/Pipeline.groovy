@@ -20,6 +20,7 @@ class Pipeline {
     String pipelineName //In the wercker.yml, I think
     boolean setScmProviderStatus
     String type
+	Application application
     /*
                 "id": "58347282dd22a501005268e7",
             "url": "https://dev.wercker.com/api/v3/pipelines/58347282dd22a501005268e7",

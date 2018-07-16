@@ -29,6 +29,7 @@ public class WerckerCache {
 
     private static final String POLL_STAMP = "lastPollCycleTimestamp";
     private static final String PIPELINE_ID = "pipelineId";
+    private static final String PIPELINE_NAME = "pipelineName";
 
     private final RedisClientDelegate redisClientDelegate;
     private final IgorConfigurationProperties igorConfigurationProperties;
@@ -81,11 +82,22 @@ public class WerckerCache {
             return c.hget(makeKey(master, pipeline), PIPELINE_ID);
         });
     }
+    
+    public String getPipelineName(String master, String id) {
+        return redisClientDelegate.withCommandsClient(c -> {
+            return c.hget(nameKey(master, id), PIPELINE_NAME);
+        });
+    }
 
     public void setPipelineID(String master, String pipeline, String id) {
         String key = makeKey(master, pipeline);
         redisClientDelegate.withCommandsClient(c -> {
             c.hset(key, PIPELINE_ID, id);
+        });
+
+        String nameKey = nameKey(master, id);
+        redisClientDelegate.withCommandsClient(c -> {
+            c.hset(nameKey, PIPELINE_NAME, pipeline);
         });
     }
 
@@ -151,7 +163,6 @@ public class WerckerCache {
     }
 
     public Boolean getEventPosted(String master, String job, String runID) {
-//        String key = makeKey(master, job) + ":" + POLL_STAMP + ":" + cursor;
         String key = makeEventsKey(master, job);
         return redisClientDelegate.withCommandsClient(c -> c.hget(key, runID) != null);
     }
@@ -166,7 +177,6 @@ public class WerckerCache {
     public void pruneOldMarkers(String master, String job, Long cursor) {
         remove(master, job);
         redisClientDelegate.withCommandsClient(c -> {
-//          c.del(makeKey(master, job) + ":" + POLL_STAMP + ":" + cursor);
             c.del(makeEventsKey(master, job));
         });
     }
@@ -183,6 +193,10 @@ public class WerckerCache {
 
     private String makeKey(String master, String job) {
         return prefix() + ":" + master + ":" + job.toUpperCase() + ":" + job;
+    }
+
+    private String nameKey(String master, String pipelineId) {
+        return prefix() + ":" + master + ":all_pipelines:" + pipelineId;
     }
 
     private String prefix() {

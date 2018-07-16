@@ -67,17 +67,19 @@ class WerckerClientSpec extends Specification {
         setResponse 'getRuns.js'
 		
         when:
-		List<Run> runs = client.getRunsSince(authHeader, branch, limit, time)
+		List<Run> runs = client.getRunsSince(authHeader, branch, ['x','y','z'], limit, time)
 		
         then:
 		def request = server.takeRequest()
 		
 		expect:
-//		System.out.println(request.path)
 		request.path.startsWith('/api/spinnaker/v1/runs?')
 		request.path.contains('branch=' + branch)
 		request.path.contains( 'limit=' + limit)
 		request.path.contains( 'since=' + time)
+		request.path.contains( 'pipelineIds=x')
+		request.path.contains( 'pipelineIds=y')
+		request.path.contains( 'pipelineIds=z')
         runs.size() == 5
         assertRun(runs[1])
         assertRun(runs[4])
