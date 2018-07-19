@@ -9,18 +9,17 @@
 package com.netflix.spinnaker.igor.wercker
 
 import com.netflix.spinnaker.igor.IgorConfigurationProperties
+import com.netflix.spinnaker.igor.wercker.model.Run;
 import com.netflix.spinnaker.kork.jedis.EmbeddedRedis
 import com.netflix.spinnaker.kork.jedis.JedisClientDelegate
 import com.netflix.spinnaker.kork.jedis.RedisClientDelegate
-import com.netflix.spinnaker.igor.wercker.model.Run;
+
 import redis.clients.jedis.JedisPool
-import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
-import spock.lang.Unroll
 
 class WerckerCacheSpec extends Specification {
-	
+
     EmbeddedRedis embeddedRedis = EmbeddedRedis.embed()
     RedisClientDelegate redisClientDelegate = new JedisClientDelegate(embeddedRedis.pool as JedisPool)
 
@@ -29,23 +28,21 @@ class WerckerCacheSpec extends Specification {
 
     final master = 'testWerckerMaster'
     final test = 'test'
-	final pipeline = 'myOrg/myApp/myTestPipeline'
+    final pipeline = 'myOrg/myApp/myTestPipeline'
 
     void cleanup() {
-        embeddedRedis.pool.resource.withCloseable {
-            it.flushDB()
-        }
+        embeddedRedis.pool.resource.withCloseable { it.flushDB() }
         embeddedRedis.destroy()
     }
 
     void 'lastPollCycleTimestamp get overridden'() {
-		long now1 = System.currentTimeMillis();
+        long now1 = System.currentTimeMillis();
         when:
         cache.setLastPollCycleTimestamp(master, 'myOrg/myApp/myPipeline', now1)
         then:
         cache.getLastPollCycleTimestamp(master, 'myOrg/myApp/myPipeline') == now1
-		
-		long now2 = System.currentTimeMillis();
+
+        long now2 = System.currentTimeMillis();
         when:
         cache.setLastPollCycleTimestamp(master, 'myOrg/myApp/myPipeline', now2)
         then:
@@ -53,60 +50,60 @@ class WerckerCacheSpec extends Specification {
     }
 
     void 'generates buildNumbers ordered by startedAt'() {
-		long now = System.currentTimeMillis();
-		List<Run> runs1 = [
-			new Run(id:"b",    startedAt: new Date(now-10)),
-			new Run(id:"a",    startedAt: new Date(now-11)),
-			new Run(id:"init", startedAt: new Date(now-12)),
-		]
+        long now = System.currentTimeMillis();
+        List<Run> runs1 = [
+            new Run(id:"b",    startedAt: new Date(now-10)),
+            new Run(id:"a",    startedAt: new Date(now-11)),
+            new Run(id:"init", startedAt: new Date(now-12)),
+        ]
         cache.updateBuildNumbers(master, pipeline, runs1)
 
-		List<Run> runs2 = [
-			new Run(id:"now", startedAt: new Date(now)),
-			new Run(id:"d",   startedAt: new Date(now-1)),
-			new Run(id:"c",   startedAt: new Date(now-2)),
-		]
-		cache.updateBuildNumbers(master, pipeline, runs2)
+        List<Run> runs2 = [
+            new Run(id:"now", startedAt: new Date(now)),
+            new Run(id:"d",   startedAt: new Date(now-1)),
+            new Run(id:"c",   startedAt: new Date(now-2)),
+        ]
+        cache.updateBuildNumbers(master, pipeline, runs2)
 
-		expect:
-		cache.getBuildNumber(master, pipeline, runId) == buildNumber
-		
-		where:
-		runId  | buildNumber
-		'init' | 0
-		   'a' | 1
-		   'b' | 2
-		   'c' | 3
-		   'd' | 4
-		 'now' | 5
+        expect:
+        cache.getBuildNumber(master, pipeline, runId) == buildNumber
+
+        where:
+        runId  | buildNumber
+        'init' | 0
+        'a'    | 1
+        'b'    | 2
+        'c'    | 3
+        'd'    | 4
+        'now'  | 5
     }
-	
-	void 'generates buildNumbers ordered by createdAt'() {
-		long now = System.currentTimeMillis();
-		List<Run> runs1 = [
-			new Run(id:"y",    createdAt: new Date(now-10)),
-			new Run(id:"x",    startedAt: new Date(now-11)),
-			new Run(id:"zero", createdAt: new Date(now-12)),
-		]
-		cache.updateBuildNumbers(master, pipeline, runs1)
 
-		List<Run> runs2 = [
-			new Run(id:"latest", createdAt: new Date(now)),
-			new Run(id:"4",      startedAt: new Date(now-1)),
-			new Run(id:"3",      createdAt: new Date(now-2)),
-		]
-		cache.updateBuildNumbers(master, pipeline, runs2)
-		
-		expect:
-		cache.getBuildNumber(master, pipeline, runId) == buildNumber
-		
-		where:
-		runId    | buildNumber
-		 'zero'  | 0
-		   'x'   | 1
-		   'y'   | 2
-		   '3'   | 3
-		   '4'   | 4
-		'latest' | 5
-	}
+    void 'generates buildNumbers ordered by createdAt'() {
+        long now = System.currentTimeMillis();
+        List<Run> runs1 = [
+            new Run(id:"y",    createdAt: new Date(now-10)),
+            new Run(id:"x",    startedAt: new Date(now-11)),
+            new Run(id:"zero", createdAt: new Date(now-12)),
+        ]
+        cache.updateBuildNumbers(master, pipeline, runs1)
+
+        List<Run> runs2 = [
+            new Run(id:"latest", createdAt: new Date(now)),
+            new Run(id:"4",      startedAt: new Date(now-1)),
+            new Run(id:"3",      createdAt: new Date(now-2)),
+        ]
+        cache.updateBuildNumbers(master, pipeline, runs2)
+
+        expect:
+        cache.getBuildNumber(master, pipeline, runId) == buildNumber
+
+        where:
+        runId    | buildNumber
+        'zero'   | 0
+        'x'      | 1
+        'y'      | 2
+        '3'      | 3
+        '4'      | 4
+        'latest' | 5
+    }
 }

@@ -8,26 +8,29 @@
  */
 package com.netflix.spinnaker.igor.config
 
+import java.util.concurrent.TimeUnit
+
+import javax.validation.Valid
+
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+
 import com.netflix.spinnaker.igor.IgorConfigurationProperties
 import com.netflix.spinnaker.igor.config.WerckerProperties.WerckerHost
 import com.netflix.spinnaker.igor.service.BuildMasters
 import com.netflix.spinnaker.igor.wercker.WerckerCache
 import com.netflix.spinnaker.igor.wercker.WerckerClient
 import com.netflix.spinnaker.igor.wercker.WerckerService
+import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger
 import com.squareup.okhttp.OkHttpClient
+
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger
 import retrofit.Endpoints
 import retrofit.RestAdapter
 import retrofit.client.OkClient
-
-import javax.validation.Valid
-import java.util.concurrent.TimeUnit
 
 @Configuration
 @Slf4j
@@ -36,14 +39,15 @@ import java.util.concurrent.TimeUnit
 @EnableConfigurationProperties(WerckerProperties)
 public class WerckerConfig {
     @Bean
-    Map<String, WerckerService> werckerMasters(BuildMasters buildMasters, WerckerCache cache,
-                                               IgorConfigurationProperties igorConfigurationProperties,
-                                               @Valid WerckerProperties werckerProperties) {
+    Map<String, WerckerService> werckerMasters(
+            BuildMasters buildMasters,
+            WerckerCache cache,
+            IgorConfigurationProperties igorConfigurationProperties,
+            @Valid WerckerProperties werckerProperties) {
         log.debug "creating werckerMasters"
-        Map<String, WerckerService> werckerMasters = ( werckerProperties?.masters?.collectEntries {
-            WerckerProperties.WerckerHost host ->
+        Map<String, WerckerService> werckerMasters = ( werckerProperties?.masters?.collectEntries { WerckerProperties.WerckerHost host ->
             log.debug "bootstrapping Wercker ${host.address} as ${host.name}"
-            [(host.name): new WerckerService(host, cache, werckerClient(host))]
+            [(host.name): new WerckerService(host, cache, werckerClient(host, igorConfigurationProperties.getClient().timeout))]
         })
 
         buildMasters.map.putAll werckerMasters
@@ -54,12 +58,11 @@ public class WerckerConfig {
         OkHttpClient client = new OkHttpClient()
         client.setReadTimeout(timeout, TimeUnit.MILLISECONDS)
         return new RestAdapter.Builder()
-            .setLog(new Slf4jRetrofitLogger(WerckerService))
-            .setLogLevel(RestAdapter.LogLevel.BASIC)
-            .setEndpoint(Endpoints.newFixedEndpoint(host.address))
-//            .setRequestInterceptor(requestInterceptor)
-            .setClient(new OkClient(client))
-            .build()
-            .create(WerckerClient)
+                .setLog(new Slf4jRetrofitLogger(WerckerService))
+                .setLogLevel(RestAdapter.LogLevel.BASIC)
+                .setEndpoint(Endpoints.newFixedEndpoint(host.address))
+                .setClient(new OkClient(client))
+                .build()
+                .create(WerckerClient)
     }
 }

@@ -112,7 +112,7 @@ class BuildController {
             HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).split('/').drop(4).join('/')
         if (buildMasters.filteredMap(BuildServiceProvider.JENKINS).containsKey(master)) {
             buildMasters.map[master].getBuilds(job).list
-        } else if (buildMasters.map.containsKey(master)) { //if (buildMasters.filteredMap(BuildServiceProvider.TRAVIS).containsKey(master)) {
+        } else if (buildMasters.map.containsKey(master)) {
             buildMasters.map[master].getBuilds(job)
         } else {
             throw new MasterNotFoundException("Master '${master}' not found")

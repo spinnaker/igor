@@ -8,18 +8,19 @@
  */
 package com.netflix.spinnaker.igor.wercker;
 
-import com.netflix.spinnaker.igor.IgorConfigurationProperties;
-import com.netflix.spinnaker.igor.wercker.model.Run;
-import com.netflix.spinnaker.kork.jedis.RedisClientDelegate;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.netflix.spinnaker.igor.IgorConfigurationProperties;
+import com.netflix.spinnaker.igor.wercker.model.Run;
+import com.netflix.spinnaker.kork.jedis.RedisClientDelegate;
 
 /**
  * Shared cache of build details for jenkins
@@ -36,7 +37,7 @@ public class WerckerCache {
 
     @Autowired
     public WerckerCache(RedisClientDelegate redisClientDelegate,
-                        IgorConfigurationProperties igorConfigurationProperties) {
+            IgorConfigurationProperties igorConfigurationProperties) {
         this.redisClientDelegate = redisClientDelegate;
         this.igorConfigurationProperties = igorConfigurationProperties;
     }
@@ -56,25 +57,25 @@ public class WerckerCache {
     }
 
     static Run useCreatedAtIfNotStarted(Run run) {
-    	if (run.getStartedAt() == null) {
-    		run.setStartedAt(run.getCreatedAt());
-    	}
-    	return run;
+        if (run.getStartedAt() == null) {
+            run.setStartedAt(run.getCreatedAt());
+        }
+        return run;
     }
-    
+
     static Comparator<Run> runStartedAtComparator = new Comparator<Run>() {
-		@Override
-		public int compare(Run r1, Run r2) {	
-			useCreatedAtIfNotStarted(r1);
-			useCreatedAtIfNotStarted(r2);
-			if (r1.getStartedAt() == null) {
-				return r2.getStartedAt() == null ? 0 : -1;
-			} else if (r2.getStartedAt() == null) {
-				return 1;
-			}
-			long l = (r1.getStartedAt().toInstant().toEpochMilli() - r2.getStartedAt().toInstant().toEpochMilli());
-			return l > 0 ? 1 : (l == 0 ? 0 : -1);
-		}
+        @Override
+        public int compare(Run r1, Run r2) {
+            useCreatedAtIfNotStarted(r1);
+            useCreatedAtIfNotStarted(r2);
+            if (r1.getStartedAt() == null) {
+                return r2.getStartedAt() == null ? 0 : -1;
+            } else if (r2.getStartedAt() == null) {
+                return 1;
+            }
+            long l = (r1.getStartedAt().toInstant().toEpochMilli() - r2.getStartedAt().toInstant().toEpochMilli());
+            return l > 0 ? 1 : (l == 0 ? 0 : -1);
+        }
     };
 
     public String getPipelineID(String master, String pipeline) {
@@ -82,7 +83,7 @@ public class WerckerCache {
             return c.hget(makeKey(master, pipeline), PIPELINE_ID);
         });
     }
-    
+
     public String getPipelineName(String master, String id) {
         return redisClientDelegate.withCommandsClient(c -> {
             return c.hget(nameKey(master, id), PIPELINE_NAME);
@@ -104,48 +105,52 @@ public class WerckerCache {
     public String getRunID(String master, String pipeline, final int buildNumber) {
         String key = makeKey(master, pipeline) + ":runs";
         final Map<String, String> existing = redisClientDelegate.withCommandsClient(c -> {
-        	if (!c.exists(key)) {
-        		return null;
-        	}
-        	return c.hgetAll(key);
+            if (!c.exists(key)) {
+                return null;
+            }
+            return c.hgetAll(key);
         });
         String build = Integer.toString(buildNumber);
-        for(Entry<String, String> entry : existing.entrySet()) {
-        	if (entry.getValue().equals(build)) {
-        		return entry.getKey();
-        	}
+        for (Entry<String, String> entry : existing.entrySet()) {
+            if (entry.getValue().equals(build)) {
+                return entry.getKey();
+            }
         }
         return null;
     }
 
     /**
-     * Creates entries in Redis for each run in the runs list (except if the run id already exists)
-     * and generates build numbers for each run id (ordered by startedAt date)
+     * Creates entries in Redis for each run in the runs list (except if the run id
+     * already exists) and generates build numbers for each run id (ordered by
+     * startedAt date)
+     * 
      * @param master
      * @param appAndPipelineName
      * @param runs
-     * @return a map containing the generated build numbers for each run created, keyed by run id
+     * @return a map containing the generated build numbers for each run created,
+     *         keyed by run id
      */
-    public Map<String, Integer> updateBuildNumbers(String master, String appAndPipelineName,
-                                                   List<Run> runs) {
+    public Map<String, Integer> updateBuildNumbers(String master, String appAndPipelineName, List<Run> runs) {
         String key = makeKey(master, appAndPipelineName) + ":runs";
         final Map<String, String> existing = redisClientDelegate.withCommandsClient(c -> {
-        	if (!c.exists(key)) {
-        		return null;
-        	}
-        	return c.hgetAll(key);
+            if (!c.exists(key)) {
+                return null;
+            }
+            return c.hgetAll(key);
         });
-        List<Run> newRuns = (existing == null || existing.size() == 0) ? runs
-    			: runs.stream().filter(run -> !existing.containsKey(run.getId())).collect(Collectors.toList());
+        List<Run> newRuns = runs;
+        if (existing != null && existing.size() > 0) {
+            newRuns = runs.stream().filter(run -> !existing.containsKey(run.getId())).collect(Collectors.toList());
+        }
         Map<String, Integer> runIdToBuildNumber = new HashMap<>();
-    	int startNumber = (existing == null || existing.size() == 0) ? 0 : existing.size();
-    	newRuns.sort(runStartedAtComparator);
-    	for(int i = 0; i < newRuns.size(); i++) {
-    	    int buildNum = startNumber + i;
-    		setBuildNumber(master, appAndPipelineName, newRuns.get(i).getId() , buildNum);
-    		runIdToBuildNumber.put(newRuns.get(i).getId(), buildNum);
-    	}
-    	return runIdToBuildNumber;
+        int startNumber = (existing == null || existing.size() == 0) ? 0 : existing.size();
+        newRuns.sort(runStartedAtComparator);
+        for (int i = 0; i < newRuns.size(); i++) {
+            int buildNum = startNumber + i;
+            setBuildNumber(master, appAndPipelineName, newRuns.get(i).getId(), buildNum);
+            runIdToBuildNumber.put(newRuns.get(i).getId(), buildNum);
+        }
+        return runIdToBuildNumber;
     }
 
     public void setBuildNumber(String master, String pipeline, String runID, int number) {
@@ -157,7 +162,7 @@ public class WerckerCache {
 
     public Long getBuildNumber(String master, String pipeline, String runID) {
         return redisClientDelegate.withCommandsClient(c -> {
-            String ts = c.hget(makeKey(master, pipeline)+ ":runs", runID);
+            String ts = c.hget(makeKey(master, pipeline) + ":runs", runID);
             return ts == null ? null : Long.parseLong(ts);
         });
     }
@@ -188,7 +193,7 @@ public class WerckerCache {
     }
 
     private String makeEventsKey(String master, String job) {
-    	return makeKey(master, job) + ":" + POLL_STAMP + ":events";
+        return makeKey(master, job) + ":" + POLL_STAMP + ":events";
     }
 
     private String makeKey(String master, String job) {

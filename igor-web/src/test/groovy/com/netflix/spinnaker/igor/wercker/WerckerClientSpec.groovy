@@ -14,13 +14,9 @@ import com.netflix.spinnaker.igor.config.WerckerProperties.WerckerHost
 import com.netflix.spinnaker.igor.wercker.model.*
 import com.squareup.okhttp.mockwebserver.MockResponse
 import com.squareup.okhttp.mockwebserver.MockWebServer
+
 import spock.lang.Shared
 import spock.lang.Specification
-import java.util.List
-
-import com.netflix.spinnaker.igor.wercker.model.Application
-
-import retrofit.http.Header
 
 class WerckerClientSpec extends Specification {
 
@@ -40,72 +36,72 @@ class WerckerClientSpec extends Specification {
 
     void 'get all applications'() {
         setup:
-		def authHeader = "my_authHeader"
-		def limit = 300
+        def authHeader = "my_authHeader"
+        def limit = 300
         setResponse 'getApplications.js'
 
         when:
-		List<Application> apps = client.getApplications(authHeader, limit)
-		
+        List<Application> apps = client.getApplications(authHeader, limit)
+
         then:
-		def request = server.takeRequest()
-		
-		expect:
+        def request = server.takeRequest()
+
+        expect:
         apps.size() == 5
-		request.path.startsWith('/api/spinnaker/v1/applications?')
-		request.path.contains('limit=' + limit)
-		assertApp(apps[0])
-		assertApp(apps[2])
+        request.path.startsWith('/api/spinnaker/v1/applications?')
+        request.path.contains('limit=' + limit)
+        assertApp(apps[0])
+        assertApp(apps[2])
     }
-	
-	void 'get all runs since time'() {
+
+    void 'get all runs since time'() {
         given:
-		def authHeader = "my_authHeader"
-		def time = System.currentTimeMillis()
-		def branch = 'master'
-		def limit = 300
+        def authHeader = "my_authHeader"
+        def time = System.currentTimeMillis()
+        def branch = 'master'
+        def limit = 300
         setResponse 'getRuns.js'
-		
+
         when:
-		List<Run> runs = client.getRunsSince(authHeader, branch, ['x','y','z'], limit, time)
-		
+        List<Run> runs = client.getRunsSince(authHeader, branch, ['x', 'y', 'z'], limit, time)
+
         then:
-		def request = server.takeRequest()
-		
-		expect:
-		request.path.startsWith('/api/spinnaker/v1/runs?')
-		request.path.contains('branch=' + branch)
-		request.path.contains( 'limit=' + limit)
-		request.path.contains( 'since=' + time)
-		request.path.contains( 'pipelineIds=x')
-		request.path.contains( 'pipelineIds=y')
-		request.path.contains( 'pipelineIds=z')
+        def request = server.takeRequest()
+
+        expect:
+        request.path.startsWith('/api/spinnaker/v1/runs?')
+        request.path.contains('branch=' + branch)
+        request.path.contains( 'limit=' + limit)
+        request.path.contains( 'since=' + time)
+        request.path.contains( 'pipelineIds=x')
+        request.path.contains( 'pipelineIds=y')
+        request.path.contains( 'pipelineIds=z')
         runs.size() == 5
         assertRun(runs[1])
         assertRun(runs[4])
-	}
-	
-	def assertApp(Application app) {
-		app.id && app.name && app.owner && app.pipelines
-	}
-	
-	def assertRun(Run run) {
-		run.id && run.status && run.user &&
-		run.application && run.pipeline 
-	}
-	
+    }
+
+    def assertApp(Application app) {
+        app.id && app.name && app.owner && app.pipelines
+    }
+
+    def assertRun(Run run) {
+        run.id && run.status && run.user &&
+                run.application && run.pipeline
+    }
+
     private void setResponse(String fileName) {
         server.enqueue(
-            new MockResponse()
+                new MockResponse()
                 .setBody(read(fileName))
                 .setHeader('Content-Type', 'application/json; charset=utf-8')
-        )
+                )
         server.start()
         def host = new WerckerHost(name: 'werckerMaster', address: server.url('/').toString())
         client = new WerckerConfig().werckerClient(host)
     }
-	
-	String read(String fileName) {
-		return new File(getClass().getResource('/wercker/' + fileName).toURI()).text
-	}
+
+    String read(String fileName) {
+        return new File(getClass().getResource('/wercker/' + fileName).toURI()).text
+    }
 }

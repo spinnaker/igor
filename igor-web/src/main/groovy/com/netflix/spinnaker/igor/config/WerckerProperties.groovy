@@ -8,11 +8,12 @@
  */
 package com.netflix.spinnaker.igor.config
 
-import groovy.transform.CompileStatic
+import javax.validation.Valid
+
 import org.hibernate.validator.constraints.NotEmpty
 import org.springframework.boot.context.properties.ConfigurationProperties
 
-import javax.validation.Valid
+import groovy.transform.CompileStatic
 /**
  * Helper class to map masters in properties file into a validated property map
  */
@@ -32,7 +33,7 @@ class WerckerProperties {
         String user
 
         String token
-		
+
         Integer itemUpperThreshold
     }
 }

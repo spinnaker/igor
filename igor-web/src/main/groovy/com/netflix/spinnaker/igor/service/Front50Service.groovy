@@ -1,5 +1,6 @@
 /*
  * Copyright 2014 Netflix, Inc.
+ * Copyright (c) 2017, 2018, Oracle Corporation and/or its affiliates. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +17,7 @@
 
 package com.netflix.spinnaker.igor.service
 
-import java.util.List
-import java.util.Map
-
-import retrofit.http.Body
 import retrofit.http.GET
-import retrofit.http.POST
 import retrofit.http.Path
 import retrofit.http.Query
 
@@ -29,12 +25,12 @@ import retrofit.http.Query
  * Posts new build executions to echo
  */
 interface Front50Service {
-  //
-  // Pipeline-related
-  //
-  @GET('/pipelines')
-  List<Map> getAllPipelineConfigs()
+    //
+    // Pipeline-related
+    //
+    @GET('/pipelines')
+    List<Map> getAllPipelineConfigs()
 
-  @GET('/pipelines/{app}')
-  List<Map> getPipelineConfigsForApplication(@Path("app") String app, @Query("refresh") boolean refresh)
+    @GET('/pipelines/{app}')
+    List<Map> getPipelineConfigsForApplication(@Path("app") String app, @Query("refresh") boolean refresh)
 }

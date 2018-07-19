@@ -1,5 +1,6 @@
 /*
  * Copyright 2014 Netflix, Inc.
+ * Copyright (c) 2017, 2018, Oracle Corporation and/or its affiliates. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +17,15 @@
 
 package com.netflix.spinnaker.igor.config
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+
 import com.netflix.spinnaker.config.OkHttpClientConfiguration
 import com.netflix.spinnaker.igor.IgorConfigurationProperties
 import com.netflix.spinnaker.igor.service.Front50Service
 import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
+
 import retrofit.Endpoints
 import retrofit.RestAdapter
 import retrofit.client.OkClient
@@ -44,11 +47,11 @@ class Front50Config {
         def cli = okHttpClientConfig.create()
 
         new RestAdapter.Builder()
-            .setEndpoint(Endpoints.newFixedEndpoint(address))
-            .setClient(new OkClient(cli))
-            .setLogLevel(RestAdapter.LogLevel.NONE)
-            .setLog(new Slf4jRetrofitLogger(Front50Service))
-            .build()
-            .create(Front50Service)
+                .setEndpoint(Endpoints.newFixedEndpoint(address))
+                .setClient(new OkClient(cli))
+                .setLogLevel(RestAdapter.LogLevel.NONE)
+                .setLog(new Slf4jRetrofitLogger(Front50Service))
+                .build()
+                .create(Front50Service)
     }
 }

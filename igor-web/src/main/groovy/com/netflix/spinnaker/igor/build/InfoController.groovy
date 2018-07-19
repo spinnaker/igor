@@ -141,7 +141,7 @@ class InfoController {
 
             return jobList
         } else if (buildMasters.map.containsKey(master)) {
-			def werckerService = buildMasters.filteredMap(BuildServiceProvider.WERCKER)[master] 
+            def werckerService = buildMasters.filteredMap(BuildServiceProvider.WERCKER)[master] 
             if (werckerService) {
                 return werckerService.getJobs()
             } else {

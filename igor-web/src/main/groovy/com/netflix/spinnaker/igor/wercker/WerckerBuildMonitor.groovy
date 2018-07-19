@@ -8,6 +8,17 @@
  */
 package com.netflix.spinnaker.igor.wercker
 
+import static net.logstash.logback.argument.StructuredArguments.kv
+
+import java.util.stream.Collectors
+
+import javax.annotation.PreDestroy
+
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.stereotype.Service
+
 import com.netflix.discovery.DiscoveryClient
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.igor.IgorConfigurationProperties
@@ -17,32 +28,19 @@ import com.netflix.spinnaker.igor.build.model.Result
 import com.netflix.spinnaker.igor.config.WerckerProperties
 import com.netflix.spinnaker.igor.history.EchoService
 import com.netflix.spinnaker.igor.history.model.GenericBuildContent
-import com.netflix.spinnaker.igor.service.Front50Service
-
 import com.netflix.spinnaker.igor.history.model.GenericBuildEvent
 import com.netflix.spinnaker.igor.model.BuildServiceProvider
-
 import com.netflix.spinnaker.igor.polling.CommonPollingMonitor
 import com.netflix.spinnaker.igor.polling.DeltaItem
 import com.netflix.spinnaker.igor.polling.LockService
 import com.netflix.spinnaker.igor.polling.PollContext
 import com.netflix.spinnaker.igor.polling.PollingDelta
 import com.netflix.spinnaker.igor.service.BuildMasters
+import com.netflix.spinnaker.igor.service.Front50Service
 import com.netflix.spinnaker.igor.wercker.model.Run
+
 import groovy.time.TimeCategory
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
-import org.springframework.stereotype.Service
 import retrofit.RetrofitError
-
-import javax.annotation.PreDestroy
-
-import java.util.Optional
-import java.util.Map.Entry
-import java.util.stream.Collectors
-
-import static net.logstash.logback.argument.StructuredArguments.kv
 
 /**
  * Monitors new wercker runs
@@ -59,16 +57,17 @@ class WerckerBuildMonitor extends CommonPollingMonitor<PipelineDelta, PipelinePo
     private final WerckerProperties werckerProperties
 
     @Autowired
-    WerckerBuildMonitor(IgorConfigurationProperties properties,
-                        Registry registry,
-                        Optional<DiscoveryClient> discoveryClient,
-                        Optional<LockService> lockService,
-                        WerckerCache cache,
-                        BuildMasters buildMasters,
-                        @Value('${wercker.polling.enabled:true}') boolean pollingEnabled,
-                        Optional<EchoService> echoService,
-                        Optional<Front50Service> front50Service,
-                        WerckerProperties werckerProperties) {
+    WerckerBuildMonitor(
+    IgorConfigurationProperties properties,
+    Registry registry,
+    Optional<DiscoveryClient> discoveryClient,
+    Optional<LockService> lockService,
+    WerckerCache cache,
+    BuildMasters buildMasters,
+    @Value('${wercker.polling.enabled:true}') boolean pollingEnabled,
+    Optional<EchoService> echoService,
+    Optional<Front50Service> front50Service,
+    WerckerProperties werckerProperties) {
         super(properties, registry, discoveryClient, lockService)
         this.cache = cache
         this.buildMasters = buildMasters
@@ -96,8 +95,9 @@ class WerckerBuildMonitor extends CommonPollingMonitor<PipelineDelta, PipelinePo
     void poll(boolean sendEvents) {
         long startTime = System.currentTimeMillis()
         log.info "WerckerBuildMonitor Polling cycle started: ${new Date()}, front50:${front50.isPresent()}, echoService:${echoService.isPresent()} "
-        buildMasters.filteredMap(BuildServiceProvider.WERCKER).keySet().parallelStream().forEach(
-            { master -> pollSingle(new PollContext(master, !sendEvents)) }
+        buildMasters.filteredMap(BuildServiceProvider.WERCKER).keySet().parallelStream().forEach( { master ->
+            pollSingle(new PollContext(master, !sendEvents))
+        }
         )
         log.info "WerckerBuildMonitor Polling cycle done in ${System.currentTimeMillis() - startTime}ms"
     }
@@ -124,114 +124,110 @@ class WerckerBuildMonitor extends CommonPollingMonitor<PipelineDelta, PipelinePo
 
         WerckerService werckerService = buildMasters.map[master] as WerckerService
         long since = System.currentTimeMillis() - (Long.valueOf(getPollInterval() * 2 * 1000))
-		if (front50.isPresent()) {
-			Set<String> pipelines = getConfiguredJobs(master);
-//			pipelines.forEach( { pipeline -> processRuns(werckerService, master, pipeline, delta, null) } );
-			try {
-				Map<String, List<Run>> runs = werckerService.getRunsSince(pipelines, since);
-				runs.keySet().forEach( { pipeline ->
-					processRuns(werckerService, master, pipeline, delta, runs.get(pipeline))
-				} );
-			} catch (e) {
-				log.error("Error processing runs for Wercker[{}]", kv("master", master), e)
-			}
-			
-		} else {
-		    try {
-			    Map<String, List<Run>> runs = werckerService.getRunsSince(since);
-			    runs.keySet().forEach( { pipeline ->
-				    processRuns(werckerService, master, pipeline, delta, runs.get(pipeline))
-			    } );
-		    } catch (e) {
-			    log.error("Error processing runs for Wercker[{}]", kv("master", master), e)
-		    }
-		}
+        try {
+            if (front50.isPresent()) {
+                Set<String> pipelines = getConfiguredJobs(master)
+                Map<String, List<Run>> runs = werckerService.getRunsSince(pipelines, since)
+                runs.keySet().forEach( { pipeline ->
+                    processRuns(werckerService, master, pipeline, delta, runs.get(pipeline))
+                } )
+            } else {
+                Map<String, List<Run>> runs = werckerService.getRunsSince(since)
+                runs.keySet().forEach( { pipeline ->
+                    processRuns(werckerService, master, pipeline, delta, runs.get(pipeline))
+                } )
+            }
+        } catch (e) {
+            log.error("Error processing runs for Wercker[{}]", kv("master", master), e)
+        }
         log.debug("Took ${System.currentTimeMillis() - startTime}ms to retrieve Wercker pipelines (master: {})", kv("master", master))
         return new PipelinePollingDelta(master: master, items: delta)
     }
 
-	Set<String> getConfiguredJobs(String master) {
-		Set<String> jobs = [];
-		front50.get().getAllPipelineConfigs().forEach({ pipeline ->
-			pipeline['triggers'].forEach({ trigger ->
-			    if (trigger['enabled'] && trigger['type'] == 'wercker' && trigger['master'] == master) {
-					log.debug "configured Trigger for ${master} pipeline: ${pipeline['application']} ${pipeline['name']} ${trigger}"
-					jobs.add(trigger['job']);
-				}
-			})		
-			pipeline['stages'].forEach({ stage ->
-				if (stage['type'] == 'wercker' && stage['master'] == master) {
-					log.debug "configured Stage for ${master} pipeline: ${pipeline['application']} ${pipeline['name']} ${stage}"
-					jobs.add(stage['job']);
-				}
-			})
-		})
-		return jobs;
-	}
+    Set<String> getConfiguredJobs(String master) {
+        Set<String> jobs = []
+        front50.get().getAllPipelineConfigs().forEach({ pipeline ->
+            pipeline['triggers'].forEach({ trigger ->
+                if (trigger['enabled'] && trigger['type'] == 'wercker' && trigger['master'] == master) {
+                    log.debug "configured Trigger for ${master} pipeline: ${pipeline['application']} ${pipeline['name']} ${trigger}"
+                    jobs.add(trigger['job'])
+                }
+            })
+            pipeline['stages'].forEach({ stage ->
+                if (stage['type'] == 'wercker' && stage['master'] == master) {
+                    log.debug "configured Stage for ${master} pipeline: ${pipeline['application']} ${pipeline['name']} ${stage}"
+                    jobs.add(stage['job'])
+                }
+            })
+        })
+        return jobs
+    }
 
-	static Comparator<Run> finishedAtComparator = new Comparator<Run>() {
-		@Override
-		public int compare(Run r1, Run r2) {
-			if (r1.finishedAt != null && r2.finishedAt != null) {
-			    return r1.finishedAt.fastTime - r2.finishedAt.fastTime;
-			} else {
-			    return (r1.finishedAt == null) ? ((r2.finishedAt == null)? 0 : -1) : 1;
-			}
-		}
-	};
+    static Comparator<Run> finishedAtComparator = new Comparator<Run>() {
+        @Override
+        public int compare(Run r1, Run r2) {
+            if (r1.finishedAt != null && r2.finishedAt != null) {
+                return r1.finishedAt.fastTime - r2.finishedAt.fastTime
+            } else if (r1.finishedAt == null) {
+                return r2.finishedAt == null? 0 : -1
+            } else {
+                return 1
+            }
+        }
+    }
 
-	Run getLastFinishedAt(List<Run> runs) {
-		return (runs && runs.size() > 0) ? Collections.max(runs, finishedAtComparator) : null;
-	}
+    Run getLastFinishedAt(List<Run> runs) {
+        return (runs && runs.size() > 0) ? Collections.max(runs, finishedAtComparator) : null
+    }
 
-	static Comparator<Run> startedAtComparator = new Comparator<Run>() {
-		@Override
-		public int compare(Run r1, Run r2) {
-			if (r1.startedAt != null && r2.startedAt != null) {
-				return r1.startedAt.fastTime - r2.startedAt.fastTime;
-			} else {
-				return (r1.startedAt == null) ? ((r2.startedAt == null)? 0 : -1) : 1;
-			}
-		}
-	};
+    static Comparator<Run> startedAtComparator = new Comparator<Run>() {
+        @Override
+        public int compare(Run r1, Run r2) {
+            if (r1.startedAt != null && r2.startedAt != null) {
+                return r1.startedAt.fastTime - r2.startedAt.fastTime
+            } else {
+                return (r1.startedAt == null) ? ((r2.startedAt == null)? 0 : -1) : 1
+            }
+        }
+    }
 
-	Run getLastStartedAt(List<Run> runs) {
-		return Collections.max(runs, startedAtComparator);
-	}
+    Run getLastStartedAt(List<Run> runs) {
+        return Collections.max(runs, startedAtComparator)
+    }
 
-	/**
-	 * wercker.pipeline = project|job
-	 * wercker.run = build
-	 */
-    private void processRuns( WerckerService werckerService, String master, String pipeline, 
-		List<PipelineDelta> delta, List<Run> runs) {
-		List<Run> allRuns = runs? runs : werckerService.getBuilds(pipeline);
+    /**
+     * wercker.pipeline = project|job
+     * wercker.run = build
+     */
+    private void processRuns( WerckerService werckerService, String master, String pipeline,
+            List<PipelineDelta> delta, List<Run> runs) {
+        List<Run> allRuns = runs? runs : werckerService.getBuilds(pipeline)
         log.info "polling Wercker pipeline: ${pipeline} got ${allRuns.size()} runs"
         if (allRuns.empty) {
             log.debug("[{}:{}] has no runs skipping...", kv("master", master), kv("pipeline", pipeline))
             return
         }
-		Run lastStartedAt = getLastStartedAt(allRuns);
+        Run lastStartedAt = getLastStartedAt(allRuns)
         try {
             Long cursor = cache.getLastPollCycleTimestamp(master, pipeline)
-			//The last build/run
-            Long lastBuildStamp = lastStartedAt.startedAt.fastTime //job.lastBuild.timestamp as Long
-            Date upperBound     = lastStartedAt.startedAt //new Date(lastBuildStamp)
+            //The last build/run
+            Long lastBuildStamp = lastStartedAt.startedAt.fastTime
+            Date upperBound     = lastStartedAt.startedAt
             if (cursor == lastBuildStamp) {
                 log.debug("[${master}:${pipeline}] is up to date. skipping")
                 return
             }
-			cache.updateBuildNumbers(master, pipeline, allRuns)
-			List<Run> allBuilds = allRuns.findAll { it?.startedAt?.fastTime > cursor }
+            cache.updateBuildNumbers(master, pipeline, allRuns)
+            List<Run> allBuilds = allRuns.findAll { it?.startedAt?.fastTime > cursor }
             if (!cursor && !igorProperties.spinnaker.build.handleFirstBuilds) {
                 cache.setLastPollCycleTimestamp(master, pipeline, lastBuildStamp)
                 return
             }
             List<Run> currentlyBuilding = allBuilds.findAll { it.finishedAt == null }
-			//If there are multiple completed runs, use only the latest finished one
-			log.debug "allNewBuilds: ${allBuilds}"
-			Run lastFinished = getLastFinishedAt(allBuilds)
-			List<Run> completedBuilds = (lastFinished && lastFinished.finishedAt)? [lastFinished] : []
+            //If there are multiple completed runs, use only the latest finished one
+            log.debug "allNewBuilds: ${allBuilds}"
+            Run lastFinished = getLastFinishedAt(allBuilds)
+            List<Run> completedBuilds = (lastFinished && lastFinished.finishedAt)? [lastFinished]: []
             log.debug("[${master}:${pipeline}] currentlyBuilding: ${currentlyBuilding}" )
             log.debug("[${master}:${pipeline}]   completedBuilds: ${completedBuilds}" )
             cursor = cursor?:lastBuildStamp
@@ -240,25 +236,25 @@ class WerckerBuildMonitor extends CommonPollingMonitor<PipelineDelta, PipelinePo
                 completedBuilds = onlyInLookBackWindow(completedBuilds)
             }
             delta.add(new PipelineDelta(
-                cursor: cursor,
-                name: pipeline,
-                lastBuildStamp: lastBuildStamp,
-                upperBound: upperBound,
-                lowerBound: lowerBound,
-                completedBuilds: completedBuilds,
-                runningBuilds: currentlyBuilding
-            ))
+                    cursor: cursor,
+                    name: pipeline,
+                    lastBuildStamp: lastBuildStamp,
+                    upperBound: upperBound,
+                    lowerBound: lowerBound,
+                    completedBuilds: completedBuilds,
+                    runningBuilds: currentlyBuilding
+                    ))
         } catch (e) {
             log.error("Error processing runs for [{}:{}]", kv("master", master), kv("pipeline", pipeline), e)
             if (e.cause instanceof RetrofitError) {
                 def re = (RetrofitError) e.cause
-                log.error("Error communicating with Wercker for [{}:{}]: {}", kv("master", master), kv("pipeline", pipeline), kv("url", re.url), re);
+                log.error("Error communicating with Wercker for [{}:{}]: {}", kv("master", master), kv("pipeline", pipeline), kv("url", re.url), re)
             }
         }
     }
 
     private List<Run> onlyInLookBackWindow(List<Run> builds) {
-        use(TimeCategory) { 
+        use(TimeCategory) {
             def offsetSeconds = pollInterval.seconds
             def lookBackWindowMins = igorProperties.spinnaker.build.lookBackWindowMins.minutes
             Date lookBackDate = (offsetSeconds + lookBackWindowMins).ago
@@ -269,26 +265,28 @@ class WerckerBuildMonitor extends CommonPollingMonitor<PipelineDelta, PipelinePo
         }
     }
 
-	private GenericBuild toBuild(String master, String pipeline, Run run) {
-		Result res = (run.finishedAt == null) ? Result.BUILDING : (run.result.equals("passed")? Result.SUCCESS : Result.FAILURE)
-		return new GenericBuild (
-					building: (run.finishedAt == null),
-					result: res,
-					number: cache.getBuildNumber(master, pipeline, run.id),
-					timestamp: run.startedAt.fastTime as String,
-					id: run.id,
-					url: run.url
-				);
-	}
+    private GenericBuild toBuild(String master, String pipeline, Run run) {
+        Result res = (run.finishedAt == null) ? Result.BUILDING : (run.result.equals("passed")? Result.SUCCESS : Result.FAILURE)
+        return new GenericBuild (
+                building: (run.finishedAt == null),
+                result: res,
+                number: cache.getBuildNumber(master, pipeline, run.id),
+                timestamp: run.startedAt.fastTime as String,
+                id: run.id,
+                url: run.url
+                )
+    }
 
     @Override
     protected void commitDelta(PipelinePollingDelta delta, boolean sendEvents) {
         String master = delta.master
-        delta.items.parallelStream().forEach { pipeline -> //job = pipeline
+        delta.items.parallelStream().forEach { pipeline ->
+            //job = Wercker pipeline (org/app/pipeline)
             // post event for latest finished run
-            pipeline.completedBuilds.forEach { run -> //build = run
+            pipeline.completedBuilds.forEach { run ->
+                //build = Wercker run
                 Boolean eventPosted = cache.getEventPosted(master, pipeline.name, run.id)
-				GenericBuild build = toBuild(master, pipeline.name, run)
+                GenericBuild build = toBuild(master, pipeline.name, run)
                 if (!eventPosted && echoService.isPresent() && sendEvents) {
                     log.debug("[${master}:${pipeline.name}]:${build.id} event posted")
                     postEvent(new GenericProject(pipeline.name, build), master)

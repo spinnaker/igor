@@ -8,22 +8,18 @@
  */
 package com.netflix.spinnaker.igor.wercker
 
+import java.util.concurrent.TimeUnit
+
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.igor.IgorConfigurationProperties
 import com.netflix.spinnaker.igor.config.WerckerProperties
 import com.netflix.spinnaker.igor.history.EchoService
-import com.netflix.spinnaker.igor.wercker.WerckerService
-import com.netflix.spinnaker.igor.wercker.model.Run
 import com.netflix.spinnaker.igor.model.BuildServiceProvider
 import com.netflix.spinnaker.igor.service.BuildMasters
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
 
 import rx.schedulers.TestScheduler
 import spock.lang.Specification
-import spock.lang.Subject
-
-import java.util.Optional
-import java.util.concurrent.TimeUnit
 
 /**
  * Ensures that build monitor runs periodically
@@ -33,8 +29,8 @@ class WerckerBuildMonitorSchedulingSpec extends Specification {
     WerckerCache cache = Mock(WerckerCache)
     WerckerService werckerService = Mock(WerckerService)
     WerckerBuildMonitor monitor
-	Optional<EchoService> echoService = Optional.of(Mock(EchoService))
-	
+    Optional<EchoService> echoService = Optional.of(Mock(EchoService))
+
     final MASTER = 'MASTER'
     final List<String> APPS = []
     final TestScheduler scheduler = new TestScheduler()
@@ -43,22 +39,22 @@ class WerckerBuildMonitorSchedulingSpec extends Specification {
         given:
         cache.getJobNames(MASTER) >> []
         BuildMasters buildMasters = Mock(BuildMasters)
-		buildMasters.map >> [MASTER: werckerService]
-		werckerService.getRunsSince(_) >> [:]
+        buildMasters.map >> [MASTER: werckerService]
+        werckerService.getRunsSince(_) >> [:]
         def cfg = new IgorConfigurationProperties()
         cfg.spinnaker.build.pollInterval = 1
         monitor = new WerckerBuildMonitor(
-            cfg,
-            new NoopRegistry(),
-            Optional.empty(),
-            Optional.empty(),
-            cache,
-            buildMasters,
-            true,
-            Optional.empty(),
-			Optional.empty(),
-            new WerckerProperties()
-        )
+                cfg,
+                new NoopRegistry(),
+                Optional.empty(),
+                Optional.empty(),
+                cache,
+                buildMasters,
+                true,
+                Optional.empty(),
+                Optional.empty(),
+                new WerckerProperties()
+                )
         monitor.worker = scheduler.createWorker()
         when:
         monitor.onApplicationEvent(Mock(RemoteStatusChangedEvent))
@@ -103,17 +99,17 @@ class WerckerBuildMonitorSchedulingSpec extends Specification {
         def cfg = new IgorConfigurationProperties()
         cfg.spinnaker.build.pollInterval = 1
         monitor = new WerckerBuildMonitor(
-            cfg,
-            new NoopRegistry(),
-            Optional.empty(),
-            Optional.empty(),
-            cache,
-            buildMasters,
-            false,
-            Optional.empty(),
-			Optional.empty(),
-            new WerckerProperties()
-        )
+                cfg,
+                new NoopRegistry(),
+                Optional.empty(),
+                Optional.empty(),
+                cache,
+                buildMasters,
+                false,
+                Optional.empty(),
+                Optional.empty(),
+                new WerckerProperties()
+                )
         monitor.worker = scheduler.createWorker()
 
         when:
