@@ -8,12 +8,12 @@
  */
 package com.netflix.spinnaker.igor.config
 
-import javax.validation.Valid
+import groovy.transform.CompileStatic
 
 import org.hibernate.validator.constraints.NotEmpty
 import org.springframework.boot.context.properties.ConfigurationProperties
 
-import groovy.transform.CompileStatic
+import javax.validation.Valid
 /**
  * Helper class to map masters in properties file into a validated property map
  */

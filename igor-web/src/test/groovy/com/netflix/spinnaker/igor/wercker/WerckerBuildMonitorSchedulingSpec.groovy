@@ -8,8 +8,6 @@
  */
 package com.netflix.spinnaker.igor.wercker
 
-import java.util.concurrent.TimeUnit
-
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.igor.IgorConfigurationProperties
 import com.netflix.spinnaker.igor.config.WerckerProperties
@@ -17,6 +15,8 @@ import com.netflix.spinnaker.igor.history.EchoService
 import com.netflix.spinnaker.igor.model.BuildServiceProvider
 import com.netflix.spinnaker.igor.service.BuildMasters
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
+
+import java.util.concurrent.TimeUnit
 
 import rx.schedulers.TestScheduler
 import spock.lang.Specification

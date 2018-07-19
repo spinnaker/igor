@@ -17,14 +17,14 @@
 
 package com.netflix.spinnaker.igor.config
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-
 import com.netflix.spinnaker.config.OkHttpClientConfiguration
 import com.netflix.spinnaker.igor.IgorConfigurationProperties
 import com.netflix.spinnaker.igor.service.Front50Service
 import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger
+
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 
 import retrofit.Endpoints
 import retrofit.RestAdapter

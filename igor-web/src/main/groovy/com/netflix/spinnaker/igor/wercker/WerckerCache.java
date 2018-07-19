@@ -8,19 +8,19 @@
  */
 package com.netflix.spinnaker.igor.wercker;
 
+import com.netflix.spinnaker.igor.IgorConfigurationProperties;
+import com.netflix.spinnaker.igor.wercker.model.Run;
+import com.netflix.spinnaker.kork.jedis.RedisClientDelegate;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import com.netflix.spinnaker.igor.IgorConfigurationProperties;
-import com.netflix.spinnaker.igor.wercker.model.Run;
-import com.netflix.spinnaker.kork.jedis.RedisClientDelegate;
 
 /**
  * Shared cache of build details for jenkins

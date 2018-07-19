@@ -10,15 +10,6 @@ package com.netflix.spinnaker.igor.wercker
 
 import static net.logstash.logback.argument.StructuredArguments.kv
 
-import java.util.stream.Collectors
-
-import javax.annotation.PreDestroy
-
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
-import org.springframework.stereotype.Service
-
 import com.netflix.discovery.DiscoveryClient
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.igor.IgorConfigurationProperties
@@ -40,6 +31,16 @@ import com.netflix.spinnaker.igor.service.Front50Service
 import com.netflix.spinnaker.igor.wercker.model.Run
 
 import groovy.time.TimeCategory
+
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.stereotype.Service
+
+import java.util.stream.Collectors
+
+import javax.annotation.PreDestroy
+
 import retrofit.RetrofitError
 
 /**

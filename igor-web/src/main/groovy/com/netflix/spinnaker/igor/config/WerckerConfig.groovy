@@ -8,15 +8,6 @@
  */
 package com.netflix.spinnaker.igor.config
 
-import java.util.concurrent.TimeUnit
-
-import javax.validation.Valid
-
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-
 import com.netflix.spinnaker.igor.IgorConfigurationProperties
 import com.netflix.spinnaker.igor.config.WerckerProperties.WerckerHost
 import com.netflix.spinnaker.igor.service.BuildMasters
@@ -28,6 +19,16 @@ import com.squareup.okhttp.OkHttpClient
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+
+import java.util.concurrent.TimeUnit
+
+import javax.validation.Valid
+
 import retrofit.Endpoints
 import retrofit.RestAdapter
 import retrofit.client.OkClient
