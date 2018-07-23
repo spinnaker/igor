@@ -29,10 +29,8 @@ class WerckerBuildMonitorSchedulingSpec extends Specification {
     WerckerCache cache = Mock(WerckerCache)
     WerckerService werckerService = Mock(WerckerService)
     WerckerBuildMonitor monitor
-    Optional<EchoService> echoService = Optional.of(Mock(EchoService))
 
     final MASTER = 'MASTER'
-    final List<String> APPS = []
     final TestScheduler scheduler = new TestScheduler()
 
     void 'scheduler polls periodically'() {
@@ -80,7 +78,7 @@ class WerckerBuildMonitorSchedulingSpec extends Specification {
         1 * buildMasters.map >> [MASTER: werckerService]
         1 * werckerService.getRunsSince(_) >> [:]
 
-        when: 'poll at 2 and 3 second'
+        when: 'poll at 5 second'
         scheduler.advanceTimeBy(4000L, TimeUnit.SECONDS.MILLISECONDS)
 
         then:
@@ -125,7 +123,7 @@ class WerckerBuildMonitorSchedulingSpec extends Specification {
         then:
         0 * buildMasters.filteredMap
 
-        when: 'poll at 1 second'
+        when: 'no poll at 1 second'
         scheduler.advanceTimeBy(2L, TimeUnit.SECONDS.MILLISECONDS)
 
         then:

@@ -8,15 +8,17 @@
  */
 package com.netflix.spinnaker.igor.wercker.model
 
+import groovy.transform.ToString
+
 /**
  * Represents a Wercker application
  */
-@groovy.transform.ToString
+@ToString
 class Application {
-    String id;
-    String url;
-    String name;
-    Owner owner;
-    String privacy;
-    List<Pipeline> pipelines;
+    String id
+    String url
+    String name
+    Owner owner
+    String privacy
+    List<Pipeline> pipelines
 }

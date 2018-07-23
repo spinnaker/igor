@@ -142,10 +142,23 @@ class InfoControllerSpec extends Specification {
 
         then:
         1 * buildMasters.filteredMap(BuildServiceProvider.JENKINS) >> ["travis-master1": []]
-        1 * buildMasters.filteredMap(BuildServiceProvider.WERCKER) >> ["travis-master1": []]
         1 * buildMasters.map >> ["travis-master1": []]
         1 * cache.getJobNames('travis-master1') >> ["some-job"]
         response.contentAsString == '["some-job"]'
+
+    }
+
+    void 'is able to get jobs for a wercker master'() {
+        def werckerJob = 'myOrg/myApp/myTarget'
+        when:
+        MockHttpServletResponse response = mockMvc.perform(get('/jobs/wercker-master')
+            .accept(MediaType.APPLICATION_JSON)).andReturn().response
+
+        then:
+        1 * buildMasters.filteredMap(BuildServiceProvider.WERCKER) >> ['wercker-master': []]
+        1 * buildMasters.map >> ['wercker-master': []]
+        1 * cache.getJobNames('wercker-master') >> [werckerJob]
+        response.contentAsString == '["' + werckerJob + '"]'
 
     }
 

@@ -8,16 +8,18 @@
  */
 package com.netflix.spinnaker.igor.wercker.model
 
+import groovy.transform.ToString
+
 /**
  * Represents a Wercker Pipeline
  */
-@groovy.transform.ToString
+@ToString
 class Pipeline {
     String id
     String url
     String name
     String permissions
-    String pipelineName //In the wercker.yml, I think
+    String pipelineName //This is the name in the wercker.yml
     boolean setScmProviderStatus
     String type
     Application application

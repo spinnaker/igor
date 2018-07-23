@@ -68,44 +68,10 @@ class InfoController {
 
         if (showUrl == 'true') {
             List<Object> masterList = []
-            if (!providerType || providerType == BuildServiceProvider.JENKINS) {
-                masterList.addAll(jenkinsProperties?.masters.collect {
-                    [
-                        "name"   : it.name,
-                        "address": it.address
-                    ]
-                })
-            }
-            if (!providerType || providerType == BuildServiceProvider.TRAVIS) {
-                masterList.addAll(
-                    travisProperties?.masters.collect {
-                        [
-                            "name"   : it.name,
-                            "address": it.address
-                        ]
-                    }
-                )
-            }
-            if (!providerType || providerType == BuildServiceProvider.GITLAB_CI) {
-                masterList.addAll(
-                    gitlabCiProperties?.masters.collect {
-                        [
-                            "name"   : it.name,
-                            "address": it.address
-                        ]
-                    }
-                )
-            }
-            if (!providerType || providerType == BuildServiceProvider.WERCKER) {
-                masterList.addAll(
-                    werckerProperties?.masters.collect {
-                        [
-                            "name"         : it.name,
-                            "address"      : it.address
-                        ]
-                    }
-                )
-            }
+            addMaster(masterList, providerType, jenkinsProperties,  BuildServiceProvider.JENKINS)
+            addMaster(masterList, providerType, travisProperties,   BuildServiceProvider.TRAVIS)
+            addMaster(masterList, providerType, gitlabCiProperties, BuildServiceProvider.GITLAB_CI)
+            addMaster(masterList, providerType, werckerProperties,  BuildServiceProvider.WERCKER)
             return masterList
         } else {
             //Filter by provider type if it is specified
@@ -117,10 +83,24 @@ class InfoController {
             }
         }
     }
+    
+    void addMaster(masterList, providerType, properties, expctedType) {
+        if (!providerType || providerType == expctedType) {
+            masterList.addAll(
+                properties?.masters.collect {
+                    [
+                        "name"         : it.name,
+                        "address"      : it.address
+                    ]
+                }
+            )
+        }
+    }
 
     @RequestMapping(value = '/jobs/{master:.+}', method = RequestMethod.GET)
     List<String> getJobs(@PathVariable String master) {
-        def jenkinsService = buildMasters.filteredMap(BuildServiceProvider.JENKINS)[master]
+        def jenkinsMap = buildMasters.filteredMap(BuildServiceProvider.JENKINS)
+        def jenkinsService = jenkinsMap? jenkinsMap[master] : null
         if (jenkinsService) {
             def jobList = []
             def recursiveGetJobs
@@ -141,7 +121,8 @@ class InfoController {
 
             return jobList
         } else if (buildMasters.map.containsKey(master)) {
-            def werckerService = buildMasters.filteredMap(BuildServiceProvider.WERCKER)[master] 
+            def werckerMap = buildMasters.filteredMap(BuildServiceProvider.WERCKER)
+            def werckerService = werckerMap? werckerMap[master] : null
             if (werckerService) {
                 return werckerService.getJobs()
             } else {

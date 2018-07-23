@@ -8,10 +8,16 @@
  */
 package com.netflix.spinnaker.igor.wercker.model
 
+import static java.util.Comparator.comparing
+import static java.util.Comparator.naturalOrder
+import static java.util.Comparator.nullsFirst
+
+import groovy.transform.ToString
+
 /**
  * Represents a Wercker Run
  */
-@groovy.transform.ToString
+@ToString
 class Run {
     String id
     String url
@@ -31,7 +37,9 @@ class Run {
     Pipeline pipeline
     Application application
 
-    public String toString() {
-        return "Run(" +id+", finishedAt=" + finishedAt+"," + application?.name + "/"+pipeline?.id+")";
-    }
+    static final public Comparator<Run> startedAtComparator =
+        comparing({r -> r.startedAt?: r.createdAt}, nullsFirst(naturalOrder()))
+
+    static final public Comparator<Run> finishedAtComparator =
+        comparing({r -> r.finishedAt}, nullsFirst(naturalOrder()))
 }

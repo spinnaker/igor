@@ -45,15 +45,20 @@ class WerckerBuildMonitorSpec extends Specification {
 
     final MASTER = 'MASTER'
     final pipeline = 'myOrg/myApp/pollingTest'
-    final List<String> APPS = []
     final TestScheduler scheduler = new TestScheduler()
-
-    void 'no finished run'() {
-        given:
+    
+    BuildMasters mockBuildMasters() {
         cache.getJobNames(MASTER) >> ['pipeline']
         BuildMasters buildMasters = Mock(BuildMasters)
         buildMasters.map >> [MASTER: mockService]
+        buildMasters.filteredMap(BuildServiceProvider.WERCKER) >> [MASTER: mockService]
+        return buildMasters;
+    }
 
+    void 'no finished run'() {
+        given:
+        BuildMasters buildMasters = mockBuildMasters()
+        
         long now = System.currentTimeMillis();
         List<Run> runs1 = [
             new Run(id:"b",    startedAt: new Date(now-10)),
@@ -63,15 +68,13 @@ class WerckerBuildMonitorSpec extends Specification {
         monitor = monitor(buildMasters)
         monitor.worker = scheduler.createWorker()
         mockService.getRunsSince(_) >> [pipeline: runs1]
-        cache.getBuildNumber(_, _, _) >> 1
+        cache.getBuildNumber(*_) >> 1
 
         when:
         monitor.onApplicationEvent(Mock(RemoteStatusChangedEvent))
         scheduler.advanceTimeBy(1L, TimeUnit.SECONDS.MILLISECONDS)
 
         then: 'initial poll'
-        1 * buildMasters.filteredMap(BuildServiceProvider.WERCKER) >> [MASTER: mockService]
-        1 * buildMasters.map >> [MASTER: mockService]
         0 * echoService.postEvent(_)
 
         cleanup:
@@ -80,9 +83,7 @@ class WerckerBuildMonitorSpec extends Specification {
 
     void 'initial poll with completed runs'() {
         given:
-        cache.getJobNames(MASTER) >> ['pipeline']
-        BuildMasters buildMasters = Mock(BuildMasters)
-        buildMasters.map >> [MASTER: mockService]
+        BuildMasters buildMasters = mockBuildMasters()
 
         long now = System.currentTimeMillis();
         List<Run> runs1 = [
@@ -93,38 +94,32 @@ class WerckerBuildMonitorSpec extends Specification {
         monitor = monitor(buildMasters)
         monitor.worker = scheduler.createWorker()
         mockService.getRunsSince(_) >> [pipeline: runs1]
-        cache.getBuildNumber(_, _, _) >> 1
+        cache.getBuildNumber(*_) >> 1
 
         when:
         monitor.onApplicationEvent(Mock(RemoteStatusChangedEvent))
         scheduler.advanceTimeBy(1L, TimeUnit.SECONDS.MILLISECONDS)
 
         then: 'initial poll'
-        1 * buildMasters.filteredMap(BuildServiceProvider.WERCKER) >> [MASTER: mockService]
-        1 * buildMasters.map >> [MASTER: mockService]
         1 * echoService.postEvent(_)
 
         cleanup:
         monitor.stop()
     }
 
-    void 'select latest one form multiple completed runs'() {
+    void 'select latest one from multiple completed runs'() {
         given:
-        cache.getJobNames(MASTER) >> ['pipeline']
-        BuildMasters buildMasters = Mock(BuildMasters)
-        buildMasters.map >> [MASTER: mockService]
+        BuildMasters buildMasters = mockBuildMasters()
         monitor = monitor(buildMasters)
         monitor.worker = scheduler.createWorker()
         mockService.getRunsSince(_) >> [:]
-        cache.getBuildNumber(_, _, _) >> 1
+        cache.getBuildNumber(*_) >> 1
 
         when:
         monitor.onApplicationEvent(Mock(RemoteStatusChangedEvent))
         scheduler.advanceTimeBy(1L, TimeUnit.SECONDS.MILLISECONDS)
 
         then: 'initial poll'
-        1 * buildMasters.filteredMap(BuildServiceProvider.WERCKER) >> [MASTER: mockService]
-        1 * buildMasters.map >> [MASTER: mockService]
         0 * echoService.postEvent(_)
 
         when:
@@ -138,17 +133,18 @@ class WerckerBuildMonitorSpec extends Specification {
         long now = System.currentTimeMillis();
         List<Run> runs1 = [
             new Run(id:"b",    startedAt: new Date(now-10)),
-            new Run(id:"a",    startedAt: new Date(now-11), finishedAt: new Date(now-11)),
-            new Run(id:"init", startedAt: new Date(now-12), finishedAt: new Date(now-10)),
+            new Run(id:"a",    startedAt: new Date(now-11), finishedAt: new Date(now-9)),
+            new Run(id:"init", startedAt: new Date(now-12), finishedAt: new Date(now-8)),
         ]
         cache.getLastPollCycleTimestamp(_, _) >> (now - 1000)
         mockService.getRunsSince(_) >> [pipeline: runs1]
-        cache.getBuildNumber(_, _, _) >> 1
+        cache.getBuildNumber(*_) >> 1
         scheduler.advanceTimeBy(2L, TimeUnit.SECONDS.MILLISECONDS)
 
         then:
         1 * buildMasters.filteredMap(BuildServiceProvider.WERCKER) >> [MASTER: mockService]
         1 * buildMasters.map >> [MASTER: mockService]
+        1 * cache.setEventPosted('MASTER', 'pipeline', 'init')
         1 * echoService.postEvent(_)
 
         cleanup:
@@ -161,7 +157,7 @@ class WerckerBuildMonitorSpec extends Specification {
         buildMasters.map >> [MASTER: werckerService]
         monitor = monitor(buildMasters)
         monitor.worker = scheduler.createWorker()
-        cache.getBuildNumber(_, _, _) >> 1
+        cache.getBuildNumber(*_) >> 1
         client.getRunsSince(_, _, _, _, _) >> []
 
         when:
@@ -203,7 +199,7 @@ class WerckerBuildMonitorSpec extends Specification {
         ]
         client.getRunsSince(_,_,_,_,_) >> runs1
         cache.getLastPollCycleTimestamp(_, _) >> (now - 1000)
-        cache.getBuildNumber(_, _, _) >> 1
+        cache.getBuildNumber(*_) >> 1
         scheduler.advanceTimeBy(2L, TimeUnit.SECONDS.MILLISECONDS)
 
         then:

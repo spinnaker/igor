@@ -8,6 +8,8 @@
  */
 package com.netflix.spinnaker.igor.wercker
 
+import static com.netflix.spinnaker.igor.wercker.model.Run.finishedAtComparator
+import static com.netflix.spinnaker.igor.wercker.model.Run.startedAtComparator
 import static net.logstash.logback.argument.StructuredArguments.kv
 
 import com.netflix.discovery.DiscoveryClient
@@ -49,7 +51,7 @@ import retrofit.RetrofitError
 @Service
 @ConditionalOnProperty('wercker.enabled')
 class WerckerBuildMonitor extends CommonPollingMonitor<PipelineDelta, PipelinePollingDelta> {
-
+ 
     private final WerckerCache cache
     private final BuildMasters buildMasters
     private final boolean pollingEnabled
@@ -59,16 +61,16 @@ class WerckerBuildMonitor extends CommonPollingMonitor<PipelineDelta, PipelinePo
 
     @Autowired
     WerckerBuildMonitor(
-    IgorConfigurationProperties properties,
-    Registry registry,
-    Optional<DiscoveryClient> discoveryClient,
-    Optional<LockService> lockService,
-    WerckerCache cache,
-    BuildMasters buildMasters,
-    @Value('${wercker.polling.enabled:true}') boolean pollingEnabled,
-    Optional<EchoService> echoService,
-    Optional<Front50Service> front50Service,
-    WerckerProperties werckerProperties) {
+        IgorConfigurationProperties properties,
+        Registry registry,
+        Optional<DiscoveryClient> discoveryClient,
+        Optional<LockService> lockService,
+        WerckerCache cache,
+        BuildMasters buildMasters,
+        @Value('${wercker.polling.enabled:true}') boolean pollingEnabled,
+        Optional<EchoService> echoService,
+        Optional<Front50Service> front50Service,
+        WerckerProperties werckerProperties) {
         super(properties, registry, discoveryClient, lockService)
         this.cache = cache
         this.buildMasters = buildMasters
@@ -164,32 +166,8 @@ class WerckerBuildMonitor extends CommonPollingMonitor<PipelineDelta, PipelinePo
         return jobs
     }
 
-    static Comparator<Run> finishedAtComparator = new Comparator<Run>() {
-        @Override
-        public int compare(Run r1, Run r2) {
-            if (r1.finishedAt != null && r2.finishedAt != null) {
-                return r1.finishedAt.fastTime - r2.finishedAt.fastTime
-            } else if (r1.finishedAt == null) {
-                return r2.finishedAt == null? 0 : -1
-            } else {
-                return 1
-            }
-        }
-    }
-
     Run getLastFinishedAt(List<Run> runs) {
         return (runs && runs.size() > 0) ? Collections.max(runs, finishedAtComparator) : null
-    }
-
-    static Comparator<Run> startedAtComparator = new Comparator<Run>() {
-        @Override
-        public int compare(Run r1, Run r2) {
-            if (r1.startedAt != null && r2.startedAt != null) {
-                return r1.startedAt.fastTime - r2.startedAt.fastTime
-            } else {
-                return (r1.startedAt == null) ? ((r2.startedAt == null)? 0 : -1) : 1
-            }
-        }
     }
 
     Run getLastStartedAt(List<Run> runs) {
@@ -202,7 +180,7 @@ class WerckerBuildMonitor extends CommonPollingMonitor<PipelineDelta, PipelinePo
      */
     private void processRuns( WerckerService werckerService, String master, String pipeline,
             List<PipelineDelta> delta, List<Run> runs) {
-        List<Run> allRuns = runs? runs : werckerService.getBuilds(pipeline)
+        List<Run> allRuns = runs ?: werckerService.getBuilds(pipeline)
         log.info "polling Wercker pipeline: ${pipeline} got ${allRuns.size()} runs"
         if (allRuns.empty) {
             log.debug("[{}:{}] has no runs skipping...", kv("master", master), kv("pipeline", pipeline))
@@ -288,10 +266,11 @@ class WerckerBuildMonitor extends CommonPollingMonitor<PipelineDelta, PipelinePo
                 //build = Wercker run
                 Boolean eventPosted = cache.getEventPosted(master, pipeline.name, run.id)
                 GenericBuild build = toBuild(master, pipeline.name, run)
-                if (!eventPosted && echoService.isPresent() && sendEvents) {
+                if (!eventPosted && sendEvents) {
                     log.debug("[${master}:${pipeline.name}]:${build.id} event posted")
-                    postEvent(new GenericProject(pipeline.name, build), master)
-                    cache.setEventPosted(master, pipeline.name, run.id)
+                    if(postEvent(new GenericProject(pipeline.name, build), master)) {
+                        cache.setEventPosted(master, pipeline.name, run.id)
+                    }
                 }
             }
 
@@ -309,13 +288,14 @@ class WerckerBuildMonitor extends CommonPollingMonitor<PipelineDelta, PipelinePo
         return werckerProperties.masters.find { partition == it.name }?.itemUpperThreshold
     }
 
-    private void postEvent(GenericProject project, String master) {
+    private boolean postEvent(GenericProject project, String master) {
         if (!echoService.isPresent()) {
             log.warn("Cannot send build notification: Echo is not configured")
             registry.counter(missedNotificationId.withTag("monitor", getClass().simpleName)).increment()
-            return
+            return false;
         }
         echoService.get().postEvent(new GenericBuildEvent(content: new GenericBuildContent(project: project, master: master, type: "wercker")))
+        return true;
     }
 
     private static class PipelinePollingDelta implements PollingDelta<PipelineDelta> {

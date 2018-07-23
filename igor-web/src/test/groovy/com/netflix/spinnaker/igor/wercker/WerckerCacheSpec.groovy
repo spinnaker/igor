@@ -53,14 +53,14 @@ class WerckerCacheSpec extends Specification {
         long now = System.currentTimeMillis();
         List<Run> runs1 = [
             new Run(id:"b",    startedAt: new Date(now-10)),
-            new Run(id:"a",    startedAt: new Date(now-11)),
-            new Run(id:"init", startedAt: new Date(now-12)),
+            new Run(id:"a",    createdAt: new Date(now-11)),
+            new Run(id:"init"),
         ]
         cache.updateBuildNumbers(master, pipeline, runs1)
 
         List<Run> runs2 = [
             new Run(id:"now", startedAt: new Date(now)),
-            new Run(id:"d",   startedAt: new Date(now-1)),
+            new Run(id:"d",   createdAt: new Date(now-1)),
             new Run(id:"c",   startedAt: new Date(now-2)),
         ]
         cache.updateBuildNumbers(master, pipeline, runs2)

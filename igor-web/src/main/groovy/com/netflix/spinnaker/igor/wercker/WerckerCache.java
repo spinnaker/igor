@@ -8,6 +8,8 @@
  */
 package com.netflix.spinnaker.igor.wercker;
 
+import static com.netflix.spinnaker.igor.wercker.model.Run.startedAtComparator;
+
 import com.netflix.spinnaker.igor.IgorConfigurationProperties;
 import com.netflix.spinnaker.igor.wercker.model.Run;
 import com.netflix.spinnaker.kork.jedis.RedisClientDelegate;
@@ -15,7 +17,6 @@ import com.netflix.spinnaker.kork.jedis.RedisClientDelegate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,28 +56,6 @@ public class WerckerCache {
             return ts == null ? null : Long.parseLong(ts);
         });
     }
-
-    static Run useCreatedAtIfNotStarted(Run run) {
-        if (run.getStartedAt() == null) {
-            run.setStartedAt(run.getCreatedAt());
-        }
-        return run;
-    }
-
-    static Comparator<Run> runStartedAtComparator = new Comparator<Run>() {
-        @Override
-        public int compare(Run r1, Run r2) {
-            useCreatedAtIfNotStarted(r1);
-            useCreatedAtIfNotStarted(r2);
-            if (r1.getStartedAt() == null) {
-                return r2.getStartedAt() == null ? 0 : -1;
-            } else if (r2.getStartedAt() == null) {
-                return 1;
-            }
-            long l = (r1.getStartedAt().toInstant().toEpochMilli() - r2.getStartedAt().toInstant().toEpochMilli());
-            return l > 0 ? 1 : (l == 0 ? 0 : -1);
-        }
-    };
 
     public String getPipelineID(String master, String pipeline) {
         return redisClientDelegate.withCommandsClient(c -> {
@@ -144,7 +123,7 @@ public class WerckerCache {
         }
         Map<String, Integer> runIdToBuildNumber = new HashMap<>();
         int startNumber = (existing == null || existing.size() == 0) ? 0 : existing.size();
-        newRuns.sort(runStartedAtComparator);
+        newRuns.sort(startedAtComparator);
         for (int i = 0; i < newRuns.size(); i++) {
             int buildNum = startNumber + i;
             setBuildNumber(master, appAndPipelineName, newRuns.get(i).getId(), buildNum);
@@ -205,6 +184,6 @@ public class WerckerCache {
     }
 
     private String prefix() {
-        return igorConfigurationProperties.getSpinnaker().getJedis().getPrefix();
+        return igorConfigurationProperties.getSpinnaker().getJedis().getPrefix() + "_wercker";
     }
 }
