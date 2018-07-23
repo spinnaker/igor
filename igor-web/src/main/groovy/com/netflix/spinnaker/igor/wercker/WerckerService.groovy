@@ -293,7 +293,7 @@ class WerckerService implements BuildService {
         return groupRunsByPipeline(allRuns, null)
     }
 
-    private Map<String, List<Run>> groupRunsByPipeline(List<Run> allRuns, List<String> pipelineKeys) {
+    private Map<String, List<Run>> groupRunsByPipeline(List<Run> allRuns, Map<String, String> pipelineKeys) {
         Map<String, List<Run>> pipelineRuns = [:]
         allRuns.forEach({run ->
             run.startedAt = run.startedAt ?: run.createdAt
