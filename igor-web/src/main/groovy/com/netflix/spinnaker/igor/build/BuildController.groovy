@@ -196,19 +196,11 @@ class BuildController {
             def queuedLocation = locationHeader.value
 
             queuedLocation.split('/')[-1]
-        } else if (isTravis(master) || isWercker(master)) {
+        } else if (buildMasters.map.containsKey(master)) {
             return buildMasters.map[master].triggerBuildWithParameters(job, requestParams)
         } else {
             throw new MasterNotFoundException("Master '${master}' not found")
         }
-    }
-
-    boolean isTravis(final String masterName) {
-        return buildMasters.filteredMap(BuildServiceProvider.TRAVIS).containsKey(masterName)
-    }
-
-    boolean isWercker(final String masterName) {
-        return buildMasters.filteredMap(BuildServiceProvider.WERCKER).containsKey(masterName)
     }
 
     static void validateJobParameters(JobConfig jobConfig, Map<String, String> requestParams) {

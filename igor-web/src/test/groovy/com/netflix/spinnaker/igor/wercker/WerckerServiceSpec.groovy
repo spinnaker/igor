@@ -58,7 +58,7 @@ class WerckerServiceSpec extends Specification {
             pipeOf('anotherPipe', 'git'),
             pipeOf(pipe, 'git', pipelineId)
         ]
-        def now = System.currentTimeMillis();
+        def now = System.currentTimeMillis()
         List<Run> runs = [
             runOf('1', now-1, appOf(app, org, []), pipelines[1]),
             runOf('2', now-2, appOf(app, org, []), pipelines[1]),
@@ -78,7 +78,7 @@ class WerckerServiceSpec extends Specification {
             'myPipelineID',
             org + '/' + app + '/' + pipe
         ]
-        def now = System.currentTimeMillis();
+        def now = System.currentTimeMillis()
         List<Run> runs = [
             runOf('1', now-1, null, null),
             runOf('2', now-2, appOf(app, org, []), pipeOf(pipe, 'git')),
@@ -93,13 +93,13 @@ class WerckerServiceSpec extends Specification {
 
     void 'categorize runs with pipelineQName'() {
         setup:
-        long now = System.currentTimeMillis();
+        long now = System.currentTimeMillis()
         long since = now-1000
         def app1 = appOf('app1', 'org1', [])
         def app2 = appOf('app2', 'org1', [])
-        def pipe1 = pipeOf('p1', 'git', 'a', app1);
-        def pipe2 = pipeOf('p2', 'git', 'b', app2);
-        def pipe3 = pipeOf('p3', 'git', 'c', app1);
+        def pipe1 = pipeOf('p1', 'git', 'a', app1)
+        def pipe2 = pipeOf('p2', 'git', 'b', app2)
+        def pipe3 = pipeOf('p3', 'git', 'c', app1)
         List<Run> runs1 = [
             runOf('1', now-10, app1, pipe1, 'a'),
             runOf('2', now-10, app2, pipe2, 'b'),
@@ -114,6 +114,8 @@ class WerckerServiceSpec extends Specification {
         expect:
         service.getRunsSince(since).size() == 3
         service.getRunsSince(since).get('org1/app2/p2').size() == 2
+        service.getRunsSince(since).get('org1/app1/p1').size() == 1
+        service.getRunsSince(since).get('org1/app1/p3').size() == 1
     }
 
     void 'get GenericBuild with buildNumber'() {
