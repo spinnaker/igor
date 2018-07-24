@@ -15,7 +15,6 @@ import com.netflix.spinnaker.igor.config.WerckerProperties.WerckerHost
 import com.netflix.spinnaker.igor.history.EchoService
 import com.netflix.spinnaker.igor.model.BuildServiceProvider
 import com.netflix.spinnaker.igor.service.BuildMasters
-import com.netflix.spinnaker.igor.service.Front50Service
 import com.netflix.spinnaker.igor.wercker.model.Application
 import com.netflix.spinnaker.igor.wercker.model.Owner
 import com.netflix.spinnaker.igor.wercker.model.Pipeline
@@ -216,46 +215,8 @@ class WerckerBuildMonitorSpec extends Specification {
         cleanup:
         monitor.stop()
     }
-    
-    void 'get runs with front50'() {
-        given:
-        BuildMasters buildMasters = Mock(BuildMasters)
-        Front50Service front50 = Mock(Front50Service)
-        buildMasters.map >> [MASTER: werckerService]
-        cache.getBuildNumber(*_) >> 1
-        client.getRunsSince(_, _, _, _, _) >> []
-        front50.getAllPipelineConfigs() >> [ 
-            [ 'triggers': [ ['enabled' : 'true',  'type' : 'wercker', 'master' : 'MASTER', 'job' : 'myOrg/app0/p00'],
-                            ['enabled' : 'false', 'type' : 'wercker', 'master' : 'MASTER', 'job' : 'myOrg/appX/px']  ], 'stages':[] ],
-            [ 'triggers': [ ['enabled' : 'true',  'type' : 'wercker', 'master' : 'MASTER', 'job' : 'myOrg/app1/p10'] ] ],
-            [ 'stages'  : [ [ 'type' : 'wercker', 'master' : 'MASTER', 'job' : 'myOrg/app1/p11'],
-                            [ 'type' : 'wercker', 'master' : 'MASTER', 'job' : 'myOrg/app2/p20'] ] ],
-            [ 'stages'  : [ [ 'type' : 'wercker', 'master' : 'yyyyyy', 'job' : 'myOrg/appY/py'] ] ]
-        ]
-        cache.getPipelineID(_, 'myOrg/app0/p00') >> 'a'
-        cache.getPipelineID(_, 'myOrg/app1/p10') >> 'b'
-        cache.getPipelineID(_, 'myOrg/app1/p11') >> 'c'
-        cache.getPipelineID(_, 'myOrg/appX/px')  >> 'x'
-        cache.getPipelineID(_, 'myOrg/appY/py')  >> 'y'
-        cache.getPipelineID(_, 'myOrg/app2/p20') >> 'd'
-        monitor = monitor(buildMasters, front50)
-        monitor.worker = scheduler.createWorker()
-        
-        when:
-        monitor.onApplicationEvent(Mock(RemoteStatusChangedEvent))
-        scheduler.advanceTimeBy(1L, TimeUnit.SECONDS.MILLISECONDS)
 
-        then: 
-        1 * buildMasters.filteredMap(BuildServiceProvider.WERCKER) >> [MASTER: werckerService]
-        1 * buildMasters.map >> [MASTER: werckerService]
-        1 * client.getRunsSince(_, _, ['a', 'b', 'c', 'd'], _, _) >> []
-        0 * echoService.postEvent(_)
-
-        cleanup:
-        monitor.stop()
-    }
-
-    WerckerBuildMonitor monitor(BuildMasters buildMasters, front50=null) {
+    WerckerBuildMonitor monitor(BuildMasters buildMasters) {
         def cfg = new IgorConfigurationProperties()
         cfg.spinnaker.build.pollInterval = 1
         return new WerckerBuildMonitor(
@@ -267,7 +228,6 @@ class WerckerBuildMonitorSpec extends Specification {
                 buildMasters,
                 true,
                 Optional.of(echoService),
-                front50? Optional.of(front50): Optional.empty(),
                 new WerckerProperties()
                 )
     }

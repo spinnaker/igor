@@ -19,8 +19,14 @@ import com.netflix.spinnaker.igor.model.BuildServiceProvider
 import com.netflix.spinnaker.igor.service.BuildService
 import com.netflix.spinnaker.igor.wercker.model.*
 import groovy.util.logging.Slf4j
+
+import java.util.List
+import java.util.Map
+
 import retrofit.RetrofitError
 import retrofit.client.Response
+import retrofit.http.Body
+import retrofit.http.Query
 import retrofit.mime.TypedByteArray
 
 import static com.netflix.spinnaker.igor.model.BuildServiceProvider.WERCKER
@@ -80,7 +86,7 @@ class WerckerService implements BuildService {
             throw new BuildController.BuildJobError(
             "Could not find build number ${buildNumber} for job ${job} - no matching run ID!")
         }
-        Run run = werckerClient.getRunById(authHeaderValue, runId)
+        Run run = getRunById(runId)
         String addr = address.endsWith("/") ? address.substring(0, address.length()-1) : address
 
         GenericBuild genericBuild = new GenericBuild()
@@ -123,7 +129,7 @@ class WerckerService implements BuildService {
             return
         }
         log.info("Aborting Wercker run id {}", kv("runId", runId))
-        return werckerClient.abortRun(authHeaderValue, runId, [:])
+        return abortRun(authHeaderValue, runId, [:])
     }
 
     @Override
@@ -133,8 +139,7 @@ class WerckerService implements BuildService {
         String appName = qPipeline.appName
         String pipelineName = qPipeline.pipelineName
 
-        List<Pipeline> pipelines = werckerClient.getPipelinesForApplication(
-                authHeaderValue, org, appName)
+        List<Pipeline> pipelines = getPipelines(org, appName)
         List<String> pnames = pipelines.collect { it.name + "|" +it.pipelineName + "|" + it.id }
         log.debug "triggerBuildWithParameters pipelines: ${pnames}"
         Pipeline pipeline = pipelines.find {p -> pipelineName.equals(p.name)}
@@ -142,13 +147,12 @@ class WerckerService implements BuildService {
             log.info("Triggering run for pipeline {} with id {}",
                     kv("pipelineName", pipelineName), kv("pipelineId", pipeline.id))
             try {
-                Map<String, Object> runInfo = werckerClient.triggerBuild(
-                        authHeaderValue, new RunPayload(pipeline.id, 'Triggered from Spinnaker'))
+                Map<String, Object> runInfo = triggerBuild(new RunPayload(pipeline.id, 'Triggered from Spinnaker'))
                 //TODO desagar the triggerBuild call above itself returns a Run, but the createdAt date
                 //is not in ISO8601 format, and parsing fails. The following is a temporary
                 //workaround - the getRunById call below gets the same Run object but Wercker
                 //returns the date in the ISO8601 format for this case.
-                Run run = werckerClient.getRunById(authHeaderValue, runInfo.get('id'))
+                Run run = getRunById(runInfo.get('id'))
 
                 //Create an entry in the WerckerCache for this new run. This will also generate
                 //an integer build number for the run
@@ -213,6 +217,42 @@ class WerckerService implements BuildService {
         }).execute()
     }
 
+    Run getRunById(String runId) {
+        new SimpleHystrixCommand<Run>(groupKey, buildCommandKey("getRunById"), {
+            return werckerClient.getRunById(authHeaderValue, runId)
+        }).execute()
+    }
+
+    Response abortRun(String runId, Map body) {
+        new SimpleHystrixCommand<Response>(groupKey, buildCommandKey("abortRun"), {
+            return werckerClient.abortRun(authHeaderValue, runId, body)
+        }).execute()
+    }
+
+    List<Run> getRunsSince(String branch, List<String> pipelineIds, int limit, long since) {
+        new SimpleHystrixCommand<List<Run>>(groupKey, buildCommandKey("getRunsSince"), {
+            return werckerClient.getRunsSince(authHeaderValue, branch, pipelineIds, limit, since)
+        }).execute()
+    }
+
+    List<Run> getRunsForPipeline(String pipelineId) {
+        new SimpleHystrixCommand<List<Run>>(groupKey, buildCommandKey("getRunsForPipeline"), {
+            return werckerClient.getRunsForPipeline(authHeaderValue, pipelineId)
+        }).execute()
+    }
+
+    Pipeline getPipeline(String pipelineId) {
+        new SimpleHystrixCommand<Pipeline>(groupKey, buildCommandKey("getPipeline"), {
+            return werckerClient.getPipeline(authHeaderValue, pipelineId)
+        }).execute()
+    }
+
+    Map<String, Object> triggerBuild(RunPayload runPayload) {
+        new SimpleHystrixCommand<Map<String, Object>>(groupKey, buildCommandKey("triggerBuild"), {
+            return werckerClient.triggerBuild(authHeaderValue, runPayload)
+        }).execute()
+    }
+
     /**
      * A CommandKey should be unique per group (to ensure broken circuits do not span Wercker masters)
      */
@@ -223,7 +263,7 @@ class WerckerService implements BuildService {
     List<Run> getBuilds(String appAndPipelineName) {
         String pipelineId = getPipelineId(appAndPipelineName)
         log.debug "getBuilds for ${groupKey} ${appAndPipelineName} ${pipelineId}"
-        return pipelineId? werckerClient.getRunsForPipeline(authHeaderValue, pipelineId) : []
+        return pipelineId? getRunsForPipeline(pipelineId) : []
     }
 
     String pipelineKey(Run run, Map<String, String> pipelineKeys) {
@@ -241,8 +281,7 @@ class WerckerService implements BuildService {
         String pipelineId = cache.getPipelineID(groupKey, appAndPipelineName)
         if (pipelineId == null) {
             try {
-                List<Pipeline> pipelines = werckerClient.getPipelinesForApplication(
-                    authHeaderValue, qPipeline.ownerName, qPipeline.appName)
+                List<Pipeline> pipelines = getPipelines(qPipeline.ownerName, qPipeline.appName)
                 Pipeline matchingPipeline = pipelines.find {
                     pipeline -> qPipeline.pipelineName == pipeline.name
                 }
@@ -261,7 +300,7 @@ class WerckerService implements BuildService {
         String name = cache.getPipelineName(groupKey, pipelineId)
         if (name == null) {
             try {
-                Pipeline pipeline = werckerClient.getPipeline(authHeaderValue, pipelineId)
+                Pipeline pipeline = getPipeline(pipelineId)
                 if (pipeline && pipeline.application && pipeline.application.owner) {
                     name = new QualifiedPipelineName(
                         pipeline.application.owner.name,
@@ -281,14 +320,14 @@ class WerckerService implements BuildService {
         long start = System.currentTimeMillis()
         Map<String, String> pipelineKeys = pipelines.collectEntries { [(getPipelineId(it)) : (it)] }
         List<String> pids = pipelineKeys.keySet().asList()
-        List<Run> allRuns = werckerClient.getRunsSince(authHeaderValue, branch, pids, limit, since)
+        List<Run> allRuns = getRunsSince(branch, pids, limit, since)
         log.debug "getRunsSince for pipelines:${pipelines} : ${allRuns.size()} runs in ${System.currentTimeMillis() - start}ms!!"
         return groupRunsByPipeline(allRuns, pipelineKeys)
     }
 
     Map<String, List<Run>> getRunsSince(long since) {
         long start = System.currentTimeMillis()
-        List<Run> allRuns = werckerClient.getRunsSince(authHeaderValue, branch, [], limit, since)
+        List<Run> allRuns = getRunsSince(branch, [], limit, since)
         log.debug "getRunsSince ${since} : ${allRuns.size()} runs in ${System.currentTimeMillis() - start}ms!!"
         return groupRunsByPipeline(allRuns, null)
     }
