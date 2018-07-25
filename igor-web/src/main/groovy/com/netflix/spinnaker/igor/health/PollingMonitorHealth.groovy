@@ -61,21 +61,24 @@ public class PollingMonitorHealth implements HealthIndicator {
             } else {
                 healths << Health.unknown().withDetail("${poller.name}.status", 'not in service').build()
             }
-
         }
 
-        def health = healths.empty ? Health.down() :
-            healths.find { it.status == Status.DOWN } ? Health.down() :
+        def health = Health.down()
+
+        if (healths.empty) {
+            health.withDetail('status', 'No polling agents running, however igor itself is healthy')
+            health.up()
+        } else {
+            health = healths.find { it.status == Status.DOWN } ? Health.down() :
                 healths.find { it.status == Status.UNKNOWN } ? Health.unknown() :
                     Health.up()
 
-
-        healths.empty ? health.withDetail('status', 'No polling agents running') :
             healths.forEach {
                 it.details.forEach { k, v ->
                     health = health.withDetail(k, v)
                 }
             }
+        }
 
         Health healthResult = health.build()
         if (healthResult.status.code == Status.UP.code) {
