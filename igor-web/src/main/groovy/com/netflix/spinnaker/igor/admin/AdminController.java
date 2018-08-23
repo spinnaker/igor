@@ -62,7 +62,7 @@ public class AdminController {
             .filter(it -> it.getName().equals(monitorName))
             .findFirst()
             .orElseThrow(() -> new NotFoundException(format(
-                "PollingMonitor %s was not found, available monitors: %s",
+                "PollingMonitor %s was not found, available monitors are: %s",
                 monitorName,
                 pollingMonitors.stream().map(PollingMonitor::getName).collect(Collectors.toList())
             )));
