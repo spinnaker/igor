@@ -27,7 +27,7 @@ class BuildArtifactFilterSpec extends Specification {
   def environment = new MockEnvironment()
 
   @Subject
-  def buildArtifactFilter = new BuildArtifactFilter(environment: environment)
+  def buildArtifactFilter = new BuildArtifactFilter(environment)
 
   @Unroll
   def 'should filter artifacts based on environment configuration'() {
