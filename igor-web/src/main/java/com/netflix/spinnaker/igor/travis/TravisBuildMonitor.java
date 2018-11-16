@@ -254,10 +254,10 @@ public class TravisBuildMonitor extends CommonPollingMonitor<TravisBuildMonitor.
 
     private Predicate<V3Build> filterNewBuildsPredicate() {
         /*
-        NEW_BUILD_GRACE_PERIOD is here because the travis API needs some time in order to fully represent the build in
-        the api.
+        NewBuildGracePeriod is here because the travis API needs some time in order to fully represent the build in
+        the api. This can be overridden by travis.newBuildGracePeriod.
         */
-        Instant threshold = Instant.now().minus(30L, ChronoUnit.SECONDS);
+        Instant threshold = Instant.now().minus(travisProperties.getNewBuildGracePeriod(), ChronoUnit.SECONDS);
         return build -> !build.getState().isRunning() || (build.getFinishedAt() != null && build.getFinishedAt().isBefore(threshold));
     }
 
