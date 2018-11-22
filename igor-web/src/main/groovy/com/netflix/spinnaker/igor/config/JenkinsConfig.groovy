@@ -18,7 +18,9 @@ package com.netflix.spinnaker.igor.config
 
 
 import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
+import com.fasterxml.jackson.module.jaxb.JaxbAnnotationModule
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.igor.IgorConfigurationProperties
 import com.netflix.spinnaker.igor.config.client.DefaultJenkinsOkHttpClientProvider
@@ -108,18 +110,23 @@ class JenkinsConfig {
         return new JenkinsService(jenkinsHostId, jenkinsClient, csrf)
     }
 
+    static ObjectMapper getObjectMapper() {
+        return new XmlMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            .registerModule(new JaxbAnnotationModule());
+    }
+
     static JenkinsClient jenkinsClient(JenkinsProperties.JenkinsHost host,
                                        OkHttpClient client,
                                        RequestInterceptor requestInterceptor,
                                        int timeout = 30000) {
         client.setReadTimeout(timeout, TimeUnit.MILLISECONDS)
-        def xmlMapper = new XmlMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 
         new RestAdapter.Builder()
             .setEndpoint(Endpoints.newFixedEndpoint(host.address))
             .setRequestInterceptor(requestInterceptor)
             .setClient(new OkClient(client))
-            .setConverter(new JacksonConverter(xmlMapper))
+            .setConverter(new JacksonConverter(getObjectMapper()))
             .build()
             .create(JenkinsClient)
     }

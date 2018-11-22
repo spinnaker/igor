@@ -16,36 +16,44 @@
 
 package com.netflix.spinnaker.igor.jenkins.client.model
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
-import org.simpleframework.xml.Element
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper
 import org.simpleframework.xml.ElementList
-import org.simpleframework.xml.Path
-import org.simpleframework.xml.Root
+
+import javax.xml.bind.annotation.XmlElement
 
 /**
  * Represents a parameter for a Jenkins job
  */
-@Root(name = "parameterDefinition", strict = false)
 class ParameterDefinition {
+    // used when deserializing the response from Jenkins
+    @XmlElement
+    DefaultParameterValue defaultParameterValue
 
-    @Path("defaultParameterValue[1]")
-    @Element(name = "name")
-    String defaultName
-
-    @Path("defaultParameterValue[1]")
-    @Element(name="value", required = false)
-    String defaultValue
-
-    @Element
+    @XmlElement
     String name
 
-    @Element(required = false)
+    @XmlElement(required = false)
     String description
 
-    @Element
+    @XmlElement
     String type
 
-    @ElementList(entry = "choice", required = false, inline = true)
-    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
+    @JacksonXmlElementWrapper(useWrapping = false)
+    @XmlElement(name = "choice", required = false)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     List<String> choices
+
+    // used when serializing
+    @XmlElement(name = "defaultName")
+    public String getDefaultName() {
+        return defaultParameterValue.getName()
+    }
+
+    // used when serializing
+    @XmlElement(name = "defaultValue")
+    public String getDefaultValue() {
+        return defaultParameterValue.getValue()
+    }
 }
