@@ -48,14 +48,14 @@ class ParameterDefinition {
     List<String> choices
 
     // used when serializing
-    @XmlElement(name = "defaultName")
-    public String getDefaultName() {
-        return defaultParameterValue.getName()
-    }
-
-    // used when serializing
     @XmlElement(name = "defaultValue")
     public String getDefaultValue() {
         return defaultParameterValue.getValue()
+    }
+
+    // used when serializing
+    @XmlElement(name = "defaultName")
+    public String getDefaultName() {
+        return defaultParameterValue.getName()
     }
 }
