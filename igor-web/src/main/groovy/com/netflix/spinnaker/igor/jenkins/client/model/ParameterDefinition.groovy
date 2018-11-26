@@ -22,10 +22,12 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper
 import org.simpleframework.xml.ElementList
 
 import javax.xml.bind.annotation.XmlElement
+import javax.xml.bind.annotation.XmlType
 
 /**
  * Represents a parameter for a Jenkins job
  */
+@XmlType(propOrder=["defaultParameterValue","name","description","type","choice","defaultValue","defaultName"])
 class ParameterDefinition {
     // used when deserializing the response from Jenkins
     @XmlElement
