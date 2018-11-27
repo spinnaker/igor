@@ -205,7 +205,7 @@ class InfoControllerSpec extends Specification {
         setResponse(getJobConfigWithChoices())
 
         when:
-        MockHttpServletResponse response = mockMvc.perform(get(url)
+        MockHttpServletResponse response = mockMvc.perform(get('/jobs/master1/MY-JOB')
             .accept(MediaType.APPLICATION_JSON)).andReturn().response
 
         then:
