@@ -236,21 +236,25 @@ class BuildController {
                 String path = getArtifactPathFromBuild(jenkinsService, job, buildNumber, fileName)
 
                 if (path == null) {
-                    log.error("Unable to get igorProperties: Could not find build artifact matching requested filename '{}' on '{}' build '{}", kv("fileName", fileName), kv("master", master), kv("buildNumber", buildNumber))
+                    log.error("Unable to get igorProperties: Could not find build artifact matching requested filename '{}' on '{}' build '{}",
+                            kv("fileName", fileName), kv("master", master), kv("buildNumber", buildNumber))
                     return map
                 }
 
                 def propertyStream = jenkinsService.getPropertyFile(job, buildNumber, path).body.in()
-
-                if (fileName.endsWith('.yml') || fileName.endsWith('.yaml')) {
-                    Yaml yml = new Yaml(new SafeConstructor())
-                    map = yml.load(propertyStream)
-                } else if (fileName.endsWith('.json')) {
-                    map = objectMapper.readValue(propertyStream, Map)
-                } else {
-                    Properties properties = new Properties()
-                    properties.load(propertyStream)
-                    map = map << properties
+                try {
+                    if (fileName.endsWith('.yml') || fileName.endsWith('.yaml')) {
+                        Yaml yml = new Yaml(new SafeConstructor())
+                        map = yml.load(propertyStream)
+                    } else if (fileName.endsWith('.json')) {
+                        map = objectMapper.readValue(propertyStream, Map)
+                    } else {
+                        Properties properties = new Properties()
+                        properties.load(propertyStream)
+                        map = map << properties
+                    }
+                } finally {
+                    propertyStream.close()
                 }
             } catch (e) {
                 log.error("Unable to get igorProperties '{}'", kv("job", job), e)
