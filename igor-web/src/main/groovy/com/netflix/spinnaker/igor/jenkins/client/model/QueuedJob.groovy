@@ -27,7 +27,7 @@ class QueuedJob {
 
     @XmlElement(name = 'number')
     Integer getNumber() {
-        return executable.number
+        return executable?.number
     }
 }
 
