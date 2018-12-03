@@ -15,26 +15,28 @@
  */
 
 buildscript {
-    ext {
-        springBootVersion = "1.5.7.RELEASE"
-    }
     repositories {
         jcenter()
         maven { url "http://spinnaker.bintray.com/gradle" }
         maven { url "https://plugins.gradle.org/m2/" }
     }
     dependencies {
-        classpath 'com.netflix.spinnaker.gradle:spinnaker-gradle-project:3.17.0'
-        classpath "org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}"
+        classpath 'com.netflix.spinnaker.gradle:spinnaker-dev-plugin:5.2.2'
     }
 }
 
 allprojects {
-    apply plugin: 'spinnaker.project'
+    apply plugin: 'spinnaker.base-project'
     apply plugin: 'groovy'
 
+    sourceSets.main.java.srcDirs = []
+    sourceSets.main.groovy.srcDirs += ["src/main/java"]
+
     ext {
-        spinnakerDependenciesVersion = project.hasProperty('spinnakerDependenciesVersion') ? project.property('spinnakerDependenciesVersion') : '0.129.0'
+        spinnakerDependenciesVersion = '1.8.0'
+        if (project.hasProperty('spinnakerDependenciesVersion')) {
+          spinnakerDependenciesVersion = project.property('spinnakerDependenciesVersion')
+        }
     }
 
     def checkLocalVersions = [spinnakerDependenciesVersion: spinnakerDependenciesVersion]
@@ -63,7 +65,20 @@ allprojects {
       }
     }
 
+    tasks.withType(JavaExec) {
+      if (System.getProperty('DEBUG', 'false') == 'true') {
+        jvmArgs '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8188'
+      }
+    }
+
     group = "com.netflix.spinnaker.igor"
+
+    //c&p this because NetflixOss reverts it to 1.7 and ends up getting applied last..
+    project.plugins.withType(JavaBasePlugin) {
+        JavaPluginConvention convention = project.convention.getPlugin(JavaPluginConvention)
+        convention.sourceCompatibility = JavaVersion.VERSION_1_8
+        convention.targetCompatibility = JavaVersion.VERSION_1_8
+    }
 }
 
-defaultTasks 'bootRun'
+defaultTasks 'run'

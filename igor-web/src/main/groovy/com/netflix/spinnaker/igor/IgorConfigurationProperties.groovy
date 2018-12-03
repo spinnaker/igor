@@ -42,6 +42,20 @@ class IgorConfigurationProperties {
 
         @NestedConfigurationProperty
         final BuildProperties build = new BuildProperties()
+
+        @Canonical
+        static class PollingSafeguardProperties {
+            /**
+             * Defines the upper threshold for number of new cache items before a cache update cycle will be completely
+             * rejected. This is to protect against potentially re-indexing old caches due to downstream service errors.
+             * Once this threshold is tripped, API-driven resolution may be required. By default set higher than most
+             * use cases would require since it's a feature that requires more hands-on operations.
+             */
+            int itemUpperThreshold = 1000
+        }
+
+        @NestedConfigurationProperty
+        final PollingSafeguardProperties pollingSafeguard = new PollingSafeguardProperties()
     }
 
     @NestedConfigurationProperty
@@ -51,6 +65,15 @@ class IgorConfigurationProperties {
     static class RedisProperties {
         String connection = "redis://localhost:6379"
         int timeout = 2000
+
+        @Canonical
+        static class DockerV1KeyMigration {
+            int ttlDays = 30
+            int batchSize = 100
+        }
+
+        @NestedConfigurationProperty
+        DockerV1KeyMigration dockerV1KeyMigration = new DockerV1KeyMigration()
     }
 
     @NestedConfigurationProperty

@@ -28,6 +28,7 @@ import com.netflix.spinnaker.igor.jenkins.client.model.JobConfig
 import com.netflix.spinnaker.igor.jenkins.client.model.JobList
 import com.netflix.spinnaker.igor.jenkins.client.model.ScmDetails
 import com.netflix.spinnaker.igor.model.BuildServiceProvider
+import com.netflix.spinnaker.igor.model.Crumb
 import com.netflix.spinnaker.igor.service.BuildService
 import com.netflix.spinnaker.kork.core.RetrySupport
 import groovy.util.logging.Slf4j
@@ -41,12 +42,14 @@ import static net.logstash.logback.argument.StructuredArguments.kv
 class JenkinsService implements BuildService{
     final String groupKey
     final JenkinsClient jenkinsClient
+    final Boolean csrf
 
     RetrySupport retrySupport = new RetrySupport()
 
-    JenkinsService(String jenkinsHostId, JenkinsClient jenkinsClient) {
+    JenkinsService(String jenkinsHostId, JenkinsClient jenkinsClient, Boolean csrf) {
         this.groupKey = "jenkins-${jenkinsHostId}"
         this.jenkinsClient = jenkinsClient
+        this.csrf = csrf
     }
 
     private String encode(uri) {
@@ -85,6 +88,14 @@ class JenkinsService implements BuildService{
         }).execute()
     }
 
+    Crumb getCrumb() {
+        return csrf ?
+            new SimpleHystrixCommand<Crumb>(groupKey, buildCommandKey("getCrumb"), {
+                return jenkinsClient.getCrumb()
+            }).execute() :
+            null
+    }
+
     BuildsList getBuilds(String jobName) {
         new SimpleHystrixCommand<BuildsList>(
             groupKey, buildCommandKey("getBuilds"), {
@@ -116,7 +127,7 @@ class JenkinsService implements BuildService{
         }
 
         log.info("Submitted build job '{}'", kv("job", job))
-        def locationHeader = response.headers.find { it.name == "Location" }
+        def locationHeader = response.headers.find { it.name.toLowerCase() == "location" }
         if (!locationHeader) {
             throw new BuildController.QueuedJobDeterminationError("Could not find Location header for job '${job}'")
         }
@@ -146,11 +157,12 @@ class JenkinsService implements BuildService{
     }
 
     Response build(String jobName) {
-        return jenkinsClient.build(encode(jobName), "")
+        def resp = jenkinsClient.build(encode(jobName), "", getCrumb()?.getCrumb())
+        return resp
     }
 
     Response buildWithParameters(String jobName, Map<String, String> queryParams) {
-        return jenkinsClient.buildWithParameters(encode(jobName), queryParams, "")
+        return jenkinsClient.buildWithParameters(encode(jobName), queryParams, "", getCrumb()?.getCrumb())
     }
 
     JobConfig getJobConfig(String jobName) {
@@ -162,11 +174,11 @@ class JenkinsService implements BuildService{
     }
 
     Response stopRunningBuild (String jobName, Integer buildNumber){
-        return jenkinsClient.stopRunningBuild(encode(jobName), buildNumber, "")
+        return jenkinsClient.stopRunningBuild(encode(jobName), buildNumber, "", getCrumb()?.getCrumb())
     }
 
     Response stopQueuedBuild (String queuedBuild) {
-        return jenkinsClient.stopQueuedBuild(queuedBuild, "")
+        return jenkinsClient.stopQueuedBuild(queuedBuild, "", getCrumb()?.getCrumb())
     }
 
   /**
@@ -184,9 +196,7 @@ class JenkinsService implements BuildService{
     @Override
     List<GenericGitRevision> getGenericGitRevisions(String job, int buildNumber) {
         ScmDetails scmDetails = getGitDetails(job, buildNumber)
-        if (scmDetails?.action?.lastBuiltRevision?.branch?.name) {
-            return scmDetails.genericGitRevisions()
-        }
-        return null
+        return scmDetails.genericGitRevisions()
+
     }
 }

@@ -19,15 +19,15 @@ package com.netflix.spinnaker.igor.config
 import groovy.transform.CompileStatic
 import org.hibernate.validator.constraints.NotEmpty
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.validation.annotation.Validated
 
 import javax.validation.Valid
-import javax.validation.constraints.Null
-
 /**
  * Helper class to map masters in properties file into a validated property map
  */
 @CompileStatic
 @ConfigurationProperties(prefix = 'jenkins')
+@Validated
 class JenkinsProperties {
     @Valid
     List<JenkinsHost> masters
@@ -39,11 +39,11 @@ class JenkinsProperties {
         @NotEmpty
         String address
 
-        @NotEmpty
         String username
 
-        @NotEmpty
         String password
+
+        Boolean csrf = false
 
         // These are needed for Google-based OAuth with a service account credential
         String jsonPath
@@ -51,5 +51,7 @@ class JenkinsProperties {
 
         // Can be used directly, if available.
         String token
+
+        Integer itemUpperThreshold;
     }
 }

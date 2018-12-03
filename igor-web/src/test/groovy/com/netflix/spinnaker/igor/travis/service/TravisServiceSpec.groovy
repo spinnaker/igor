@@ -16,8 +16,11 @@
 
 package com.netflix.spinnaker.igor.travis.service
 
+import com.netflix.spinnaker.igor.build.artifact.decorator.DebDetailsDecorator
+import com.netflix.spinnaker.igor.build.artifact.decorator.RpmDetailsDecorator
 import com.netflix.spinnaker.igor.build.model.GenericBuild
 import com.netflix.spinnaker.igor.build.model.Result
+import com.netflix.spinnaker.igor.service.ArtifactDecorator
 import com.netflix.spinnaker.igor.travis.client.TravisClient
 import com.netflix.spinnaker.igor.travis.client.model.AccessToken
 import com.netflix.spinnaker.igor.travis.client.model.Build
@@ -38,9 +41,13 @@ class TravisServiceSpec extends Specification{
     @Shared
     TravisService service
 
+    @Shared
+    Optional<ArtifactDecorator> artifactDecorator
+
     void setup() {
         client = Mock(TravisClient)
-        service = new TravisService('travis-ci', 'http://my.travis.ci', 'someToken', 25, client, null, [])
+        artifactDecorator = Optional.of(new ArtifactDecorator([new DebDetailsDecorator(), new RpmDetailsDecorator()], null))
+        service = new TravisService('travis-ci', 'http://my.travis.ci', 'someToken', 25, client, null, artifactDecorator, [])
 
         AccessToken accessToken = new AccessToken()
         accessToken.accessToken = "someToken"
@@ -64,7 +71,7 @@ class TravisServiceSpec extends Specification{
         2 * build.state >> 'passed'
         1 * build.duration >> 32
         1 * build.finishedAt >> Instant.now()
-        1 * build.timestamp() >> 1458051084000
+        1 * build.getTimestamp() >> 1458051084000
     }
 
     @Unroll
@@ -137,7 +144,7 @@ class TravisServiceSpec extends Specification{
         then:
         fetchedCommit.isTag()
         1 * client.builds("token someToken", "org/repo", 38) >> builds
-        2 * builds.commits >> [commit]
+        3 * builds.commits >> [commit]
     }
 
     def "getCommit(repoSlug, buildNumber) when no commit is found"() {
@@ -148,9 +155,9 @@ class TravisServiceSpec extends Specification{
         service.getCommit("org/repo", 38)
 
         then:
-        thrown NoSuchFieldException
+        thrown NoSuchElementException
         1 * client.builds("token someToken", "org/repo", 38) >> builds
-        1 * builds.commits >> []
+        2 * builds.commits >> []
     }
 
     def "branchedRepoSlug should return branch prefixed with pull_request if it is a pull request"() {
@@ -167,7 +174,7 @@ class TravisServiceSpec extends Specification{
         1 * client.builds("token someToken", "my/slug", 21) >> builds
         2 * builds.builds >> [build]
         1 * build.pullRequest >> true
-        1 * commit.branchNameWithTagHandling() >> "master"
+        1 * commit.getBranchNameWithTagHandling() >> "master"
 
     }
 

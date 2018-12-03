@@ -15,6 +15,8 @@
  */
 package com.netflix.spinnaker.igor.gitlabci
 
+import com.netflix.spectator.api.NoopRegistry
+import com.netflix.spinnaker.igor.IgorConfigurationProperties
 import com.netflix.spinnaker.igor.build.BuildCache
 import com.netflix.spinnaker.igor.config.GitlabCiProperties
 import com.netflix.spinnaker.igor.gitlabci.client.model.Pipeline
@@ -22,6 +24,7 @@ import com.netflix.spinnaker.igor.gitlabci.client.model.PipelineStatus
 import com.netflix.spinnaker.igor.gitlabci.client.model.Project
 import com.netflix.spinnaker.igor.gitlabci.service.GitlabCiService
 import com.netflix.spinnaker.igor.history.EchoService
+import com.netflix.spinnaker.igor.polling.PollContext
 import com.netflix.spinnaker.igor.service.BuildMasters
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -38,7 +41,16 @@ class GitlabCiBuildMonitorSpec extends Specification {
 
     void setup() {
         def properties = new GitlabCiProperties(cachedJobTTLDays: CACHED_JOB_TTL_DAYS)
-        buildMonitor = new GitlabCiBuildMonitor(buildCache: buildCache, buildMasters: new BuildMasters(map: [MASTER: service]), gitlabCiProperties: properties, echoService: echoService)
+        buildMonitor = new GitlabCiBuildMonitor(
+            new IgorConfigurationProperties(),
+            new NoopRegistry(),
+            Optional.empty(),
+            Optional.empty(),
+            buildCache,
+            new BuildMasters(map: [MASTER: service]),
+            properties,
+            Optional.of(echoService)
+        )
     }
 
     @Unroll
@@ -53,22 +65,48 @@ class GitlabCiBuildMonitorSpec extends Specification {
         buildCache.getLastBuild(MASTER, _, false) >> lastBuildNr
 
         when:
-        buildMonitor.changedBuilds(MASTER)
+        buildMonitor.pollSingle(new PollContext(MASTER))
 
         then:
         1 * buildCache.setLastBuild(MASTER, "user1/project1", 101, false, CACHED_JOB_TTL_SECONDS)
         1 * buildCache.setLastBuild(MASTER, "user1/project1/master", 101, false, CACHED_JOB_TTL_SECONDS)
 
         and:
-        1 * buildMonitor.echoService.postEvent({
+        1 * echoService.postEvent({
             it.content.project.name == "user1/project1"
             it.content.project.lastBuild.number == 101
         })
 
-        1 * buildMonitor.echoService.postEvent({
+        1 * echoService.postEvent({
             it.content.project.name == "user1/project1/master"
             it.content.project.lastBuild.number == 101
         })
+
+        where:
+        jobsInCache                 | lastBuildNr
+        []                          | 0
+        ["user1/project1/master"]   | 100
+    }
+
+    def "dont send events if suppressed"() {
+        given:
+        Project project = new Project(pathWithNamespace: 'user1/project1')
+        Pipeline pipeline = new Pipeline(id: 101, tag: false, ref: 'master', finishedAt: new Date(), status: PipelineStatus.success)
+
+        service.getProjects() >> [project]
+        service.getPipelines(project, _) >> [pipeline]
+        buildCache.getJobNames(MASTER) >> jobsInCache
+        buildCache.getLastBuild(MASTER, _, false) >> lastBuildNr
+
+        when:
+        buildMonitor.pollSingle(new PollContext(MASTER).fastForward())
+
+        then:
+        1 * buildCache.setLastBuild(MASTER, "user1/project1", 101, false, CACHED_JOB_TTL_SECONDS)
+        1 * buildCache.setLastBuild(MASTER, "user1/project1/master", 101, false, CACHED_JOB_TTL_SECONDS)
+
+        and:
+        0 * echoService.postEvent(_)
 
         where:
         jobsInCache                 | lastBuildNr
@@ -86,13 +124,13 @@ class GitlabCiBuildMonitorSpec extends Specification {
         buildCache.getJobNames(MASTER) >> []
 
         when:
-        buildMonitor.changedBuilds(MASTER)
+        buildMonitor.pollSingle(new PollContext(MASTER))
 
         then:
         0 * buildCache.setLastBuild(_, _, _, _, _)
 
         and:
-        0 * buildMonitor.echoService.postEvent(_)
+        0 * echoService.postEvent(_)
     }
 
     def "ignore previous builds"() {
@@ -106,12 +144,12 @@ class GitlabCiBuildMonitorSpec extends Specification {
         buildCache.getLastBuild(MASTER, "user1/project1/master", false) >> 102
 
         when:
-        buildMonitor.changedBuilds(MASTER)
+        buildMonitor.pollSingle(new PollContext(MASTER))
 
         then:
         0 * buildCache.setLastBuild(_, _, _, _, _)
 
         and:
-        0 * buildMonitor.echoService.postEvent(_)
+        0 * echoService.postEvent(_)
     }
 }

@@ -20,14 +20,16 @@ import com.netflix.spinnaker.kork.jedis.RedisClientDelegate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+
+import static java.lang.String.format;
 
 @Service
 public class DockerRegistryCache {
 
-    private final static String ID = "dockerRegistry";
+    final static String ID = "dockerRegistry";
 
     // docker-digest must conform to hash:hashvalue. The string "~" explicitly avoids this to act as an "empty" placeholder.
     private final static String EMPTY_DIGEST = "~";
@@ -42,14 +44,16 @@ public class DockerRegistryCache {
         this.igorConfigurationProperties = igorConfigurationProperties;
     }
 
-    public List<String> getImages(String account) {
-        return redisClientDelegate.withMultiClient(c -> {
-            return new ArrayList<>(c.keys(prefix() + ":" + ID + ":" + account + "*"));
+    public Set<String> getImages(String account) {
+        Set<String> result = new HashSet<>();
+        redisClientDelegate.withKeyScan(makeIndexPattern(prefix(), account), 1000, page -> {
+            result.addAll(page.getResults());
         });
+        return result;
     }
 
-    public String getLastDigest(String account, String registry, String repository, String tag) {
-        String key = makeKey(account, registry, repository, tag);
+    public String getLastDigest(String account, String repository, String tag) {
+        String key = new DockerRegistryV2Key(prefix(), ID, account, repository, tag).toString();
         return redisClientDelegate.withCommandsClient(c -> {
             Map<String, String> res = c.hgetAll(key);
             if (res.get("digest").equals(EMPTY_DIGEST)) {
@@ -59,22 +63,16 @@ public class DockerRegistryCache {
         });
     }
 
-    public void setLastDigest(String account, String registry, String repository, String tag, String digest) {
-        String key = makeKey(account, registry, repository, tag);
+    public void setLastDigest(String account, String repository, String tag, String digest) {
+        String key = new DockerRegistryV2Key(prefix(), ID, account, repository, tag).toString();
         String d = digest == null ? EMPTY_DIGEST : digest;
         redisClientDelegate.withCommandsClient(c -> {
             c.hset(key, "digest", d);
         });
     }
 
-    public void remove(String imageId) {
-        redisClientDelegate.withCommandsClient(c -> {
-            c.del(imageId);
-        });
-    }
-
-    private String makeKey(String account, String registry, String repository, String tag) {
-        return prefix() + ":" + ID + ":" + account + ":" + registry + ":" + repository + ":" + tag;
+    static String makeIndexPattern(String prefix, String account) {
+        return format("%s:%s:v2:%s:*", prefix, ID, account);
     }
 
     private String prefix() {

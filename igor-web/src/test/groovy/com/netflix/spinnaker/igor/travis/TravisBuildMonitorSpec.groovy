@@ -15,13 +15,17 @@
  */
 package com.netflix.spinnaker.igor.travis
 
+import com.netflix.spectator.api.NoopRegistry
+import com.netflix.spinnaker.igor.IgorConfigurationProperties
 import com.netflix.spinnaker.igor.build.BuildCache
 import com.netflix.spinnaker.igor.config.TravisProperties
 import com.netflix.spinnaker.igor.history.EchoService
 import com.netflix.spinnaker.igor.service.BuildMasters
 import com.netflix.spinnaker.igor.travis.client.model.Repo
+import com.netflix.spinnaker.igor.travis.client.model.v3.TravisBuildState
 import com.netflix.spinnaker.igor.travis.client.model.v3.V3Build
 import com.netflix.spinnaker.igor.travis.client.model.v3.V3Repository
+import com.netflix.spinnaker.igor.travis.service.TravisBuildConverter
 import com.netflix.spinnaker.igor.travis.service.TravisService
 import spock.lang.Specification
 
@@ -31,6 +35,7 @@ import java.time.temporal.ChronoUnit
 class TravisBuildMonitorSpec extends Specification {
     BuildCache buildCache = Mock(BuildCache)
     TravisService travisService = Mock(TravisService)
+    EchoService echoService = Mock()
     TravisBuildMonitor travisBuildMonitor
 
     final String MASTER = "MASTER"
@@ -39,10 +44,19 @@ class TravisBuildMonitorSpec extends Specification {
 
     void setup() {
         def travisProperties = new TravisProperties(cachedJobTTLDays: CACHED_JOB_TTL_DAYS)
-        travisBuildMonitor = new TravisBuildMonitor(buildCache: buildCache, buildMasters: new BuildMasters(map: [MASTER : travisService]), travisProperties: travisProperties)
+        travisBuildMonitor = new TravisBuildMonitor(
+            new IgorConfigurationProperties(),
+            new NoopRegistry(),
+            Optional.empty(),
+            buildCache,
+            new BuildMasters(map: [MASTER : travisService]),
+            travisProperties,
+            Optional.of(echoService),
+            Optional.empty()
+        )
     }
 
-    void 'flag a new build not found in the cache'() {
+    void 'flag a new build on master, but do not send event on repo if a newer build is present at repo level'() {
         Repo repo = new Repo()
         repo.slug = "test-org/test-repo"
         repo.lastBuildNumber = 4
@@ -53,23 +67,28 @@ class TravisBuildMonitorSpec extends Specification {
         V3Repository repository = Mock(V3Repository)
 
         when:
-        List<Map> receivedBuilds = travisBuildMonitor.changedBuilds(MASTER)
+        List<TravisBuildMonitor.BuildDelta> receivedBuilds = travisBuildMonitor.changedBuilds(MASTER, travisService)
+        travisBuildMonitor.commitDelta(new TravisBuildMonitor.BuildPollingDelta(master: MASTER, items: receivedBuilds), true)
 
         then:
         1 * travisService.getReposForAccounts() >> repos
         1 * travisService.getBuilds(repo, 5) >> [ build ]
         build.branchedRepoSlug() >> "test-org/test-repo/master"
         build.getNumber() >> 4
-        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/master', false) >> 3
-        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo/master', 4, false, CACHED_JOB_TTL_SECONDS)
-        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo', 4, false, CACHED_JOB_TTL_SECONDS)
-
+        build.getState() >> TravisBuildState.passed
         build.repository >> repository
         repository.slug >> 'test-org/test-repo'
+
+        1 * travisService.getGenericBuild(build, true) >> TravisBuildConverter.genericBuild(build, MASTER)
+        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/master', false) >> 3
+        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo', false) >> 5
+        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo/master', 4, false, CACHED_JOB_TTL_SECONDS)
+        0 * buildCache.setLastBuild(MASTER, 'test-org/test-repo', 4, false, CACHED_JOB_TTL_SECONDS)
+
         receivedBuilds.size() == 1
-        receivedBuilds[0].slug == 'test-org/test-repo/master'
-        receivedBuilds[0].current == 4
-        receivedBuilds[0].previous == 3
+        receivedBuilds[0].branchedRepoSlug == 'test-org/test-repo/master'
+        receivedBuilds[0].currentBuildNum == 4
+        receivedBuilds[0].previousBuildNum == 3
     }
 
     void 'ignore old build not found in the cache'() {
@@ -88,32 +107,31 @@ class TravisBuildMonitorSpec extends Specification {
         V3Repository repository = Mock(V3Repository)
 
         when:
-        List<Map> builds = travisBuildMonitor.changedBuilds(MASTER)
+        List<TravisBuildMonitor.BuildDelta> builds = travisBuildMonitor.changedBuilds(MASTER, travisService)
+        travisBuildMonitor.commitDelta(new TravisBuildMonitor.BuildPollingDelta(master: MASTER, items: builds), true)
 
         then:
         1 * travisService.getReposForAccounts() >> repos
         1 * travisService.getBuilds(repo, 5) >> [ build ]
         build.branchedRepoSlug() >> "test-org/test-repo/master"
         build.getNumber() >> 4
+        build.getState() >> TravisBuildState.passed
+        build.repository >> repository
+        repository.slug >> 'test-org/test-repo'
 
-
+        1 * travisService.getGenericBuild(build, true) >> TravisBuildConverter.genericBuild(build, MASTER)
         1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/master', false) >> 3
         1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo/master', 4, false, CACHED_JOB_TTL_SECONDS)
         1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo', 4, false, CACHED_JOB_TTL_SECONDS)
 
-        build.repository >> repository
-        repository.slug >> 'test-org/test-repo'
-
         expect:
         builds.size() == 1
-        builds[0].slug == 'test-org/test-repo/master'
-        builds[0].current == 4
-        builds[0].previous == 3
+        builds[0].branchedRepoSlug == 'test-org/test-repo/master'
+        builds[0].currentBuildNum == 4
+        builds[0].previousBuildNum == 3
     }
 
     void 'send events for build both on branch and on repository'() {
-        travisBuildMonitor.echoService = Mock(EchoService)
-
         Repo repo = new Repo()
         repo.slug = "test-org/test-repo"
         repo.lastBuildNumber = 4
@@ -124,7 +142,46 @@ class TravisBuildMonitorSpec extends Specification {
         V3Repository repository = Mock(V3Repository)
 
         when:
-        travisBuildMonitor.changedBuilds(MASTER)
+        List<TravisBuildMonitor.BuildDelta> builds = travisBuildMonitor.changedBuilds(MASTER, travisService)
+        travisBuildMonitor.commitDelta(new TravisBuildMonitor.BuildPollingDelta(master: MASTER, items: builds), true)
+
+        then:
+        1 * travisService.getReposForAccounts() >> repos
+        1 * travisService.getBuilds(repo, 5) >> [ build ]
+        build.branchedRepoSlug() >> "test-org/test-repo/my_branch"
+        build.getNumber() >> 4
+        build.getState() >> TravisBuildState.passed
+        build.repository >> repository
+        repository.slug >> 'test-org/test-repo'
+
+        1 * travisService.getGenericBuild(build, true) >> TravisBuildConverter.genericBuild(build, MASTER)
+        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/my_branch', false) >> 3
+        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo/my_branch', 4, false, CACHED_JOB_TTL_SECONDS)
+        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo', 4, false, CACHED_JOB_TTL_SECONDS)
+
+        1 * echoService.postEvent({
+            it.content.project.name == "test-org/test-repo"
+            it.content.project.lastBuild.number == 4
+        })
+        1 * echoService.postEvent({
+            it.content.project.name == "test-org/test-repo/my_branch"
+            it.content.project.lastBuild.number == 4
+        })
+    }
+
+    void 'suppress echo notifications'() {
+        Repo repo = new Repo()
+        repo.slug = "test-org/test-repo"
+        repo.lastBuildNumber = 4
+        repo.lastBuildState = "passed"
+        repo.lastBuildStartedAt = Instant.now()
+        List<Repo> repos = [repo]
+        V3Build build = Mock(V3Build)
+        V3Repository repository = Mock(V3Repository)
+
+        when:
+        List<TravisBuildMonitor.BuildDelta> builds = travisBuildMonitor.changedBuilds(MASTER, travisService)
+        travisBuildMonitor.commitDelta(new TravisBuildMonitor.BuildPollingDelta(master: MASTER, items: builds), false)
 
         then:
         1 * travisService.getReposForAccounts() >> repos
@@ -140,20 +197,10 @@ class TravisBuildMonitorSpec extends Specification {
         repository.slug >> 'test-org/test-repo'
         build.getState() >> "passed"
 
-        1 * travisBuildMonitor.echoService.postEvent({
-            it.content.project.name == "test-org/test-repo"
-            it.content.project.lastBuild.number == 4
-        })
-        1 * travisBuildMonitor.echoService.postEvent({
-            it.content.project.name == "test-org/test-repo/my_branch"
-            it.content.project.lastBuild.number == 4
-        })
-
+        0 * echoService.postEvent(_)
     }
 
     void 'send events when two different branches build at the same time.'() {
-        travisBuildMonitor.echoService = Mock(EchoService)
-
         Repo repo = new Repo()
         repo.slug = "test-org/test-repo"
         repo.lastBuildNumber = 4
@@ -165,15 +212,23 @@ class TravisBuildMonitorSpec extends Specification {
         V3Repository repository = Mock(V3Repository)
 
         when:
-        travisBuildMonitor.changedBuilds(MASTER)
+        List<TravisBuildMonitor.BuildDelta> result = travisBuildMonitor.changedBuilds(MASTER, travisService)
+        travisBuildMonitor.commitDelta(new TravisBuildMonitor.BuildPollingDelta(master: MASTER, items: result), true)
 
         then:
         1 * travisService.getReposForAccounts() >> repos
         1 * travisService.getBuilds(repo, 5) >> [ build, buildDifferentBranch ]
         build.branchedRepoSlug() >> "test-org/test-repo/my_branch"
         build.getNumber() >> 4
+        build.getState() >> TravisBuildState.passed
+        build.repository >> repository
         buildDifferentBranch.branchedRepoSlug() >> "test-org/test-repo/different_branch"
         buildDifferentBranch.getNumber() >> 3
+        buildDifferentBranch.getState() >> TravisBuildState.passed
+        buildDifferentBranch.repository >> repository
+        repository.slug >> 'test-org/test-repo'
+        1 * travisService.getGenericBuild(build, true) >> TravisBuildConverter.genericBuild(build, MASTER)
+        1 * travisService.getGenericBuild(buildDifferentBranch, true) >> TravisBuildConverter.genericBuild(buildDifferentBranch, MASTER)
         1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/my_branch', false) >> 2
         1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo/my_branch', 4, false, CACHED_JOB_TTL_SECONDS)
         1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo', 4, false, CACHED_JOB_TTL_SECONDS)
@@ -182,32 +237,22 @@ class TravisBuildMonitorSpec extends Specification {
         1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/different_branch', false) >> 1
         1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo/different_branch', 3, false, CACHED_JOB_TTL_SECONDS)
 
-        build.repository >> repository
-        repository.slug >> 'test-org/test-repo'
-        build.getState() >> "passed"
-        buildDifferentBranch.repository >> repository
-        buildDifferentBranch.getState() >> "passed"
-
-
-        1 * travisBuildMonitor.echoService.postEvent({
+        1 * echoService.postEvent({
             it.content.project.name == "test-org/test-repo/my_branch" &&
                 it.content.project.lastBuild.number == 4
         })
-        1 * travisBuildMonitor.echoService.postEvent({
+        1 * echoService.postEvent({
             it.content.project.name == "test-org/test-repo" &&
                 it.content.project.lastBuild.number == 4
         })
 
-        1 * travisBuildMonitor.echoService.postEvent({
+        1 * echoService.postEvent({
             it.content.project.name == "test-org/test-repo" &&
                 it.content.project.lastBuild.number == 3
         })
-        1 * travisBuildMonitor.echoService.postEvent({
+        1 * echoService.postEvent({
             it.content.project.name == "test-org/test-repo/different_branch" &&
                 it.content.project.lastBuild.number == 3
         })
-
-
-
     }
 }

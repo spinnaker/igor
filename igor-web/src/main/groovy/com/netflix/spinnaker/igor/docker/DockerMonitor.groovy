@@ -16,98 +16,143 @@
 
 package com.netflix.spinnaker.igor.docker
 
+import com.netflix.discovery.DiscoveryClient
+import com.netflix.spectator.api.BasicTag
+import com.netflix.spectator.api.Registry
+import com.netflix.spinnaker.igor.IgorConfigurationProperties
 import com.netflix.spinnaker.igor.build.model.GenericArtifact
+import com.netflix.spinnaker.igor.config.DockerRegistryProperties
 import com.netflix.spinnaker.igor.docker.model.DockerRegistryAccounts
 import com.netflix.spinnaker.igor.docker.service.TaggedImage
 import com.netflix.spinnaker.igor.history.EchoService
 import com.netflix.spinnaker.igor.history.model.DockerEvent
 import com.netflix.spinnaker.igor.polling.CommonPollingMonitor
+import com.netflix.spinnaker.igor.polling.DeltaItem
+import com.netflix.spinnaker.igor.polling.LockService
+import com.netflix.spinnaker.igor.polling.PollContext
+import com.netflix.spinnaker.igor.polling.PollingDelta
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Service
+
+import java.util.concurrent.TimeUnit
 
 import static net.logstash.logback.argument.StructuredArguments.kv
 
 @Service
 @SuppressWarnings('CatchException')
-@ConditionalOnProperty('dockerRegistry.enabled')
-class DockerMonitor extends CommonPollingMonitor {
+@ConditionalOnProperty(['services.clouddriver.baseUrl', 'dockerRegistry.enabled'])
+class DockerMonitor extends CommonPollingMonitor<ImageDelta, DockerPollingDelta> {
+
+    private final DockerRegistryCache cache
+    private final DockerRegistryAccounts dockerRegistryAccounts
+    private final Optional<EchoService> echoService
+    private final Optional<DockerRegistryCacheV2KeysMigration> keysMigration
+    private final DockerRegistryProperties dockerRegistryProperties
 
     @Autowired
-    DockerRegistryCache cache
-
-    @Autowired
-    DockerRegistryAccounts dockerRegistryAccounts
-
-    @Autowired(required = false)
-    EchoService echoService
+    DockerMonitor(IgorConfigurationProperties properties,
+                  Registry registry,
+                  Optional<DiscoveryClient> discoveryClient,
+                  Optional<LockService> lockService,
+                  DockerRegistryCache cache,
+                  DockerRegistryAccounts dockerRegistryAccounts,
+                  Optional<EchoService> echoService,
+                  Optional<DockerRegistryCacheV2KeysMigration> keysMigration,
+                  DockerRegistryProperties dockerRegistryProperties) {
+        super(properties, registry, discoveryClient, lockService)
+        this.cache = cache
+        this.dockerRegistryAccounts = dockerRegistryAccounts
+        this.echoService = echoService
+        this.keysMigration = keysMigration
+        this.dockerRegistryProperties = dockerRegistryProperties
+    }
 
     @Override
     void initialize() {
     }
 
     @Override
-    void poll() {
+    void poll(boolean sendEvents) {
+        if (keysMigration.isPresent() && keysMigration.get().running) {
+            log.warn("Skipping poll cycle: Keys migration is in progress")
+            return
+        }
         dockerRegistryAccounts.updateAccounts()
         dockerRegistryAccounts.accounts.forEach({ account ->
-            changedTags(account)
+            pollSingle(new PollContext((String) account.name, account, !sendEvents))
         })
     }
 
-    private void changedTags(Map accountDetails) {
-        String account = accountDetails.name
-        Boolean trackDigests = accountDetails.trackDigests ?: false
+    @Override
+    PollContext getPollContext(String partition) {
+        Map account = dockerRegistryAccounts.accounts.find { it.name == partition }
+        if (account == null) {
+            throw new IllegalStateException("Cannot find account named '$partition'")
+        }
+        return new PollContext((String) account.name, account)
+    }
 
-        log.debug 'Checking for new tags for ' + account
-        try {
-            List<String> cachedImages = cache.getImages(account)
+    @Override
+    DockerPollingDelta generateDelta(PollContext ctx) {
+        String account = ctx.context.name
+        Boolean trackDigests = ctx.context.trackDigests ?: false
 
-            def startTime = System.currentTimeMillis()
-            List<TaggedImage> images = dockerRegistryAccounts.service.getImagesByAccount(account)
-            log.debug("Took ${System.currentTimeMillis() - startTime}ms to retrieve images (account: {})", kv("account", account))
+        log.trace("Checking new tags for {}", account)
+        Set<String> cachedImages = cache.getImages(account)
 
-            Map<String, TaggedImage> imageIds = images.collectEntries {
-                [(cache.makeKey(account, it.registry, it.repository, it.tag)): it]
+        long startTime = System.currentTimeMillis()
+        List<TaggedImage> images = dockerRegistryAccounts.service.getImagesByAccount(account)
+        registry.timer("pollingMonitor.docker.retrieveImagesByAccount", [new BasicTag("account", account)])
+            .record(System.currentTimeMillis() - startTime, TimeUnit.MILLISECONDS)
+
+        List<ImageDelta> delta = []
+        images.findAll { it != null }.forEach { TaggedImage image ->
+            String imageId = new DockerRegistryV2Key(igorProperties.spinnaker.jedis.prefix, DockerRegistryCache.ID, account, image.repository, image.tag)
+            if (shouldUpdateCache(cachedImages, imageId, image, trackDigests)) {
+                delta.add(new ImageDelta(imageId: imageId, image: image))
             }
+        }
 
-            /* Not removing images from igor as we're seeing some reading issues in clouddriver
-            Observable.from(cachedImages).filter { String id ->
-                !(id in imageIds)
-            }.subscribe({ String imageId ->
-                log.info "Removing $imageId."
-                cache.remove(imageId)
-            }, {
-                log.error("Error: ${it.message}")
+        log.info("Found {} new images for {}", delta.size(), account)
+
+        return new DockerPollingDelta(items: delta, cachedImages: cachedImages)
+    }
+
+    private boolean shouldUpdateCache(Set<String> cachedImages, String imageId, TaggedImage image, boolean trackDigests) {
+        boolean updateCache = false
+        if (imageId in cachedImages) {
+            if (trackDigests) {
+                String lastDigest = cache.getLastDigest(image.account, image.repository, image.tag)
+
+                if (lastDigest != image.digest) {
+                    log.info("Updated tagged image: {}: {}. Digest changed from [$lastDigest] -> [$image.digest].", kv("account", image.account), kv("image", imageId))
+                    // If either is null, there was an error retrieving the manifest in this or the previous cache cycle.
+                    updateCache = image.digest != null && lastDigest != null
+                }
             }
-            )
-            */
+        } else {
+            updateCache = true
+        }
+        return updateCache
+    }
 
-            images.parallelStream().forEach({ TaggedImage image ->
-                def imageId = cache.makeKey(account, image.registry, image.repository, image.tag)
-                def updateCache = false
-
-                if (imageId in cachedImages) {
-                    if (trackDigests) {
-                        def lastDigest = cache.getLastDigest(image.account, image.registry, image.repository, image.tag)
-
-                        if (lastDigest != image.digest) {
-                            log.info("Updated tagged image: {}: {}. Digest changed from [$lastDigest] -> [$image.digest].", kv("account", image.account), kv("image", imageId))
-                            // If either is null, there was an error retrieving the manifest in this or the previous cache cycle.
-                            updateCache = image.digest != null && lastDigest != null
-                        }
-                    }
+    /**
+     * IMPORTANT: We don't remove indexed images from igor due to the potential for
+     * incomplete reads from clouddriver or Redis.
+     */
+    @Override
+    void commitDelta(DockerPollingDelta delta, boolean sendEvents) {
+        delta.items.findAll { it != null }.forEach { ImageDelta item ->
+            if (item != null) {
+                cache.setLastDigest(item.image.account, item.image.repository, item.image.tag, item.image.digest)
+                log.info("New tagged image: {}, {}. Digest is now [$item.image.digest].", kv("account", item.image.account), kv("image", item.imageId))
+                if (sendEvents) {
+                    postEvent(delta.cachedImages, item.image, item.imageId)
                 } else {
-                    log.info("New tagged image: {}: {}. Digest is now [$image.digest].", kv("account", image.account), kv("image", imageId))
-                    updateCache = true
+                    registry.counter(missedNotificationId.withTags("monitor", getClass().simpleName, "reason", "fastForward")).increment()
                 }
-
-                if (updateCache) {
-                    postEvent(echoService, cachedImages, image, imageId)
-                    cache.setLastDigest(image.account, image.registry, image.repository, image.tag, image.digest)
-                }
-            })
-        } catch (Exception e) {
-            log.error("Failed to update account {}", kv("account", account), e)
+            }
         }
     }
 
@@ -116,14 +161,14 @@ class DockerMonitor extends CommonPollingMonitor {
         "dockerTagMonitor"
     }
 
-    void postEvent(EchoService echoService, List<String> cachedImagesForAccount, TaggedImage image, String imageId) {
-        if (!cachedImagesForAccount) {
-            // avoid publishing an event if this account has no indexed images (protects against a flushed redis)
+    void postEvent(Set<String> cachedImagesForAccount, TaggedImage image, String imageId) {
+        if (!echoService.isPresent()) {
+            log.warn("Cannot send tagged image notification: Echo is not enabled")
+            registry.counter(missedNotificationId.withTags("monitor", getClass().simpleName, "reason", "echoDisabled")).increment()
             return
         }
-
-        if (!echoService) {
-            // avoid publishing an event if echo is disabled
+        if (!cachedImagesForAccount) {
+            // avoid publishing an event if this account has no indexed images (protects against a flushed redis)
             return
         }
 
@@ -131,12 +176,31 @@ class DockerMonitor extends CommonPollingMonitor {
         GenericArtifact dockerArtifact = new GenericArtifact("docker", image.repository, image.tag, "${image.registry}/${image.repository}:${image.tag}")
         dockerArtifact.metadata = [registry: image.registry]
 
-        echoService.postEvent(new DockerEvent(content: new DockerEvent.Content(
+        echoService.get().postEvent(new DockerEvent(content: new DockerEvent.Content(
             registry: image.registry,
             repository: image.repository,
             tag: image.tag,
             digest: image.digest,
             account: image.account,
         ), artifact: dockerArtifact))
+    }
+
+    @Override
+    protected Integer getPartitionUpperThreshold(String partition) {
+        def upperThreshold = dockerRegistryAccounts.accounts.find { it.name == partition }?.itemUpperThreshold
+        if (!upperThreshold) {
+            upperThreshold = dockerRegistryProperties.itemUpperThreshold
+        }
+        return upperThreshold
+    }
+
+    private static class DockerPollingDelta implements PollingDelta<ImageDelta> {
+        List<ImageDelta> items
+        Set<String> cachedImages
+    }
+
+    private static class ImageDelta implements DeltaItem {
+        String imageId
+        TaggedImage image
     }
 }

@@ -16,6 +16,10 @@
 
 package com.netflix.spinnaker.igor.jenkins.client
 
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.dataformat.xml.XmlMapper
+import com.fasterxml.jackson.module.jaxb.JaxbAnnotationModule
 import com.netflix.spinnaker.igor.config.JenkinsConfig
 import com.netflix.spinnaker.igor.config.JenkinsProperties
 import com.netflix.spinnaker.igor.jenkins.client.model.Build
@@ -23,6 +27,7 @@ import com.netflix.spinnaker.igor.jenkins.client.model.BuildArtifact
 import com.netflix.spinnaker.igor.jenkins.client.model.JobConfig
 import com.netflix.spinnaker.igor.jenkins.client.model.Project
 import com.netflix.spinnaker.igor.jenkins.client.model.ProjectsList
+import com.netflix.spinnaker.igor.model.Crumb
 import com.squareup.okhttp.mockwebserver.MockResponse
 import com.squareup.okhttp.mockwebserver.MockWebServer
 import spock.lang.Shared
@@ -63,12 +68,22 @@ class JenkinsClientSpec extends Specification {
     void 'gets build details'() {
         given:
         final BUILD_NUMBER = 24
-        setResponse '''<freeStyleProject><artifact><displayPath>mayo_1.0-h24.853b2ea_all.deb</displayPath><fileName>mayo_1.0-h24.853b2ea_all.deb</fileName><relativePath>build/distributions/mayo_1.0-h24.853b2ea_all.deb</relativePath></artifact><artifact><displayPath>dependencies.txt</displayPath><fileName>dependencies.txt</fileName><relativePath>build/reports/project/dependencies.txt</relativePath></artifact><artifact><displayPath>properties.txt</displayPath><fileName>properties.txt</fileName><relativePath>build/reports/project/properties.txt</relativePath></artifact><building>false</building><description>No longer used in test.</description><duration>231011</duration><estimatedDuration>231196</estimatedDuration><fullDisplayName>SPINNAKER-igor-netflix #24</fullDisplayName><id>2014-05-29_09-13-59</id><keepLog>false</keepLog><number>24</number><result>SUCCESS</result><timestamp>1401380039000</timestamp><url>http://builds.netflix.com/job/SPINNAKER-igor-netflix/24/</url><builtOn>ssh-dynaslave-3f220763</builtOn><changeSet><kind>git</kind></changeSet></freeStyleProject>'''
+        setResponse '''<freeStyleProject><artifact><displayPath>mayo_1.0-h24.853b2ea_all.deb</displayPath><fileName>mayo_1.0-h24.853b2ea_all.deb</fileName><relativePath>build/distributions/mayo_1.0-h24.853b2ea_all.deb</relativePath></artifact><artifact><displayPath>dependencies.txt</displayPath><fileName>dependencies.txt</fileName><relativePath>build/reports/project/dependencies.txt</relativePath></artifact><artifact><displayPath>igorProperties.txt</displayPath><fileName>igorProperties.txt</fileName><relativePath>build/reports/project/igorProperties.txt</relativePath></artifact><building>false</building><description>No longer used in test.</description><duration>231011</duration><estimatedDuration>231196</estimatedDuration><fullDisplayName>SPINNAKER-igor-netflix #24</fullDisplayName><id>2014-05-29_09-13-59</id><keepLog>false</keepLog><number>24</number><result>SUCCESS</result><timestamp>1401380039000</timestamp><url>http://builds.netflix.com/job/SPINNAKER-igor-netflix/24/</url><builtOn>ssh-dynaslave-3f220763</builtOn><changeSet><kind>git</kind></changeSet></freeStyleProject>'''
         Build build = client.getBuild('SPINNAKER-igor-netflix', BUILD_NUMBER)
 
         expect:
         build.number == BUILD_NUMBER
         build.result == 'SUCCESS'
+    }
+
+    void 'gets crumb'() {
+        given:
+        setResponse '<defaultCrumbIssuer _class=\'hudson.security.csrf.DefaultCrumbIssuer\'><crumb>2f70a60a9f993597a565862020bedd5a</crumb><crumbRequestField>Jenkins-Crumb</crumbRequestField></defaultCrumbIssuer>'
+        Crumb crumb = client.getCrumb()
+
+        expect:
+        crumb.crumb == '2f70a60a9f993597a565862020bedd5a'
+        crumb.crumbRequestField == 'Jenkins-Crumb'
     }
 
     void 'correctly retrieves upstream dependencies'() {
@@ -192,11 +207,13 @@ class JenkinsClientSpec extends Specification {
         setResponse("")
 
         when:
-        def response = client.build("My-Build", "")
+        def response = client.build("My-Build", "", crumb)
 
         then:
         response
 
+        where:
+        crumb << [null, 'crumb']
     }
 
     void 'trigger a build with parameters'() {
@@ -204,10 +221,13 @@ class JenkinsClientSpec extends Specification {
         setResponse("")
 
         when:
-        def response = client.buildWithParameters("My-Build", [foo:"bar", key:"value"], "")
+        def response = client.buildWithParameters("My-Build", [foo:"bar", key:"value"], "", crumb)
 
         then:
         response
+
+        where:
+        crumb << [null, 'crumb']
     }
 
     private void setResponse(String body) {
@@ -259,7 +279,7 @@ class JenkinsClientSpec extends Specification {
                 '<freeStyleBuild>' +
                 '<action><failCount>0</failCount><skipCount>9</skipCount><totalCount>465</totalCount><urlName>testReport</urlName></action>' +
                 '<artifact><displayPath>api.txt</displayPath><fileName>api.txt</fileName><relativePath>apiweb/build/api.txt</relativePath></artifact>' +
-                '<artifact><displayPath>deb.properties</displayPath><fileName>deb.properties</fileName><relativePath>foo/build/deb.properties</relativePath></artifact>' +
+                '<artifact><displayPath>deb.igorProperties</displayPath><fileName>deb.igorProperties</fileName><relativePath>foo/build/deb.igorProperties</relativePath></artifact>' +
                 '<artifact><displayPath>api.deb</displayPath><fileName>api.deb</fileName><relativePath>foo/build/distributions/api.deb</relativePath></artifact>' +
                 '<artifact><displayPath>dependencies.lock</displayPath><fileName>dependencies.lock</fileName><relativePath>foo/dependencies.lock</relativePath></artifact>' +
                 '<building>false</building>' +
@@ -274,20 +294,20 @@ class JenkinsClientSpec extends Specification {
     private String getBuildsWithArtifactsAndTests() {
         return '<hudson>' +
                 '<job>' +
-                '<name>job1</name>' +
-                '<lastBuild>' +
-                '<action><failCount>0</failCount><skipCount>1</skipCount><totalCount>111</totalCount><urlName>testReport</urlName></action>' +
-                '<action><failCount>0</failCount><skipCount>0</skipCount><totalCount>123</totalCount><urlName>testngreports</urlName></action>' +
-                '<artifact><displayPath>libs/myProject-1.601.0-sources.jar</displayPath><fileName>myProject-1.601.0-sources.jar</fileName><relativePath>build/libs/myProject-1.601.0-sources.jar</relativePath></artifact>' +
-                '<artifact><displayPath>libs/myProject-1.601.0.jar</displayPath><fileName>myProject-1.601.0.jar</fileName><relativePath>build/libs/myProject-1.601.0.jar</relativePath></artifact>' +
-                '<artifact><displayPath>publishMavenNebulaPublicationToDistMavenRepository/org/myProject/myProject/1.601.0/myProject-1.601.0-sources.jar</displayPath><fileName>myProject-1.601.0-sources.jar</fileName><relativePath>build/tmp/publishMavenNebulaPublicationToDistMavenRepository/org/myProject/myProject/1.601.0/myProject-1.601.0-sources.jar</relativePath></artifact>' +
-                '<building>false</building>' +
-                '<duration>39238</duration>' +
-                '<number>1</number>' +
-                '<result>SUCCESS</result>' +
-                '<timestamp>1421717251402</timestamp>' +
-                '<url>http://my.jenkins.net/job/job1/1/</url>' +
-                '</lastBuild>' +
+                ' <name>job1</name>' +
+                ' <lastBuild>' +
+                '   <action><failCount>0</failCount><skipCount>1</skipCount><totalCount>111</totalCount><urlName>testReport</urlName></action>' +
+                '   <action><failCount>0</failCount><skipCount>0</skipCount><totalCount>123</totalCount><urlName>testngreports</urlName></action>' +
+                '   <artifact><displayPath>libs/myProject-1.601.0-sources.jar</displayPath><fileName>myProject-1.601.0-sources.jar</fileName><relativePath>build/libs/myProject-1.601.0-sources.jar</relativePath></artifact>' +
+                '   <artifact><displayPath>libs/myProject-1.601.0.jar</displayPath><fileName>myProject-1.601.0.jar</fileName><relativePath>build/libs/myProject-1.601.0.jar</relativePath></artifact>' +
+                '   <artifact><displayPath>publishMavenNebulaPublicationToDistMavenRepository/org/myProject/myProject/1.601.0/myProject-1.601.0-sources.jar</displayPath><fileName>myProject-1.601.0-sources.jar</fileName><relativePath>build/tmp/publishMavenNebulaPublicationToDistMavenRepository/org/myProject/myProject/1.601.0/myProject-1.601.0-sources.jar</relativePath></artifact>' +
+                '   <building>false</building>' +
+                '   <duration>39238</duration>' +
+                '   <number>1</number>' +
+                '   <result>SUCCESS</result>' +
+                '   <timestamp>1421717251402</timestamp>' +
+                '   <url>http://my.jenkins.net/job/job1/1/</url>' +
+                ' </lastBuild>' +
                 '</job>' +
                 '<job>' +
                 '<name>job2</name>' +
@@ -315,5 +335,16 @@ class JenkinsClientSpec extends Specification {
                 '</lastBuild>' +
                 '</job>' +
                 '</hudson>'
+    }
+
+    private String getCrumb() {
+        return '<defaultCrumbIssuer _class=\'hudson.security.csrf.DefaultCrumbIssuer\'>' +
+            '<crumb>' +
+            '2f70a60a9f993597a565862020bedd5a' +
+            '</crumb>' +
+            '<crumbRequestField>' +
+            'Jenkins-Crumb' +
+            '</crumbRequestField>' +
+            '</defaultCrumbIssuer>'
     }
 }
