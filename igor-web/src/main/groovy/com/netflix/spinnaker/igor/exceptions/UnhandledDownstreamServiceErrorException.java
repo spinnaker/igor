@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Netflix, Inc.
+ * Copyright 2018 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,26 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.netflix.spinnaker.igor.exceptions;
 
-package com.netflix.spinnaker.igor.jenkins.client.model
+public class UnhandledDownstreamServiceErrorException extends RuntimeException {
 
-
-import javax.xml.bind.annotation.XmlElement
-import javax.xml.bind.annotation.XmlRootElement
-
-@XmlRootElement
-class QueuedJob {
-    @XmlElement
-    QueuedExecutable executable
-
-    @XmlElement(name = 'number')
-    Integer getNumber() {
-        return executable?.number
+    public UnhandledDownstreamServiceErrorException(String message) {
+        super(message);
     }
-}
 
-
-class QueuedExecutable {
-    @XmlElement
-    Integer number
+    public UnhandledDownstreamServiceErrorException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }
