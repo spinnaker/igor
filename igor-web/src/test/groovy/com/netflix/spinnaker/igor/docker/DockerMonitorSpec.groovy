@@ -116,23 +116,24 @@ class DockerMonitorSpec extends Specification {
 
         when:
         def taggedImage = new TaggedImage(tag: tag, account: "account", registry: "registry", repository: "repository", digest: digest)
-        def result = subject.shouldUpdateCache(cachedImages, keyFromTaggedImage(taggedImage), taggedImage, trackDigest)
+        def result = subject.getUpdateType(cachedImages, keyFromTaggedImage(taggedImage), taggedImage, trackDigest)
 
         then:
         dockerRegistryCache.getLastDigest(_, _, _) >> cachedDigest
-        assert result == updateCache
+        assert result.updateCache == updateCache
+        assert result.sendEvent == sendEvent
 
         where:
-        tag   | digest    | cachedDigest | trackDigest || updateCache
-        "tag" | "digest"  | "digest"     | false       || false
-        "new" | "digest"  | "digest"     | false       || true
-        "tag" | "digest2" | "digest"     | true        || true
-        "tag" | null      | "digest"     | true        || false
-        "tag" | "digest"  | null         | true        || false
-        "tag" | null      | null         | true        || false
-        "tag" | null      | "digest"     | false       || false
-        "tag" | "digest"  | null         | false       || false
-        "tag" | null      | null         | false       || false
+        tag   | digest    | cachedDigest | trackDigest || updateCache | sendEvent
+        "tag" | "digest"  | "digest"     | false       || false       | false
+        "new" | "digest"  | "digest"     | false       || true        | true
+        "tag" | "digest2" | "digest"     | true        || true        | true
+        "tag" | null      | "digest"     | true        || false       | false
+        "tag" | "digest"  | null         | true        || false       | false
+        "tag" | null      | null         | true        || false       | false
+        "tag" | null      | "digest"     | false       || false       | false
+        "tag" | "digest"  | null         | false       || false       | false
+        "tag" | null      | null         | false       || false       | false
     }
 
     @Unroll

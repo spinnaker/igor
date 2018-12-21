@@ -109,7 +109,8 @@ class DockerMonitor extends CommonPollingMonitor<ImageDelta, DockerPollingDelta>
         List<ImageDelta> delta = []
         images.findAll { it != null }.forEach { TaggedImage image ->
             String imageId = new DockerRegistryV2Key(igorProperties.spinnaker.jedis.prefix, DockerRegistryCache.ID, account, image.repository, image.tag)
-            if (shouldUpdateCache(cachedImages, imageId, image, trackDigests)) {
+            UpdateType updateType = getUpdateType(cachedImages, imageId, image, trackDigests)
+            if (updateType.updateCache) {
                 delta.add(new ImageDelta(imageId: imageId, image: image))
             }
         }
@@ -119,8 +120,8 @@ class DockerMonitor extends CommonPollingMonitor<ImageDelta, DockerPollingDelta>
         return new DockerPollingDelta(items: delta, cachedImages: cachedImages)
     }
 
-    private boolean shouldUpdateCache(Set<String> cachedImages, String imageId, TaggedImage image, boolean trackDigests) {
-        boolean updateCache = false
+    private UpdateType getUpdateType(Set<String> cachedImages, String imageId, TaggedImage image, boolean trackDigests) {
+        UpdateType updateType = UpdateType.none()
         if (imageId in cachedImages) {
             if (trackDigests) {
                 String lastDigest = cache.getLastDigest(image.account, image.repository, image.tag)
@@ -128,13 +129,13 @@ class DockerMonitor extends CommonPollingMonitor<ImageDelta, DockerPollingDelta>
                 if (lastDigest != image.digest) {
                     log.info("Updated tagged image: {}: {}. Digest changed from [$lastDigest] -> [$image.digest].", kv("account", image.account), kv("image", imageId))
                     // If either is null, there was an error retrieving the manifest in this or the previous cache cycle.
-                    updateCache = image.digest != null && lastDigest != null
+                    updateType = image.digest != null && lastDigest != null ? UpdateType.full() : UpdateType.none()
                 }
             }
         } else {
-            updateCache = true
+            updateType = UpdateType.full()
         }
-        return updateCache
+        return updateType
     }
 
     /**
@@ -202,5 +203,27 @@ class DockerMonitor extends CommonPollingMonitor<ImageDelta, DockerPollingDelta>
     private static class ImageDelta implements DeltaItem {
         String imageId
         TaggedImage image
+    }
+
+    private static class UpdateType {
+        final boolean updateCache
+        final boolean sendEvent
+
+        private UpdateType(boolean updateCache, boolean sendEvent) {
+            this.updateCache = updateCache
+            this.sendEvent = sendEvent
+        }
+
+        static UpdateType full() {
+            return new UpdateType(true, true);
+        }
+
+        static UpdateType cacheOnly() {
+            return new UpdateType(true, false)
+        }
+
+        static UpdateType none() {
+            return new UpdateType(false, false)
+        }
     }
 }
