@@ -129,7 +129,7 @@ class DockerMonitorSpec extends Specification {
         "new" | "digest"  | "digest"     | false       || true        | true
         "tag" | "digest2" | "digest"     | true        || true        | true
         "tag" | null      | "digest"     | true        || false       | false
-        "tag" | "digest"  | null         | true        || false       | false
+        "tag" | "digest"  | null         | true        || true        | false
         "tag" | null      | null         | true        || false       | false
         "tag" | null      | "digest"     | false       || false       | false
         "tag" | "digest"  | null         | false       || false       | false
