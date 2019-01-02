@@ -255,7 +255,7 @@ public class TravisService implements BuildService {
         if (jobIds == null) {
             return "";
         }
-        return jobIds.stream()
+        String travisLog = jobIds.stream()
             .map(this::getJob)
             .map(job -> {
                 if (job.getLogId() > 0) {
@@ -266,15 +266,19 @@ public class TravisService implements BuildService {
                 }
             })
             .collect(Collectors.joining("\n"));
+        log.info("fetched logs for [buildNumber:{}], [buildId:{}], [logLength:{}]", build.getNumber(), build.getId(), travisLog.length());
+        return travisLog;
     }
 
     public String getLog(V3Build build) {
-        return build.getJobs().stream()
+        String travisLog = build.getJobs().stream()
             .map(V3Job::getId)
             .map(this::getJobLog)
             .filter(Objects::nonNull)
             .map(V3Log::getContent)
             .collect(Collectors.joining("\n"));
+        log.info("fetched logs for [buildNumber:{}], [buildId:{}], [logLength:{}]", build.getNumber(), build.getId(), travisLog.length());
+        return travisLog;
     }
 
     public String getLog(int logId) {
