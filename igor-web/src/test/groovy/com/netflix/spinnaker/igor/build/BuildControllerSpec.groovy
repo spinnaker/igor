@@ -116,7 +116,7 @@ class BuildControllerSpec extends Specification {
         then:
         1 * buildMasters.filteredMap(BuildServiceProvider.JENKINS) >> [(MASTER): jenkinsService]
         1 * buildMasters.map >> [(MASTER): jenkinsService]
-        response.contentAsString == "{\"executable\":{\"number\":${QUEUED_JOB_NUMBER}},\"number\":${QUEUED_JOB_NUMBER}}"
+        response.contentAsString == "{\"executable\":{\"number\":${QUEUED_JOB_NUMBER}},\"ready\":true,\"number\":${QUEUED_JOB_NUMBER}}"
     }
 
     void 'deserialize a queue response'() {
@@ -159,6 +159,7 @@ class BuildControllerSpec extends Specification {
 
         then:
         queuedJob.number == null
+        !queuedJob.ready
     }
 
     void 'get a list of builds for a job'() {

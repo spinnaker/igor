@@ -29,6 +29,11 @@ class QueuedJob {
     Integer getNumber() {
         return executable?.number
     }
+
+    @XmlElement(name = 'ready')
+    boolean getReady() {
+        executable?.number ? true : false
+    }
 }
 
 
