@@ -12,7 +12,6 @@ mainClassName = 'com.netflix.spinnaker.igor.Main'
 
 dependencies {
     spinnaker.group "test"
-    spinnaker.group "bootWeb"
     spinnaker.group "jackson"
     spinnaker.group "retrofitDefault"
 
@@ -31,13 +30,15 @@ dependencies {
     compile spinnaker.dependency("korkHystrix")
     compile spinnaker.dependency("okHttp")
     compile spinnaker.dependency('logstashEncoder')
+    compile spinnaker.dependency("yaml")
 
-    compile 'org.yaml:snakeyaml:1.15'
+    compile spinnaker.dependency("gson")
     compile 'com.squareup.retrofit:converter-simplexml:1.9.0'
-    compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.9.6'
-    compile 'com.google.code.gson:gson:2.8.2'
-    testCompile 'com.squareup.okhttp:mockwebserver:2.7.0'
+    compile "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:${spinnaker.version("jackson")}"
 
+    runtime "org.springframework.boot:spring-boot-properties-migrator:${spinnaker.version("springBoot")}"
+
+    testCompile 'com.squareup.okhttp:mockwebserver:2.7.0'
     testCompile spinnaker.dependency("korkJedisTest")
 }
 
