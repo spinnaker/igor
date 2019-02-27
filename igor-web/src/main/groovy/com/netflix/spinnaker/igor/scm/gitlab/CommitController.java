@@ -37,7 +37,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController(value = "GitLabCommitController")
-@ConditionalOnProperty("gitlab.baseUrl")
+@ConditionalOnProperty("gitlab.base-url")
 @RequestMapping("/gitlab")
 public class CommitController extends AbstractCommitController {
     private static final Logger log = LoggerFactory.getLogger(CommitController.class);
