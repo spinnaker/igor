@@ -32,7 +32,7 @@ import retrofit.RetrofitError
 
 @Slf4j
 @RestController(value = "BitBucketCommitController")
-@ConditionalOnProperty('bitbucket.baseUrl')
+@ConditionalOnProperty('bitbucket.base-url')
 @RequestMapping("/bitbucket")
 class CommitController extends AbstractCommitController {
   @Autowired

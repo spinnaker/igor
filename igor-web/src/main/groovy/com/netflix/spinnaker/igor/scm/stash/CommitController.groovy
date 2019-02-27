@@ -31,7 +31,7 @@ import retrofit.RetrofitError
 
 @Slf4j
 @RestController(value = "StashCommitController")
-@ConditionalOnProperty('stash.baseUrl')
+@ConditionalOnProperty('stash.base-url')
 @RequestMapping("/stash")
 class CommitController extends AbstractCommitController {
     @Autowired

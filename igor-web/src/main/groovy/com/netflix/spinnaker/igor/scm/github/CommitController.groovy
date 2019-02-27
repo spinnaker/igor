@@ -32,7 +32,7 @@ import retrofit.RetrofitError
 
 @Slf4j
 @RestController(value = "GitHubCommitController")
-@ConditionalOnProperty('github.baseUrl')
+@ConditionalOnProperty('github.base-url')
 @RequestMapping("/github")
 class CommitController extends AbstractCommitController {
     @Autowired
