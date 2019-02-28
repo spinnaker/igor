@@ -34,7 +34,7 @@ import java.security.Security
 @Configuration
 @EnableAutoConfiguration(exclude = [GroovyTemplateAutoConfiguration])
 @EnableConfigurationProperties(IgorConfigurationProperties)
-@ComponentScan(['com.netflix.spinnaker.igor', 'com.netflix.spinnaker.config', 'com.netflix.spinnaker.igor.health'])
+@ComponentScan([ 'com.netflix.spinnaker.config', 'com.netflix.spinnaker.igor'])
 class Main extends SpringBootServletInitializer {
 
     static final Map<String, String> DEFAULT_PROPS = [
@@ -48,6 +48,8 @@ class Main extends SpringBootServletInitializer {
     ]
 
     static {
+        System.setProperty("spring.main.allow-bean-definition-overriding", "true");
+
         /**
          * We often operate in an environment where we expect resolution of DNS names for remote dependencies to change
          * frequently, so it's best to tell the JVM to avoid caching DNS results internally.
