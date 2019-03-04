@@ -45,7 +45,8 @@ class JenkinsBuildMonitorSchedulingSpec extends Specification {
     void 'scheduler polls periodically'() {
         given:
         cache.getJobNames(MASTER) >> []
-        BuildMasters buildMasters = Mock(BuildMasters)
+        BuildMasters buildMasters = new BuildMasters()
+        buildMasters.map = [MASTER: jenkinsService]
         def cfg = new IgorConfigurationProperties()
         cfg.spinnaker.build.pollInterval = 1
         monitor = new JenkinsBuildMonitor(
@@ -60,37 +61,31 @@ class JenkinsBuildMonitorSchedulingSpec extends Specification {
             new JenkinsProperties()
         )
         monitor.worker = scheduler.createWorker()
+        jenkinsService.buildServiceProvider() >> BuildServiceProvider.JENKINS
 
         when:
         monitor.onApplicationEvent(Mock(RemoteStatusChangedEvent))
         scheduler.advanceTimeBy(1L, TimeUnit.SECONDS.MILLISECONDS)
 
         then: 'initial poll'
-        1 * buildMasters.filteredMap(BuildServiceProvider.JENKINS) >> [MASTER: jenkinsService]
-        1 * buildMasters.map >> [MASTER: jenkinsService]
         1 * jenkinsService.projects >> PROJECTS
 
         when:
         scheduler.advanceTimeBy(998L, TimeUnit.SECONDS.MILLISECONDS)
 
         then:
-        0 * buildMasters.map >> [MASTER: jenkinsService]
         0 * jenkinsService.projects >> PROJECTS
 
         when: 'poll at 1 second'
         scheduler.advanceTimeBy(2L, TimeUnit.SECONDS.MILLISECONDS)
 
         then:
-        1 * buildMasters.filteredMap(BuildServiceProvider.JENKINS) >> [MASTER: jenkinsService]
-        1 * buildMasters.map >> [MASTER: jenkinsService]
         1 * jenkinsService.projects >> PROJECTS
 
         when: 'poll at 2 and 3 second'
         scheduler.advanceTimeBy(4000L, TimeUnit.SECONDS.MILLISECONDS)
 
         then:
-        4 * buildMasters.filteredMap(BuildServiceProvider.JENKINS) >> [MASTER: jenkinsService]
-        4 * buildMasters.map >> [MASTER: jenkinsService]
         4 * jenkinsService.projects >> PROJECTS
 
         cleanup:
@@ -100,7 +95,8 @@ class JenkinsBuildMonitorSchedulingSpec extends Specification {
     void 'scheduler can be turned off'() {
         given:
         cache.getJobNames(MASTER) >> []
-        BuildMasters buildMasters = Mock(BuildMasters)
+        BuildMasters buildMasters = new BuildMasters()
+        buildMasters.map = [MASTER: jenkinsService]
         def cfg = new IgorConfigurationProperties()
         cfg.spinnaker.build.pollInterval = 1
         monitor = new JenkinsBuildMonitor(
@@ -115,6 +111,7 @@ class JenkinsBuildMonitorSchedulingSpec extends Specification {
             new JenkinsProperties()
         )
         monitor.worker = scheduler.createWorker()
+        jenkinsService.buildServiceProvider() >> BuildServiceProvider.JENKINS
 
         when:
         monitor.onApplicationEvent(Mock(RemoteStatusChangedEvent))

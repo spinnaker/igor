@@ -47,13 +47,15 @@ class JenkinsBuildMonitorSpec extends Specification {
     final MASTER = 'MASTER'
 
     void setup() {
+        def buildMasters = new BuildMasters()
+        buildMasters.map = [MASTER: jenkinsService]
         monitor = new JenkinsBuildMonitor(
             igorConfigurationProperties,
             new NoopRegistry(),
             Optional.empty(),
             Optional.empty(),
             cache,
-            new BuildMasters(map: [MASTER: jenkinsService]),
+            buildMasters,
             true,
             Optional.of(echoService),
             new JenkinsProperties()

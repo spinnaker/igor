@@ -41,13 +41,15 @@ class GitlabCiBuildMonitorSpec extends Specification {
 
     void setup() {
         def properties = new GitlabCiProperties(cachedJobTTLDays: CACHED_JOB_TTL_DAYS)
+        def buildMasters = new BuildMasters()
+        buildMasters.map = [MASTER: service]
         buildMonitor = new GitlabCiBuildMonitor(
             new IgorConfigurationProperties(),
             new NoopRegistry(),
             Optional.empty(),
             Optional.empty(),
             buildCache,
-            new BuildMasters(map: [MASTER: service]),
+            buildMasters,
             properties,
             Optional.of(echoService)
         )

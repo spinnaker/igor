@@ -46,24 +46,10 @@ class JenkinsServiceSpec extends Specification {
     @Shared
     JenkinsService csrfService
 
-    @Shared
-    MockWebServer server
-
     void setup() {
-        server = new MockWebServer()
-        server.enqueue(
-            new MockResponse()
-                .setBody(getProjects())
-                .setHeader('Content-Type', 'text/xml;charset=UTF-8')
-        )
-        server.start()
         client = Mock(JenkinsClient)
         service = new JenkinsService('http://my.jenkins.net', client, false)
         csrfService = new JenkinsService('http://my.jenkins.net', client, true)
-    }
-
-    void cleanup() {
-        server.shutdown()
     }
 
     @Unroll
@@ -178,6 +164,13 @@ class JenkinsServiceSpec extends Specification {
 
     void 'get a list of projects with the folders plugin'() {
         given:
+        MockWebServer server = new MockWebServer()
+        server.enqueue(
+            new MockResponse()
+                .setBody(getProjects())
+                .setHeader('Content-Type', 'text/xml;charset=UTF-8')
+        )
+        server.start()
         def host = new JenkinsProperties.JenkinsHost(
             address: server.getUrl('/').toString(),
             username: 'username',
@@ -191,6 +184,9 @@ class JenkinsServiceSpec extends Specification {
         then:
         projects.size() == 3
         projects*.name == ['job1', 'job2', 'folder1/job/folder2/job/job3']
+
+        cleanup:
+        server.shutdown()
     }
 
     private String getProjects() {

@@ -36,8 +36,8 @@ class WerckerBuildMonitorSchedulingSpec extends Specification {
     void 'scheduler polls periodically'() {
         given:
         cache.getJobNames(MASTER) >> []
-        BuildMasters buildMasters = Mock(BuildMasters)
-        buildMasters.map >> [MASTER: werckerService]
+        BuildMasters buildMasters = new BuildMasters()
+        buildMasters.map = [MASTER: werckerService]
         werckerService.getRunsSince(_) >> [:]
         def cfg = new IgorConfigurationProperties()
         cfg.spinnaker.build.pollInterval = 1
@@ -53,36 +53,31 @@ class WerckerBuildMonitorSchedulingSpec extends Specification {
                 new WerckerProperties()
                 )
         monitor.worker = scheduler.createWorker()
+        werckerService.buildServiceProvider() >> BuildServiceProvider.WERCKER
+
         when:
         monitor.onApplicationEvent(Mock(RemoteStatusChangedEvent))
         scheduler.advanceTimeBy(1L, TimeUnit.SECONDS.MILLISECONDS)
 
         then: 'initial poll'
-        1 * buildMasters.filteredMap(BuildServiceProvider.WERCKER) >> [MASTER: werckerService]
-        1 * buildMasters.map >> [MASTER: werckerService]
         1 * werckerService.getRunsSince(_) >> [:]
 
         when:
         scheduler.advanceTimeBy(998L, TimeUnit.SECONDS.MILLISECONDS)
 
         then:
-        0 * buildMasters.map >> [MASTER: werckerService]
         0 * werckerService.getRunsSince(_) >> [:]
 
         when: 'poll at 1 second'
         scheduler.advanceTimeBy(2L, TimeUnit.SECONDS.MILLISECONDS)
 
         then:
-        1 * buildMasters.filteredMap(BuildServiceProvider.WERCKER) >> [MASTER: werckerService]
-        1 * buildMasters.map >> [MASTER: werckerService]
         1 * werckerService.getRunsSince(_) >> [:]
 
         when: 'poll at 5 second'
         scheduler.advanceTimeBy(4000L, TimeUnit.SECONDS.MILLISECONDS)
 
         then:
-        4 * buildMasters.filteredMap(BuildServiceProvider.WERCKER) >> [MASTER: werckerService]
-        4 * buildMasters.map >> [MASTER: werckerService]
         4 * werckerService.getRunsSince(_) >> [:]
 
         cleanup:
