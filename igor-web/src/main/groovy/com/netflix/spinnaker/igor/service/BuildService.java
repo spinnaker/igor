@@ -13,20 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.netflix.spinnaker.igor.service;
 
-package com.netflix.spinnaker.igor.service
+import com.netflix.spinnaker.igor.build.model.GenericBuild;
+import com.netflix.spinnaker.igor.build.model.GenericGitRevision;
+import com.netflix.spinnaker.igor.model.BuildServiceProvider;
 
-import com.netflix.spinnaker.igor.build.model.GenericBuild
-import com.netflix.spinnaker.igor.build.model.GenericGitRevision
-import com.netflix.spinnaker.igor.model.BuildServiceProvider
+import java.util.List;
+import java.util.Map;
 
-interface BuildService {
-    BuildServiceProvider buildServiceProvider()
+public interface BuildService {
+    BuildServiceProvider buildServiceProvider();
 
-    List<GenericGitRevision> getGenericGitRevisions(String job, int buildNumber)
+    List<GenericGitRevision> getGenericGitRevisions(String job, int buildNumber);
 
-    GenericBuild getGenericBuild(String job, int buildNumber)
+    GenericBuild getGenericBuild(String job, int buildNumber);
 
-    int triggerBuildWithParameters(String job, Map<String, String> queryParameters)
-
+    int triggerBuildWithParameters(String job, Map<String, String> queryParameters);
 }

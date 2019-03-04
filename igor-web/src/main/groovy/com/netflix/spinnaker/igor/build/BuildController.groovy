@@ -19,6 +19,8 @@ package com.netflix.spinnaker.igor.build
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.igor.build.model.GenericBuild
+import com.netflix.spinnaker.igor.exceptions.BuildJobError
+import com.netflix.spinnaker.igor.exceptions.QueuedJobDeterminationError
 import com.netflix.spinnaker.igor.jenkins.client.model.JobConfig
 import com.netflix.spinnaker.igor.jenkins.service.JenkinsService
 import com.netflix.spinnaker.igor.model.BuildServiceProvider
@@ -31,7 +33,6 @@ import com.netflix.spinnaker.kork.web.exceptions.NotFoundException
 import groovy.transform.InheritConstructors
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.servlet.HandlerMapping
 import org.yaml.snakeyaml.Yaml
@@ -280,12 +281,6 @@ class BuildController {
         }
         return buildService
     }
-
-    @InheritConstructors
-    static class BuildJobError extends InvalidRequestException {}
-
-    @ResponseStatus(code = HttpStatus.SERVICE_UNAVAILABLE)
-    static class QueuedJobDeterminationError extends RuntimeException {}
 
     @InheritConstructors
     static class InvalidJobParameterException extends InvalidRequestException {}

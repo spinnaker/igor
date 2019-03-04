@@ -152,11 +152,10 @@ class JenkinsServiceSpec extends Specification {
         service = new JenkinsService('http://my.jenkins.net', client, true)
 
         when:
-        Crumb crumb = service.getCrumb()
+        String crumb = service.getCrumb()
 
         then:
-        crumb.crumb == "fb171d526b9cc9e25afe80b356e12cb7"
-        crumb.crumbRequestField == ".crumb"
+        crumb == "fb171d526b9cc9e25afe80b356e12cb7"
 
         cleanup:
         server.shutdown()
