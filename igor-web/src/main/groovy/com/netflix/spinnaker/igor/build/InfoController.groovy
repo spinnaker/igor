@@ -47,7 +47,7 @@ class InfoController {
     JenkinsProperties jenkinsProperties
 
     @Autowired
-    BuildServices buildMasters
+    BuildServices buildServices
 
     @Autowired(required = false)
     TravisProperties travisProperties
@@ -76,9 +76,9 @@ class InfoController {
         } else {
             //Filter by provider type if it is specified
             if (providerType) {
-                return buildMasters.getServiceNames(providerType)
+                return buildServices.getServiceNames(providerType)
             } else {
-                return buildMasters.getServiceNames()
+                return buildServices.getServiceNames()
             }
         }
     }
@@ -98,7 +98,7 @@ class InfoController {
 
     @RequestMapping(value = '/jobs/{master:.+}', method = RequestMethod.GET)
     List<String> getJobs(@PathVariable String master) {
-        def buildService = buildMasters.getService(master)
+        def buildService = buildServices.getService(master)
         if (buildService == null) {
             throw new NotFoundException("Master '${master}' does not exist")
         }
@@ -135,7 +135,7 @@ class InfoController {
     Object getJobConfig(@PathVariable String master, HttpServletRequest request) {
         def job = (String) request.getAttribute(
             HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).split('/').drop(3).join('/')
-        def service = buildMasters.getService(master)
+        def service = buildServices.getService(master)
         if (service == null) {
             throw new NotFoundException("Master '${master}' does not exist")
         }

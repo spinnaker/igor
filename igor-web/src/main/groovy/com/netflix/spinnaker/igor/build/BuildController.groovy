@@ -45,7 +45,7 @@ import static org.springframework.http.HttpStatus.NOT_FOUND
 @RestController
 class BuildController {
     @Autowired
-    private BuildServices buildMasters
+    private BuildServices buildServices
 
     @Autowired(required = false)
     private BuildArtifactFilter buildArtifactFilter
@@ -204,7 +204,7 @@ class BuildController {
     }
 
     private BuildService getBuildService(String master) {
-        def buildService = buildMasters.getService(master)
+        def buildService = buildServices.getService(master)
         if (buildService == null) {
             throw new NotFoundException("Master '${master}' not found}")
         }

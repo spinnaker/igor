@@ -52,7 +52,7 @@ import retrofit.RetrofitError
 class WerckerBuildMonitor extends CommonPollingMonitor<PipelineDelta, PipelinePollingDelta> {
 
     private final WerckerCache cache
-    private final BuildServices buildMasters
+    private final BuildServices buildServices
     private final boolean pollingEnabled
     private final Optional<EchoService> echoService
     private final WerckerProperties werckerProperties
@@ -64,13 +64,13 @@ class WerckerBuildMonitor extends CommonPollingMonitor<PipelineDelta, PipelinePo
         Optional<DiscoveryClient> discoveryClient,
         Optional<LockService> lockService,
         WerckerCache cache,
-        BuildServices buildMasters,
+        BuildServices buildServices,
         @Value('${wercker.polling.enabled:true}') boolean pollingEnabled,
         Optional<EchoService> echoService,
         WerckerProperties werckerProperties) {
         super(properties, registry, discoveryClient, lockService)
         this.cache = cache
-        this.buildMasters = buildMasters
+        this.buildServices = buildServices
         this.pollingEnabled = pollingEnabled
         this.echoService = echoService
         this.werckerProperties = werckerProperties
@@ -94,7 +94,7 @@ class WerckerBuildMonitor extends CommonPollingMonitor<PipelineDelta, PipelinePo
     void poll(boolean sendEvents) {
         long startTime = System.currentTimeMillis()
         log.info "WerckerBuildMonitor Polling cycle started: ${new Date()}, echoService:${echoService.isPresent()} "
-        buildMasters.getServiceNames(BuildServiceProvider.WERCKER).parallelStream().forEach( { master ->
+        buildServices.getServiceNames(BuildServiceProvider.WERCKER).parallelStream().forEach( { master ->
             pollSingle(new PollContext(master, !sendEvents))
         }
         )
@@ -121,7 +121,7 @@ class WerckerBuildMonitor extends CommonPollingMonitor<PipelineDelta, PipelinePo
 
         List<PipelineDelta> delta = []
 
-        WerckerService werckerService = buildMasters.getService(master) as WerckerService
+        WerckerService werckerService = buildServices.getService(master) as WerckerService
         long since = System.currentTimeMillis() - (Long.valueOf(getPollInterval() * 2 * 1000))
         try {
             Map<String, List<Run>> runs = werckerService.getRunsSince(since)

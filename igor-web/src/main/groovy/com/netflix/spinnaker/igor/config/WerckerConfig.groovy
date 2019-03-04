@@ -41,7 +41,7 @@ import retrofit.client.OkClient
 public class WerckerConfig {
     @Bean
     Map<String, WerckerService> werckerMasters(
-        BuildServices buildMasters,
+        BuildServices buildServices,
         WerckerCache cache,
         IgorConfigurationProperties igorConfigurationProperties,
         @Valid WerckerProperties werckerProperties) {
@@ -51,7 +51,7 @@ public class WerckerConfig {
             [(host.name): new WerckerService(host, cache, werckerClient(host, igorConfigurationProperties.getClient().timeout))]
         })
 
-        buildMasters.addServices(werckerMasters)
+        buildServices.addServices(werckerMasters)
         werckerMasters
     }
 

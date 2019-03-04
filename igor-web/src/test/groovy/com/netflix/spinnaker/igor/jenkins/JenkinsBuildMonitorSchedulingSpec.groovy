@@ -45,8 +45,8 @@ class JenkinsBuildMonitorSchedulingSpec extends Specification {
     void 'scheduler polls periodically'() {
         given:
         cache.getJobNames(MASTER) >> []
-        BuildServices buildMasters = new BuildServices()
-        buildMasters.addServices([MASTER: jenkinsService])
+        BuildServices buildServices = new BuildServices()
+        buildServices.addServices([MASTER: jenkinsService])
         def cfg = new IgorConfigurationProperties()
         cfg.spinnaker.build.pollInterval = 1
         monitor = new JenkinsBuildMonitor(
@@ -55,7 +55,7 @@ class JenkinsBuildMonitorSchedulingSpec extends Specification {
             Optional.empty(),
             Optional.empty(),
             cache,
-            buildMasters,
+            buildServices,
             true,
             Optional.empty(),
             new JenkinsProperties()
@@ -95,8 +95,8 @@ class JenkinsBuildMonitorSchedulingSpec extends Specification {
     void 'scheduler can be turned off'() {
         given:
         cache.getJobNames(MASTER) >> []
-        BuildServices buildMasters = new BuildServices()
-        buildMasters.addServices([MASTER: jenkinsService])
+        BuildServices buildServices = new BuildServices()
+        buildServices.addServices([MASTER: jenkinsService])
         def cfg = new IgorConfigurationProperties()
         cfg.spinnaker.build.pollInterval = 1
         monitor = new JenkinsBuildMonitor(
@@ -105,7 +105,7 @@ class JenkinsBuildMonitorSchedulingSpec extends Specification {
             Optional.empty(),
             Optional.empty(),
             cache,
-            buildMasters,
+            buildServices,
             false,
             Optional.empty(),
             new JenkinsProperties()
@@ -118,19 +118,19 @@ class JenkinsBuildMonitorSchedulingSpec extends Specification {
         scheduler.advanceTimeBy(1L, TimeUnit.SECONDS.MILLISECONDS)
 
         then: 'initial poll'
-        0 * buildMasters.filteredMap
+        0 * buildServices.filteredMap
 
         when:
         scheduler.advanceTimeBy(998L, TimeUnit.SECONDS.MILLISECONDS)
 
         then:
-        0 * buildMasters.filteredMap
+        0 * buildServices.filteredMap
 
         when: 'poll at 1 second'
         scheduler.advanceTimeBy(2L, TimeUnit.SECONDS.MILLISECONDS)
 
         then:
-        0 * buildMasters.filteredMap
+        0 * buildServices.filteredMap
 
         cleanup:
         monitor.stop()

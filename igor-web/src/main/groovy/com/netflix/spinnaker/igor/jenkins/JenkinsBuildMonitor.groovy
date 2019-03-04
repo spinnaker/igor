@@ -52,7 +52,7 @@ import static net.logstash.logback.argument.StructuredArguments.kv
 class JenkinsBuildMonitor extends CommonPollingMonitor<JobDelta, JobPollingDelta> {
 
     private final JenkinsCache cache
-    private final BuildServices buildMasters
+    private final BuildServices buildServices
     private final boolean pollingEnabled
     private final Optional<EchoService> echoService
     private final JenkinsProperties jenkinsProperties
@@ -63,13 +63,13 @@ class JenkinsBuildMonitor extends CommonPollingMonitor<JobDelta, JobPollingDelta
                         Optional<DiscoveryClient> discoveryClient,
                         Optional<LockService> lockService,
                         JenkinsCache cache,
-                        BuildServices buildMasters,
+                        BuildServices buildServices,
                         @Value('${jenkins.polling.enabled:true}') boolean pollingEnabled,
                         Optional<EchoService> echoService,
                         JenkinsProperties jenkinsProperties) {
         super(properties, registry, discoveryClient, lockService)
         this.cache = cache
-        this.buildMasters = buildMasters
+        this.buildServices = buildServices
         this.pollingEnabled = pollingEnabled
         this.echoService = echoService
         this.jenkinsProperties = jenkinsProperties
@@ -91,7 +91,7 @@ class JenkinsBuildMonitor extends CommonPollingMonitor<JobDelta, JobPollingDelta
 
     @Override
     void poll(boolean sendEvents) {
-        buildMasters.getServiceNames(BuildServiceProvider.JENKINS).stream().forEach(
+        buildServices.getServiceNames(BuildServiceProvider.JENKINS).stream().forEach(
             { master -> pollSingle(new PollContext(master, !sendEvents)) }
         )
     }
@@ -107,7 +107,7 @@ class JenkinsBuildMonitor extends CommonPollingMonitor<JobDelta, JobPollingDelta
 
         final List<JobDelta> delta = []
         registry.timer("pollingMonitor.jenkins.retrieveProjects", [new BasicTag("partition", master)]).record {
-            JenkinsService jenkinsService = buildMasters.getService(master) as JenkinsService
+            JenkinsService jenkinsService = buildServices.getService(master) as JenkinsService
             List<Project> jobs = jenkinsService.getProjects()?.getList() ?:[]
             jobs.forEach( { job -> processBuildsOfProject(jenkinsService, master, job, delta)})
         }

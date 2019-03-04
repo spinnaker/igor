@@ -79,7 +79,7 @@ class JenkinsConfig {
     }
 
     @Bean
-    Map<String, JenkinsService> jenkinsMasters(BuildServices buildMasters,
+    Map<String, JenkinsService> jenkinsMasters(BuildServices buildServices,
                                                IgorConfigurationProperties igorConfigurationProperties,
                                                @Valid JenkinsProperties jenkinsProperties,
                                                JenkinsOkHttpClientProvider jenkinsOkHttpClientProvider,
@@ -109,7 +109,7 @@ class JenkinsConfig {
             )]
         })
 
-        buildMasters.addServices(jenkinsMasters)
+        buildServices.addServices(jenkinsMasters)
         jenkinsMasters
     }
 

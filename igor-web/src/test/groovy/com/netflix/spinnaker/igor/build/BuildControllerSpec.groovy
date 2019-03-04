@@ -48,7 +48,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class BuildControllerSpec extends Specification {
 
     MockMvc mockMvc
-    BuildServices buildMasters
+    BuildServices buildServices
     BuildCache cache
     JenkinsService jenkinsService
     BuildService service
@@ -81,8 +81,8 @@ class BuildControllerSpec extends Specification {
         jenkinsService.buildServiceProvider() >> BuildServiceProvider.JENKINS
         travisService = Mock(TravisService)
         travisService.buildServiceProvider() >> BuildServiceProvider.TRAVIS
-        buildMasters = new BuildServices()
-        buildMasters.addServices([
+        buildServices = new BuildServices()
+        buildServices.addServices([
             (SERVICE) : service,
             (JENKINS_SERVICE): jenkinsService,
             (TRAVIS_SERVICE): travisService,
@@ -92,7 +92,7 @@ class BuildControllerSpec extends Specification {
 
         mockMvc = MockMvcBuilders
             .standaloneSetup(new BuildController(
-                buildMasters: buildMasters,
+                buildServices: buildServices,
             ))
             .setControllerAdvice(new GenericExceptionHandlers())
             .build()

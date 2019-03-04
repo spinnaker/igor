@@ -44,14 +44,14 @@ class TravisBuildMonitorSpec extends Specification {
 
     void setup() {
         def travisProperties = new TravisProperties(cachedJobTTLDays: CACHED_JOB_TTL_DAYS)
-        def buildMasters = new BuildServices()
-        buildMasters.addServices([MASTER: travisService])
+        def buildServices = new BuildServices()
+        buildServices.addServices([MASTER: travisService])
         travisBuildMonitor = new TravisBuildMonitor(
             new IgorConfigurationProperties(),
             new NoopRegistry(),
             Optional.empty(),
             buildCache,
-            buildMasters,
+            buildServices,
             travisProperties,
             Optional.of(echoService),
             Optional.empty()

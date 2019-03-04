@@ -61,7 +61,7 @@ class IgorConfig extends WebMvcConfigurerAdapter {
     }
 
     @Bean
-    BuildServices buildMasters() {
+    BuildServices buildServices() {
         new BuildServices()
     }
 

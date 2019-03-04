@@ -47,16 +47,16 @@ class WerckerBuildMonitorSpec extends Specification {
     final pipeline = 'myOrg/myApp/pollingTest'
     final TestScheduler scheduler = new TestScheduler()
 
-    BuildServices mockBuildMasters() {
+    BuildServices mockBuildServices() {
         cache.getJobNames(MASTER) >> ['pipeline']
-        BuildServices buildMasters = new BuildServices()
-        buildMasters.addServices([MASTER: mockService])
-        return buildMasters
+        BuildServices buildServices = new BuildServices()
+        buildServices.addServices([MASTER: mockService])
+        return buildServices
     }
 
     void 'no finished run'() {
         given:
-        BuildServices buildMasters = mockBuildMasters()
+        BuildServices buildServices = mockBuildServices()
 
         long now = System.currentTimeMillis();
         List<Run> runs1 = [
@@ -64,7 +64,7 @@ class WerckerBuildMonitorSpec extends Specification {
             new Run(id:"a",    startedAt: new Date(now-11)),
             new Run(id:"init", startedAt: new Date(now-12)),
         ]
-        monitor = monitor(buildMasters)
+        monitor = monitor(buildServices)
         monitor.worker = scheduler.createWorker()
         mockService.getRunsSince(_) >> [pipeline: runs1]
         cache.getBuildNumber(*_) >> 1
@@ -83,7 +83,7 @@ class WerckerBuildMonitorSpec extends Specification {
 
     void 'initial poll with completed runs'() {
         given:
-        BuildServices buildMasters = mockBuildMasters()
+        BuildServices buildServices = mockBuildServices()
 
         long now = System.currentTimeMillis();
         List<Run> runs1 = [
@@ -91,7 +91,7 @@ class WerckerBuildMonitorSpec extends Specification {
             new Run(id:"a",    startedAt: new Date(now-11), finishedAt: new Date(now-11)),
             new Run(id:"init", startedAt: new Date(now-12), finishedAt: new Date(now-10)),
         ]
-        monitor = monitor(buildMasters)
+        monitor = monitor(buildServices)
         monitor.worker = scheduler.createWorker()
         mockService.getRunsSince(_) >> [pipeline: runs1]
         cache.getBuildNumber(*_) >> 1
@@ -110,8 +110,8 @@ class WerckerBuildMonitorSpec extends Specification {
 
     void 'select latest one from multiple completed runs'() {
         given:
-        BuildServices buildMasters = mockBuildMasters()
-        monitor = monitor(buildMasters)
+        BuildServices buildServices = mockBuildServices()
+        monitor = monitor(buildServices)
         monitor.worker = scheduler.createWorker()
         mockService.getRunsSince(_) >> [:]
         cache.getBuildNumber(*_) >> 1
@@ -152,9 +152,9 @@ class WerckerBuildMonitorSpec extends Specification {
 
     void 'get runs of multiple pipelines'() {
         setup:
-        BuildServices buildMasters = new BuildServices()
-        buildMasters.addServices([MASTER: werckerService])
-        monitor = monitor(buildMasters)
+        BuildServices buildServices = new BuildServices()
+        buildServices.addServices([MASTER: werckerService])
+        monitor = monitor(buildServices)
         monitor.worker = scheduler.createWorker()
         cache.getBuildNumber(*_) >> 1
         client.getRunsSince(_, _, _, _, _) >> []
@@ -212,7 +212,7 @@ class WerckerBuildMonitorSpec extends Specification {
         monitor.stop()
     }
 
-    WerckerBuildMonitor monitor(BuildServices buildMasters) {
+    WerckerBuildMonitor monitor(BuildServices buildServices) {
         def cfg = new IgorConfigurationProperties()
         cfg.spinnaker.build.pollInterval = 1
         return new WerckerBuildMonitor(
@@ -221,7 +221,7 @@ class WerckerBuildMonitorSpec extends Specification {
                 Optional.empty(),
                 Optional.empty(),
                 cache,
-                buildMasters,
+                buildServices,
                 true,
                 Optional.of(echoService),
                 new WerckerProperties()

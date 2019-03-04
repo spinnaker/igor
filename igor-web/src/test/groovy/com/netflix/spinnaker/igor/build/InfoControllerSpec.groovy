@@ -50,7 +50,7 @@ class InfoControllerSpec extends Specification {
 
     MockMvc mockMvc
     BuildCache cache
-    BuildServices buildMasters
+    BuildServices buildServices
     JenkinsProperties jenkinsProperties
     TravisProperties travisProperties
     GitlabCiProperties gitlabCiProperties
@@ -71,14 +71,14 @@ class InfoControllerSpec extends Specification {
 
     void createMocks(Map<String, BuildService> buildServices) {
         cache = Mock(BuildCache)
-        buildMasters = new BuildServices()
-        buildMasters.addServices(buildServices)
+        this.buildServices = new BuildServices()
+        this.buildServices.addServices(buildServices)
         jenkinsProperties = Mock(JenkinsProperties)
         travisProperties = Mock(TravisProperties)
         gitlabCiProperties = Mock(GitlabCiProperties)
         mockMvc = MockMvcBuilders.standaloneSetup(
             new InfoController(buildCache: cache,
-                buildMasters: buildMasters,
+                buildServices: this.buildServices,
                 jenkinsProperties: jenkinsProperties,
                 travisProperties: travisProperties,
                 gitlabCiProperties: gitlabCiProperties))
