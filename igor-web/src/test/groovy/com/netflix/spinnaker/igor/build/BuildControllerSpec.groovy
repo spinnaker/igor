@@ -16,8 +16,7 @@
 
 package com.netflix.spinnaker.igor.build
 
-import java.util.concurrent.Executors
-import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spinnaker.kork.web.exceptions.NotFoundException
 import com.netflix.spinnaker.igor.build.model.GenericBuild
 import com.netflix.spinnaker.igor.config.JenkinsConfig
 import com.netflix.spinnaker.igor.jenkins.client.model.*
@@ -93,10 +92,7 @@ class BuildControllerSpec extends Specification {
 
         mockMvc = MockMvcBuilders
             .standaloneSetup(new BuildController(
-                executor: Executors.newSingleThreadExecutor(),
                 buildMasters: buildMasters,
-                objectMapper: new ObjectMapper(),
-                retrySupport: retrySupport
             ))
             .setControllerAdvice(new GenericExceptionHandlers())
             .build()
@@ -116,7 +112,7 @@ class BuildControllerSpec extends Specification {
 
     void 'get an item from the queue'() {
         given:
-        1 * jenkinsService.getQueuedItem(QUEUED_JOB_NUMBER) >> new QueuedJob(executable: [number: QUEUED_JOB_NUMBER])
+        1 * jenkinsService.queuedBuild(QUEUED_JOB_NUMBER) >> new QueuedJob(executable: [number: QUEUED_JOB_NUMBER])
 
         when:
         MockHttpServletResponse response = mockMvc.perform(get("/builds/queue/${JENKINS_SERVICE}/${QUEUED_JOB_NUMBER}")
@@ -170,7 +166,7 @@ class BuildControllerSpec extends Specification {
 
     void 'get a list of builds for a job'() {
         given:
-        1 * jenkinsService.getBuilds(JOB_NAME) >> new BuildsList(list: [new Build(number: 111), new Build(number: 222)])
+        1 * jenkinsService.getBuilds(JOB_NAME) >> [new Build(number: 111), new Build(number: 222)]
 
         when:
         MockHttpServletResponse response = mockMvc.perform(get("/builds/all/${JENKINS_SERVICE}/${JOB_NAME}")
@@ -195,8 +191,9 @@ class BuildControllerSpec extends Specification {
 
     void 'get properties of a build with a bad filename'() {
         given:
-        jenkinsService.getBuild(JOB_NAME, BUILD_NUMBER) >> new Build(
-            number: BUILD_NUMBER, artifacts: [new BuildArtifact(fileName: "badFile.yml", relativePath: FILE_NAME)])
+        jenkinsService.getBuildProperties(JOB_NAME, BUILD_NUMBER, FILE_NAME) >> {
+            throw new NotFoundException()
+        }
 
         expect:
         mockMvc.perform(
@@ -208,7 +205,7 @@ class BuildControllerSpec extends Specification {
 
     void 'get properties of a travis build'() {
         given:
-        1 * travisService.getBuildProperties(JOB_NAME, BUILD_NUMBER) >> ['foo': 'bar']
+        1 * travisService.getBuildProperties(JOB_NAME, BUILD_NUMBER, _) >> ['foo': 'bar']
 
         when:
         MockHttpServletResponse response = mockMvc.perform(

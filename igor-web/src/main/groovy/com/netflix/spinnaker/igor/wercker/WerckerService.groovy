@@ -257,7 +257,7 @@ class WerckerService implements BuildService {
 
     List<Run> getBuilds(String appAndPipelineName) {
         String pipelineId = getPipelineId(appAndPipelineName)
-        log.debug "getBuilds for ${groupKey} ${appAndPipelineName} ${pipelineId}"
+        log.debug "getBuildList for ${groupKey} ${appAndPipelineName} ${pipelineId}"
         return pipelineId? getRunsForPipeline(pipelineId) : []
     }
 

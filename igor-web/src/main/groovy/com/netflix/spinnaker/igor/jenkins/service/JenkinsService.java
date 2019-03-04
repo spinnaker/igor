@@ -17,39 +17,54 @@
 
 package com.netflix.spinnaker.igor.jenkins.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.hystrix.SimpleJava8HystrixCommand;
 import com.netflix.spinnaker.igor.build.model.GenericBuild;
 import com.netflix.spinnaker.igor.build.model.GenericGitRevision;
+import com.netflix.spinnaker.igor.exceptions.ArtifactNotFoundException;
 import com.netflix.spinnaker.igor.exceptions.BuildJobError;
 import com.netflix.spinnaker.igor.exceptions.QueuedJobDeterminationError;
 import com.netflix.spinnaker.igor.jenkins.client.JenkinsClient;
 import com.netflix.spinnaker.igor.jenkins.client.model.*;
 import com.netflix.spinnaker.igor.model.BuildServiceProvider;
 import com.netflix.spinnaker.igor.model.Crumb;
+import com.netflix.spinnaker.igor.service.BuildProperties;
 import com.netflix.spinnaker.igor.service.BuildService;
 import com.netflix.spinnaker.kork.core.RetrySupport;
+import com.netflix.spinnaker.kork.web.exceptions.NotFoundException;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.util.UriUtils;
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
 import retrofit.RetrofitError;
 import retrofit.client.Header;
 import retrofit.client.Response;
 
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static net.logstash.logback.argument.StructuredArguments.kv;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Slf4j
-public class JenkinsService implements BuildService {
+public class JenkinsService implements BuildService, BuildProperties {
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private final String groupKey;
+    private final String serviceName;
     private final JenkinsClient jenkinsClient;
     private final Boolean csrf;
     private final RetrySupport retrySupport = new RetrySupport();
 
     public JenkinsService(String jenkinsHostId, JenkinsClient jenkinsClient, Boolean csrf) {
+        this.serviceName = jenkinsHostId;
         this.groupKey = "jenkins-" + jenkinsHostId;
         this.jenkinsClient = jenkinsClient;
         this.csrf = csrf;
@@ -107,9 +122,10 @@ public class JenkinsService implements BuildService {
         return null;
     }
 
-    public BuildsList getBuilds(String jobName) {
+    @Override
+    public List<Build> getBuilds(String jobName) {
         return new SimpleJava8HystrixCommand<>(
-            groupKey, buildCommandKey("getBuilds"), () -> jenkinsClient.getBuilds(encode(jobName))).execute();
+            groupKey, buildCommandKey("getBuildList"), () -> jenkinsClient.getBuilds(encode(jobName)).getList()).execute();
     }
 
     public BuildDependencies getDependencies(String jobName) {
@@ -167,8 +183,15 @@ public class JenkinsService implements BuildService {
             groupKey, buildCommandKey("getLatestBuild"), () -> jenkinsClient.getLatestBuild(encode(jobName))).execute();
     }
 
-    public QueuedJob getQueuedItem(Integer item) {
-        return jenkinsClient.getQueuedItem(item);
+    public QueuedJob queuedBuild(Integer item) {
+        try {
+            return jenkinsClient.getQueuedItem(item);
+        } catch (RetrofitError e) {
+            if (e.getResponse() != null && e.getResponse().getStatus() == NOT_FOUND.value()) {
+                throw new NotFoundException("Queued job '${item}' not found for master '${master}'.");
+            }
+            throw e;
+        }
     }
 
     public Response build(String jobName) {
@@ -183,7 +206,51 @@ public class JenkinsService implements BuildService {
         return jenkinsClient.getJobConfig(encode(jobName));
     }
 
-    public Response getPropertyFile(String jobName, Integer buildNumber, String fileName) {
+    @Override
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> getBuildProperties(String job, int buildNumber, String fileName) {
+        if (StringUtils.isEmpty(fileName)) {
+            return new HashMap<>();
+        }
+        Map<String, Object> map = new HashMap<>();
+        try {
+            String path = getArtifactPathFromBuild(job, buildNumber, fileName);
+            try (InputStream propertyStream = this.getPropertyFile(job, buildNumber, path).getBody().in()) {
+                if (fileName.endsWith(".yml") || fileName.endsWith(".yaml")) {
+                    Yaml yml = new Yaml(new SafeConstructor());
+                    map = (Map<String, Object>) yml.load(propertyStream);
+                } else if (fileName.endsWith(".json")) {
+                    map = objectMapper.readValue(propertyStream, new TypeReference<Map<String, Object>>() {});
+                } else {
+                    Properties properties = new Properties();
+                    properties.load(propertyStream);
+                    map = properties.entrySet().stream()
+                        .collect(Collectors.toMap(e -> e.getKey().toString(), Map.Entry::getValue));
+                }
+            }
+        } catch (NotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Unable to get igorProperties '{}'", kv("job", job), e);
+        }
+        return map;
+    }
+
+
+    private String getArtifactPathFromBuild(String job, int buildNumber, String fileName) {
+        return retrySupport.retry(() -> this.getBuild(job, buildNumber).getArtifacts().stream()
+            .filter(a -> a.getFileName().equals(fileName))
+            .map(BuildArtifact::getRelativePath)
+            .findFirst()
+            .orElseThrow(() -> {
+                log.error("Unable to get igorProperties: Could not find build artifact matching requested filename '{}' on '{}' build '{}",
+                    kv("fileName", fileName), kv("master", serviceName), kv("buildNumber", buildNumber));
+                return new ArtifactNotFoundException(serviceName, job, buildNumber, fileName);
+            }), 5, 2000, false);
+    }
+
+
+    private Response getPropertyFile(String jobName, Integer buildNumber, String fileName) {
         return jenkinsClient.getPropertyFile(encode(jobName), buildNumber, fileName);
     }
 

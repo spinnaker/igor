@@ -21,16 +21,14 @@ import com.netflix.spinnaker.igor.config.GitlabCiProperties
 import com.netflix.spinnaker.igor.config.JenkinsProperties
 import com.netflix.spinnaker.igor.config.TravisProperties
 import com.netflix.spinnaker.igor.config.WerckerProperties
+import com.netflix.spinnaker.igor.jenkins.service.JenkinsService
 import com.netflix.spinnaker.igor.model.BuildServiceProvider
 import com.netflix.spinnaker.igor.service.BuildServices
+import com.netflix.spinnaker.igor.wercker.WerckerService
 import com.netflix.spinnaker.kork.web.exceptions.NotFoundException
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestMethod
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 import org.springframework.web.servlet.HandlerMapping
 
 import javax.servlet.http.HttpServletRequest
@@ -105,7 +103,8 @@ class InfoController {
             throw new NotFoundException("Master '${master}' does not exist")
         }
 
-        if (buildService.buildServiceProvider() == BuildServiceProvider.JENKINS) {
+        if (buildService instanceof JenkinsService) {
+            JenkinsService jenkinsService = (JenkinsService) buildService
             def jobList = []
             def recursiveGetJobs
 
@@ -121,11 +120,12 @@ class InfoController {
                     }
                 }
             }
-            recursiveGetJobs(buildService.jobs.list)
+            recursiveGetJobs(jenkinsService.jobs.list)
 
             return jobList
-        } else if (buildService.buildServiceProvider() == BuildServiceProvider.WERCKER) {
-            return buildService.getJobs()
+        } else if (buildService instanceof WerckerService) {
+            WerckerService werckerService = (WerckerService) buildService
+            return werckerService.getJobs()
         } else {
             return buildCache.getJobNames(master)
         }

@@ -17,17 +17,16 @@
 
 package com.netflix.spinnaker.igor.build
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.igor.build.model.GenericBuild
 import com.netflix.spinnaker.igor.exceptions.BuildJobError
 import com.netflix.spinnaker.igor.exceptions.QueuedJobDeterminationError
 import com.netflix.spinnaker.igor.jenkins.client.model.JobConfig
 import com.netflix.spinnaker.igor.jenkins.service.JenkinsService
-import com.netflix.spinnaker.igor.model.BuildServiceProvider
 import com.netflix.spinnaker.igor.service.ArtifactDecorator
+import com.netflix.spinnaker.igor.service.BuildProperties
 import com.netflix.spinnaker.igor.service.BuildService
 import com.netflix.spinnaker.igor.service.BuildServices
-import com.netflix.spinnaker.kork.core.RetrySupport
+import com.netflix.spinnaker.igor.travis.service.TravisService
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.kork.web.exceptions.NotFoundException
 import groovy.transform.InheritConstructors
@@ -35,12 +34,9 @@ import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.servlet.HandlerMapping
-import org.yaml.snakeyaml.Yaml
-import org.yaml.snakeyaml.constructor.SafeConstructor
 import retrofit.RetrofitError
 
 import javax.servlet.http.HttpServletRequest
-import java.util.concurrent.ExecutorService
 
 import static net.logstash.logback.argument.StructuredArguments.kv
 import static org.springframework.http.HttpStatus.NOT_FOUND
@@ -48,24 +44,14 @@ import static org.springframework.http.HttpStatus.NOT_FOUND
 @Slf4j
 @RestController
 class BuildController {
-
     @Autowired
-    ExecutorService executor
-
-    @Autowired
-    BuildServices buildMasters
-
-    @Autowired
-    ObjectMapper objectMapper
-
-    @Autowired
-    RetrySupport retrySupport
+    private BuildServices buildMasters
 
     @Autowired(required = false)
-    BuildArtifactFilter buildArtifactFilter
+    private BuildArtifactFilter buildArtifactFilter
 
     @Autowired(required = false)
-    ArtifactDecorator artifactDecorator
+    private ArtifactDecorator artifactDecorator
 
     @RequestMapping(value = '/builds/status/{buildNumber}/{master:.+}/**')
     GenericBuild getJobStatus(@PathVariable String master, @PathVariable
@@ -94,31 +80,22 @@ class BuildController {
     @RequestMapping(value = '/builds/queue/{master}/{item}')
     Object getQueueLocation(@PathVariable String master, @PathVariable int item) {
         def buildService = getBuildService(master)
-        if (buildService.buildServiceProvider() == BuildServiceProvider.JENKINS) {
-            try {
-                return buildService.getQueuedItem(item)
-            } catch (RetrofitError e) {
-                if (e.response?.status == NOT_FOUND.value()) {
-                    throw new NotFoundException("Queued job '${item}' not found for master '${master}'.")
-                }
-                throw e
-            }
-        } else if (buildService.buildServiceProvider() == BuildServiceProvider.TRAVIS) {
-            return buildService.queuedBuild(item)
+        if (buildService instanceof JenkinsService) {
+            JenkinsService jenkinsService = (JenkinsService) buildService
+            return jenkinsService.queuedBuild(item);
+        } else if (buildService instanceof TravisService) {
+            TravisService travisService = (TravisService) buildService
+            return travisService.queuedBuild(item)
         }
+        return null
     }
 
     @RequestMapping(value = '/builds/all/{master:.+}/**')
     List<Object> getBuilds(@PathVariable String master, HttpServletRequest request) {
         def job = (String) request.getAttribute(
             HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).split('/').drop(4).join('/')
-
         def buildService = getBuildService(master)
-        if (buildService.buildServiceProvider() == BuildServiceProvider.JENKINS) {
-            return buildService.getBuilds(job).list
-        } else {
-            return buildService.getBuilds(job)
-        }
+        return buildService.getBuilds(job)
     }
 
     @RequestMapping(value = "/masters/{name}/jobs/{jobName}/stop/{queuedBuild}/{buildNumber}", method = RequestMethod.PUT)
@@ -129,23 +106,25 @@ class BuildController {
         @PathVariable Integer buildNumber) {
 
         def buildService = getBuildService(master)
-        // Jobs that haven't been started yet won't have a buildNumber
-        // (They're still in the queue). We use 0 to denote that case
-        if (buildNumber != 0 &&
-            buildService.metaClass.respondsTo(buildService, 'stopRunningBuild')) {
-            buildService.stopRunningBuild(jobName, buildNumber)
-        }
-
-        // The jenkins api for removing a job from the queue (http://<Jenkins_URL>/queue/cancelItem?id=<queuedBuild>)
-        // always returns a 404. This try catch block insures that the exception is eaten instead
-        // of being handled by the handleOtherException handler and returning a 500 to orca
-        try {
-            if (buildService.metaClass.respondsTo(buildService, 'stopQueuedBuild')) {
-                buildService.stopQueuedBuild(queuedBuild)
+        if (buildService instanceof JenkinsService) {
+            // Jobs that haven't been started yet won't have a buildNumber
+            // (They're still in the queue). We use 0 to denote that case
+            if (buildNumber != 0 &&
+                buildService.metaClass.respondsTo(buildService, 'stopRunningBuild')) {
+                buildService.stopRunningBuild(jobName, buildNumber)
             }
-        } catch (RetrofitError e) {
-            if (e.response?.status != NOT_FOUND.value()) {
-                throw e
+
+            // The jenkins api for removing a job from the queue (http://<Jenkins_URL>/queue/cancelItem?id=<queuedBuild>)
+            // always returns a 404. This try catch block insures that the exception is eaten instead
+            // of being handled by the handleOtherException handler and returning a 500 to orca
+            try {
+                if (buildService.metaClass.respondsTo(buildService, 'stopQueuedBuild')) {
+                    buildService.stopQueuedBuild(queuedBuild)
+                }
+            } catch (RetrofitError e) {
+                if (e.response?.status != NOT_FOUND.value()) {
+                    throw e
+                }
             }
         }
 
@@ -159,7 +138,7 @@ class BuildController {
         def job = (String) request.getAttribute(
             HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).split('/').drop(4).join('/')
         def buildService = getBuildService(master)
-        if (buildService.buildServiceProvider() == BuildServiceProvider.JENKINS) {
+        if (buildService instanceof JenkinsService) {
             def response
             JenkinsService jenkinsService = (JenkinsService) buildService
             JobConfig jobConfig = jenkinsService.getJobConfig(job)
@@ -217,61 +196,11 @@ class BuildController {
         def job = (String) request.getAttribute(
             HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).split('/').drop(6).join('/')
         def buildService = getBuildService(master)
-        if (buildService.buildServiceProvider() == BuildServiceProvider.JENKINS) {
-            Map<String, Object> map = [:]
-            try {
-                String path = getArtifactPathFromBuild(buildService, master, job, buildNumber, fileName)
-
-                def propertyStream = buildService.getPropertyFile(job, buildNumber, path).body.in()
-                try {
-                    if (fileName.endsWith('.yml') || fileName.endsWith('.yaml')) {
-                        Yaml yml = new Yaml(new SafeConstructor())
-                        map = yml.load(propertyStream)
-                    } else if (fileName.endsWith('.json')) {
-                        map = objectMapper.readValue(propertyStream, Map)
-                    } else {
-                        Properties properties = new Properties()
-                        properties.load(propertyStream)
-                        map = map << properties
-                    }
-                } finally {
-                    propertyStream.close()
-                }
-            } catch (NotFoundException e) {
-                throw e
-            } catch (e) {
-                log.error("Unable to get igorProperties '{}'", kv("job", job), e)
-            }
-            map
-        } else if (buildService.buildServiceProvider() == BuildServiceProvider.TRAVIS) {
-            try {
-                buildService.getBuildProperties(job, buildNumber)
-            } catch (e) {
-                log.error("Unable to get igorProperties '{}'", kv("job", job), e)
-            }
+        if (buildService instanceof BuildProperties) {
+            BuildProperties buildProperties = (BuildProperties) buildService;
+            return buildProperties.getBuildProperties(job, buildNumber, fileName);
         }
-    }
-
-    private String getArtifactPathFromBuild(jenkinsService, master, job, buildNumber, String fileName) {
-        return retrySupport.retry({ ->
-            def artifact = jenkinsService.getBuild(job, buildNumber).artifacts.find {
-                it.fileName == fileName
-            }
-            if (artifact) {
-                return artifact.relativePath
-            } else {
-                log.error("Unable to get igorProperties: Could not find build artifact matching requested filename '{}' on '{}' build '{}",
-                    kv("fileName", fileName), kv("master", master), kv("buildNumber", buildNumber))
-                throw new ArtifactNotFoundException(master, job, buildNumber, fileName)
-            }
-        }, 5, 2000, false)
-    }
-
-    @ResponseStatus(NOT_FOUND)
-    private static class ArtifactNotFoundException extends NotFoundException {
-        ArtifactNotFoundException(String master, String job, Integer buildNumber, String fileName) {
-            super("Could not find build artifact matching requested filename '$fileName' on '$master/$job' build $buildNumber")
-        }
+        return Collections.emptyMap();
     }
 
     private BuildService getBuildService(String master) {

@@ -20,8 +20,8 @@ import com.netflix.spinnaker.igor.build.model.GenericGitRevision
 import com.netflix.spinnaker.igor.config.JenkinsConfig
 import com.netflix.spinnaker.igor.config.JenkinsProperties
 import com.netflix.spinnaker.igor.jenkins.client.JenkinsClient
+import com.netflix.spinnaker.igor.jenkins.client.model.BuildsList
 import com.netflix.spinnaker.igor.jenkins.client.model.Project
-import com.netflix.spinnaker.igor.model.Crumb
 import com.squareup.okhttp.mockwebserver.MockResponse
 import com.squareup.okhttp.mockwebserver.MockWebServer
 import spock.lang.Shared
@@ -53,6 +53,15 @@ class JenkinsServiceSpec extends Specification {
     }
 
     @Unroll
+    void 'the "getBuilds method encodes the job name'() {
+        when:
+        service.getBuilds(JOB_UNENCODED)
+
+        then:
+        1 * client.getBuilds(JOB_ENCODED) >> new BuildsList(list: [])
+    }
+
+    @Unroll
     void 'the "#method" method encodes the job name'() {
         when:
         if (extra_args) {
@@ -70,7 +79,6 @@ class JenkinsServiceSpec extends Specification {
 
         where:
         method                | extra_args
-        'getBuilds'           | []
         'getDependencies'     | []
         'getBuild'            | [2]
         'getGitDetails'       | [2]
@@ -572,6 +580,91 @@ class JenkinsServiceSpec extends Specification {
 
         cleanup:
         server.shutdown()
+    }
+
+    @Unroll
+    def "getProperties correctly deserializes properties}"() {
+        given:
+        def extension = testCase.extension
+        String buildData = String.join("\n",
+            '<freeStyleBuild _class="hudson.model.FreeStyleBuild">',
+                '<artifact>',
+                    "<displayPath>props$extension</displayPath>",
+                    "<fileName>props$extension</fileName>",
+                    "<relativePath>properties/props$extension</relativePath>",
+                '</artifact>',
+                '<building>false</building>',
+                '<duration>341</duration>',
+                '<fullDisplayName>PropertiesTest #5</fullDisplayName>',
+                '<number>5</number>',
+                '<result>SUCCESS</result>',
+                '<timestamp>1551546969642</timestamp>',
+                '<url>http://jenkins-host.test/job/PropertiesTest/5/</url>',
+            '</freeStyleBuild>')
+        MockWebServer server = new MockWebServer()
+        server.enqueue(
+            new MockResponse()
+                .setBody(buildData)
+                .setHeader('Content-Type', "application/xml")
+        )
+        server.enqueue(
+            new MockResponse()
+                .setBody(testCase.contents)
+                .setHeader('Content-Type', "application/octet-stream")
+        )
+        server.start()
+        def host = new JenkinsProperties.JenkinsHost(
+            address: server.url('/').toString(),
+            username: 'username',
+            password: 'password')
+        client = new JenkinsConfig().jenkinsClient(host)
+        service = new JenkinsService('http://my.jenkins.net', client, false)
+
+        expect:
+        service.getBuildProperties("PropertiesTest", 1, "props$extension") == testCase.result
+
+        cleanup:
+        server.shutdown()
+
+        where:
+        testCase << [
+            [
+                extension: "",
+                contents: '''
+                    a=hello
+                    b=world
+                    c=3
+                ''',
+                result: [a: "hello", b: "world", c: "3"],
+            ],
+            [
+                extension: ".json",
+                contents: '''
+                    {
+                        "a" : "hello",
+                        "b" : "world",
+                        "c" : 3,
+                        "nested" : {
+                            "list" : [1, "a"]
+                        }
+                    }
+                ''',
+                result: [a: "hello", b: "world", c: 3, nested: [list: [1, "a"]] ],
+            ],
+            [
+                extension: ".yml",
+                contents: '''
+                    a: hello
+                    b: world
+                    c: 3
+                    nested:
+                        list:
+                            - 1
+                            - a
+                ''',
+                result: [a: "hello", b: "world", c: 3, nested: [list: [1, "a"]] ],
+            ],
+        ]
     }
 
 }

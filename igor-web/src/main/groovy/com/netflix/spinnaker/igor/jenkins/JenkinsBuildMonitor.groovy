@@ -166,11 +166,11 @@ class JenkinsBuildMonitor extends CommonPollingMonitor<JobDelta, JobPollingDelta
     private List<Build> getBuilds(JenkinsService jenkinsService, String master, Project job, Long cursor, Long lastBuildStamp) {
         if (!cursor) {
             log.debug("[${master}:${job.name}] setting new cursor to ${lastBuildStamp}")
-            return jenkinsService.getBuilds(job.name).getList() ?: []
+            return jenkinsService.getBuilds(job.name) ?: []
         }
 
         // filter between last poll and jenkins last build included
-        return (jenkinsService.getBuilds(job.name).getList() ?: []).findAll { build ->
+        return (jenkinsService.getBuilds(job.name) ?: []).findAll { build ->
             Long buildStamp = build.timestamp as Long
             return buildStamp <= lastBuildStamp && buildStamp > cursor
         }
