@@ -22,7 +22,7 @@ import com.netflix.spinnaker.igor.config.JenkinsProperties
 import com.netflix.spinnaker.igor.jenkins.client.model.ProjectsList
 import com.netflix.spinnaker.igor.jenkins.service.JenkinsService
 import com.netflix.spinnaker.igor.model.BuildServiceProvider
-import com.netflix.spinnaker.igor.service.BuildMasters
+import com.netflix.spinnaker.igor.service.BuildServices
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
 import rx.schedulers.TestScheduler
 import spock.lang.Specification
@@ -45,8 +45,8 @@ class JenkinsBuildMonitorSchedulingSpec extends Specification {
     void 'scheduler polls periodically'() {
         given:
         cache.getJobNames(MASTER) >> []
-        BuildMasters buildMasters = new BuildMasters()
-        buildMasters.map = [MASTER: jenkinsService]
+        BuildServices buildMasters = new BuildServices()
+        buildMasters.addServices([MASTER: jenkinsService])
         def cfg = new IgorConfigurationProperties()
         cfg.spinnaker.build.pollInterval = 1
         monitor = new JenkinsBuildMonitor(
@@ -95,8 +95,8 @@ class JenkinsBuildMonitorSchedulingSpec extends Specification {
     void 'scheduler can be turned off'() {
         given:
         cache.getJobNames(MASTER) >> []
-        BuildMasters buildMasters = new BuildMasters()
-        buildMasters.map = [MASTER: jenkinsService]
+        BuildServices buildMasters = new BuildServices()
+        buildMasters.addServices([MASTER: jenkinsService])
         def cfg = new IgorConfigurationProperties()
         cfg.spinnaker.build.pollInterval = 1
         monitor = new JenkinsBuildMonitor(

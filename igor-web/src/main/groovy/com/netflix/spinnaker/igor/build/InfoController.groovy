@@ -22,7 +22,7 @@ import com.netflix.spinnaker.igor.config.JenkinsProperties
 import com.netflix.spinnaker.igor.config.TravisProperties
 import com.netflix.spinnaker.igor.config.WerckerProperties
 import com.netflix.spinnaker.igor.model.BuildServiceProvider
-import com.netflix.spinnaker.igor.service.BuildMasters
+import com.netflix.spinnaker.igor.service.BuildServices
 import com.netflix.spinnaker.kork.web.exceptions.NotFoundException
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
@@ -49,7 +49,7 @@ class InfoController {
     JenkinsProperties jenkinsProperties
 
     @Autowired
-    BuildMasters buildMasters
+    BuildServices buildMasters
 
     @Autowired(required = false)
     TravisProperties travisProperties
@@ -78,14 +78,13 @@ class InfoController {
         } else {
             //Filter by provider type if it is specified
             if (providerType) {
-                return buildMasters.map.findResults {
-                    k, v -> v.buildServiceProvider() == providerType ? k : null}.sort()
+                return buildMasters.getServiceNames(providerType)
             } else {
-                return buildMasters.map.keySet().sort()
+                return buildMasters.getServiceNames()
             }
         }
     }
-    
+
     void addMaster(masterList, providerType, properties, expctedType) {
         if (!providerType || providerType == expctedType) {
             masterList.addAll(
@@ -101,9 +100,12 @@ class InfoController {
 
     @RequestMapping(value = '/jobs/{master:.+}', method = RequestMethod.GET)
     List<String> getJobs(@PathVariable String master) {
-        def jenkinsMap = buildMasters.filteredMap(BuildServiceProvider.JENKINS)
-        def jenkinsService = jenkinsMap? jenkinsMap[master] : null
-        if (jenkinsService) {
+        def buildService = buildMasters.getService(master)
+        if (buildService == null) {
+            throw new NotFoundException("Master '${master}' does not exist")
+        }
+
+        if (buildService.buildServiceProvider() == BuildServiceProvider.JENKINS) {
             def jobList = []
             def recursiveGetJobs
 
@@ -119,19 +121,13 @@ class InfoController {
                     }
                 }
             }
-            recursiveGetJobs(jenkinsService.jobs.list)
+            recursiveGetJobs(buildService.jobs.list)
 
             return jobList
-        } else if (buildMasters.map.containsKey(master)) {
-            def werckerMap = buildMasters.filteredMap(BuildServiceProvider.WERCKER)
-            def werckerService = werckerMap? werckerMap[master] : null
-            if (werckerService) {
-                return werckerService.getJobs()
-            } else {
-                return buildCache.getJobNames(master)
-            }
+        } else if (buildService.buildServiceProvider() == BuildServiceProvider.WERCKER) {
+            return buildService.getJobs()
         } else {
-            throw new NotFoundException("Master '${master}' does not exist")
+            return buildCache.getJobNames(master)
         }
     }
 
@@ -139,8 +135,8 @@ class InfoController {
     Object getJobConfig(@PathVariable String master, HttpServletRequest request) {
         def job = (String) request.getAttribute(
             HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).split('/').drop(3).join('/')
-        def service = buildMasters.map[master]
-        if (!service) {
+        def service = buildMasters.getService(master)
+        if (service == null) {
             throw new NotFoundException("Master '${master}' does not exist")
         }
         return service.getJobConfig(job)

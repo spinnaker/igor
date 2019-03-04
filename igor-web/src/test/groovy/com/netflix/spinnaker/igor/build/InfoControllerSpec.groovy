@@ -22,8 +22,8 @@ import com.netflix.spinnaker.igor.config.JenkinsProperties
 import com.netflix.spinnaker.igor.config.TravisProperties
 import com.netflix.spinnaker.igor.jenkins.service.JenkinsService
 import com.netflix.spinnaker.igor.model.BuildServiceProvider
-import com.netflix.spinnaker.igor.service.BuildMasters
 import com.netflix.spinnaker.igor.service.BuildService
+import com.netflix.spinnaker.igor.service.BuildServices
 import com.netflix.spinnaker.igor.travis.service.TravisService
 import com.netflix.spinnaker.igor.wercker.WerckerService
 import com.squareup.okhttp.mockwebserver.MockResponse
@@ -50,7 +50,7 @@ class InfoControllerSpec extends Specification {
 
     MockMvc mockMvc
     BuildCache cache
-    BuildMasters buildMasters
+    BuildServices buildMasters
     JenkinsProperties jenkinsProperties
     TravisProperties travisProperties
     GitlabCiProperties gitlabCiProperties
@@ -71,8 +71,8 @@ class InfoControllerSpec extends Specification {
 
     void createMocks(Map<String, BuildService> buildServices) {
         cache = Mock(BuildCache)
-        buildMasters = new BuildMasters()
-        buildMasters.map = buildServices
+        buildMasters = new BuildServices()
+        buildMasters.addServices(buildServices)
         jenkinsProperties = Mock(JenkinsProperties)
         travisProperties = Mock(TravisProperties)
         gitlabCiProperties = Mock(GitlabCiProperties)
@@ -87,14 +87,14 @@ class InfoControllerSpec extends Specification {
 
     void 'is able to get a list of jenkins buildMasters'() {
         given:
-        createMocks(['master2': null, 'build.buildMasters.blah': null, 'master1': null])
+        createMocks(['master2': null, 'build.buildServices.blah': null, 'master1': null])
 
         when:
         MockHttpServletResponse response = mockMvc.perform(get('/masters/')
             .accept(MediaType.APPLICATION_JSON)).andReturn().response
 
         then:
-        response.contentAsString == '["build.buildMasters.blah","master1","master2"]'
+        response.contentAsString == '["build.buildServices.blah","master1","master2"]'
     }
 
     void 'is able to get a list of buildMasters with urls'() {

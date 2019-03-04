@@ -11,9 +11,8 @@ package com.netflix.spinnaker.igor.wercker
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.igor.IgorConfigurationProperties
 import com.netflix.spinnaker.igor.config.WerckerProperties
-import com.netflix.spinnaker.igor.history.EchoService
 import com.netflix.spinnaker.igor.model.BuildServiceProvider
-import com.netflix.spinnaker.igor.service.BuildMasters
+import com.netflix.spinnaker.igor.service.BuildServices
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
 
 import java.util.concurrent.TimeUnit
@@ -36,8 +35,8 @@ class WerckerBuildMonitorSchedulingSpec extends Specification {
     void 'scheduler polls periodically'() {
         given:
         cache.getJobNames(MASTER) >> []
-        BuildMasters buildMasters = new BuildMasters()
-        buildMasters.map = [MASTER: werckerService]
+        BuildServices buildMasters = new BuildServices()
+        buildMasters.addServices([MASTER: werckerService])
         werckerService.getRunsSince(_) >> [:]
         def cfg = new IgorConfigurationProperties()
         cfg.spinnaker.build.pollInterval = 1
@@ -87,7 +86,7 @@ class WerckerBuildMonitorSchedulingSpec extends Specification {
     void 'scheduler can be turned off'() {
         given:
         cache.getJobNames(MASTER) >> []
-        BuildMasters buildMasters = Mock(BuildMasters)
+        BuildServices buildMasters = Mock(BuildServices)
         def cfg = new IgorConfigurationProperties()
         cfg.spinnaker.build.pollInterval = 1
         monitor = new WerckerBuildMonitor(

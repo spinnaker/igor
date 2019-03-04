@@ -27,7 +27,7 @@ import com.netflix.spinnaker.igor.jenkins.client.model.Project
 import com.netflix.spinnaker.igor.jenkins.client.model.ProjectsList
 import com.netflix.spinnaker.igor.jenkins.service.JenkinsService
 import com.netflix.spinnaker.igor.polling.PollContext
-import com.netflix.spinnaker.igor.service.BuildMasters
+import com.netflix.spinnaker.igor.service.BuildServices
 import org.slf4j.Logger
 import retrofit.RetrofitError
 import rx.schedulers.Schedulers
@@ -47,8 +47,8 @@ class JenkinsBuildMonitorSpec extends Specification {
     final MASTER = 'MASTER'
 
     void setup() {
-        def buildMasters = new BuildMasters()
-        buildMasters.map = [MASTER: jenkinsService]
+        def buildMasters = new BuildServices()
+        buildMasters.addServices([MASTER: jenkinsService])
         monitor = new JenkinsBuildMonitor(
             igorConfigurationProperties,
             new NoopRegistry(),

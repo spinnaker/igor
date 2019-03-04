@@ -33,7 +33,7 @@ import com.netflix.spinnaker.igor.polling.DeltaItem
 import com.netflix.spinnaker.igor.polling.LockService
 import com.netflix.spinnaker.igor.polling.PollContext
 import com.netflix.spinnaker.igor.polling.PollingDelta
-import com.netflix.spinnaker.igor.service.BuildMasters
+import com.netflix.spinnaker.igor.service.BuildServices
 import groovy.time.TimeCategory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -52,7 +52,7 @@ import static net.logstash.logback.argument.StructuredArguments.kv
 class JenkinsBuildMonitor extends CommonPollingMonitor<JobDelta, JobPollingDelta> {
 
     private final JenkinsCache cache
-    private final BuildMasters buildMasters
+    private final BuildServices buildMasters
     private final boolean pollingEnabled
     private final Optional<EchoService> echoService
     private final JenkinsProperties jenkinsProperties
@@ -63,7 +63,7 @@ class JenkinsBuildMonitor extends CommonPollingMonitor<JobDelta, JobPollingDelta
                         Optional<DiscoveryClient> discoveryClient,
                         Optional<LockService> lockService,
                         JenkinsCache cache,
-                        BuildMasters buildMasters,
+                        BuildServices buildMasters,
                         @Value('${jenkins.polling.enabled:true}') boolean pollingEnabled,
                         Optional<EchoService> echoService,
                         JenkinsProperties jenkinsProperties) {
@@ -91,7 +91,7 @@ class JenkinsBuildMonitor extends CommonPollingMonitor<JobDelta, JobPollingDelta
 
     @Override
     void poll(boolean sendEvents) {
-        buildMasters.filteredMap(BuildServiceProvider.JENKINS).keySet().stream().forEach(
+        buildMasters.getServiceNames(BuildServiceProvider.JENKINS).stream().forEach(
             { master -> pollSingle(new PollContext(master, !sendEvents)) }
         )
     }
@@ -107,7 +107,7 @@ class JenkinsBuildMonitor extends CommonPollingMonitor<JobDelta, JobPollingDelta
 
         final List<JobDelta> delta = []
         registry.timer("pollingMonitor.jenkins.retrieveProjects", [new BasicTag("partition", master)]).record {
-            JenkinsService jenkinsService = buildMasters.map[master] as JenkinsService
+            JenkinsService jenkinsService = buildMasters.getService(master) as JenkinsService
             List<Project> jobs = jenkinsService.getProjects()?.getList() ?:[]
             jobs.forEach( { job -> processBuildsOfProject(jenkinsService, master, job, delta)})
         }

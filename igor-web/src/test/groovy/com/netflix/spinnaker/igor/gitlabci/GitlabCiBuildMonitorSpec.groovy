@@ -25,7 +25,7 @@ import com.netflix.spinnaker.igor.gitlabci.client.model.Project
 import com.netflix.spinnaker.igor.gitlabci.service.GitlabCiService
 import com.netflix.spinnaker.igor.history.EchoService
 import com.netflix.spinnaker.igor.polling.PollContext
-import com.netflix.spinnaker.igor.service.BuildMasters
+import com.netflix.spinnaker.igor.service.BuildServices
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -41,8 +41,8 @@ class GitlabCiBuildMonitorSpec extends Specification {
 
     void setup() {
         def properties = new GitlabCiProperties(cachedJobTTLDays: CACHED_JOB_TTL_DAYS)
-        def buildMasters = new BuildMasters()
-        buildMasters.map = [MASTER: service]
+        def buildMasters = new BuildServices()
+        buildMasters.addServices([MASTER: service])
         buildMonitor = new GitlabCiBuildMonitor(
             new IgorConfigurationProperties(),
             new NoopRegistry(),

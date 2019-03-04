@@ -23,7 +23,7 @@ import com.netflix.spinnaker.igor.config.JenkinsConfig
 import com.netflix.spinnaker.igor.jenkins.client.model.*
 import com.netflix.spinnaker.igor.jenkins.service.JenkinsService
 import com.netflix.spinnaker.igor.model.BuildServiceProvider
-import com.netflix.spinnaker.igor.service.BuildMasters
+import com.netflix.spinnaker.igor.service.BuildServices
 import com.netflix.spinnaker.igor.service.BuildService
 import com.netflix.spinnaker.igor.travis.service.TravisService
 import com.netflix.spinnaker.kork.core.RetrySupport
@@ -49,7 +49,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class BuildControllerSpec extends Specification {
 
     MockMvc mockMvc
-    BuildMasters buildMasters
+    BuildServices buildMasters
     BuildCache cache
     JenkinsService jenkinsService
     BuildService service
@@ -82,12 +82,12 @@ class BuildControllerSpec extends Specification {
         jenkinsService.buildServiceProvider() >> BuildServiceProvider.JENKINS
         travisService = Mock(TravisService)
         travisService.buildServiceProvider() >> BuildServiceProvider.TRAVIS
-        buildMasters = new BuildMasters()
-        buildMasters.map = [
+        buildMasters = new BuildServices()
+        buildMasters.addServices([
             (SERVICE) : service,
             (JENKINS_SERVICE): jenkinsService,
             (TRAVIS_SERVICE): travisService,
-        ]
+        ])
         cache = Mock(BuildCache)
         server = new MockWebServer()
 
