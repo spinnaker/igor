@@ -44,14 +44,15 @@ import static org.springframework.http.HttpStatus.NOT_FOUND
 @Slf4j
 @RestController
 class BuildController {
-    @Autowired
     private BuildServices buildServices
-
-    @Autowired(required = false)
     private BuildArtifactFilter buildArtifactFilter
-
-    @Autowired(required = false)
     private ArtifactDecorator artifactDecorator
+
+    BuildController(BuildServices buildServices, Optional<BuildArtifactFilter> buildArtifactFilter, Optional<ArtifactDecorator> artifactDecorator) {
+        this.buildServices = buildServices
+        this.buildArtifactFilter = buildArtifactFilter.orElse(null)
+        this.artifactDecorator = artifactDecorator.orElse(null)
+    }
 
     @RequestMapping(value = '/builds/status/{buildNumber}/{master:.+}/**')
     GenericBuild getJobStatus(@PathVariable String master, @PathVariable
@@ -87,7 +88,7 @@ class BuildController {
             TravisService travisService = (TravisService) buildService
             return travisService.queuedBuild(item)
         }
-        return null
+        throw new UnsupportedOperationException(String.format("Queued builds are not supported for build service %s", master))
     }
 
     @RequestMapping(value = '/builds/all/{master:.+}/**')

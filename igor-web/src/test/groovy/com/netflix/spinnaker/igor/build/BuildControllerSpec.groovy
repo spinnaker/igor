@@ -91,9 +91,7 @@ class BuildControllerSpec extends Specification {
         server = new MockWebServer()
 
         mockMvc = MockMvcBuilders
-            .standaloneSetup(new BuildController(
-                buildServices: buildServices,
-            ))
+            .standaloneSetup(new BuildController(buildServices, Optional.empty(), Optional.empty()))
             .setControllerAdvice(new GenericExceptionHandlers())
             .build()
     }

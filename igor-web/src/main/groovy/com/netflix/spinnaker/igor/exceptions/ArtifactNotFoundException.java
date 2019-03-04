@@ -24,6 +24,6 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 @ResponseStatus(NOT_FOUND)
 public class ArtifactNotFoundException extends NotFoundException {
     public ArtifactNotFoundException(String master, String job, Integer buildNumber, String fileName) {
-        super("Could not find build artifact matching requested filename '$fileName' on '$master/$job' build $buildNumber");
+        super(String.format("Could not find build artifact matching requested filename '%s' on '%s/%s' build %s", fileName, master, job, buildNumber));
     }
 }
