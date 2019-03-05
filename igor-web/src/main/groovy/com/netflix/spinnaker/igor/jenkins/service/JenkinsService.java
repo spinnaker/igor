@@ -43,7 +43,6 @@ import retrofit.client.Header;
 import retrofit.client.Response;
 
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,11 +70,7 @@ public class JenkinsService implements BuildService, BuildProperties {
     }
 
     private String encode(String uri) {
-        try {
-            return UriUtils.encodeFragment(uri, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
+        return UriUtils.encodeFragment(uri, "UTF-8");
     }
 
     public ProjectsList getProjects() {
