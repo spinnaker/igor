@@ -83,6 +83,10 @@ allprojects {
         convention.sourceCompatibility = JavaVersion.VERSION_1_8
         convention.targetCompatibility = JavaVersion.VERSION_1_8
     }
+
+    bootJar {
+        mainClassName = "com.netflix.spinnaker.igor.Main"
+    }
 }
 
 defaultTasks 'run'
