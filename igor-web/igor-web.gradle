@@ -51,11 +51,3 @@ configurations.all {
     exclude group: "org.slf4j", module: "slf4j-log4j12"
     exclude group: "org.mortbay.jetty", module: "servlet-api"
 }
-
-jar {
-    enabled = true
-}
-
-bootJar {
-    mainClassName = "com.netflix.spinnaker.igor.Main"
-}
