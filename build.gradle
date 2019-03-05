@@ -87,6 +87,10 @@ allprojects {
     bootJar {
         mainClassName = "com.netflix.spinnaker.igor.Main"
     }
+
+    jar {
+        enabled = true
+    }
 }
 
 defaultTasks 'run'
