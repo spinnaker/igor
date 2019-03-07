@@ -30,14 +30,13 @@ allprojects {
     apply plugin: 'spinnaker.base-project'
     apply plugin: 'groovy'
 
-    apply plugin: 'org.springframework.boot'
     apply plugin: 'io.spring.dependency-management'
 
     sourceSets.main.java.srcDirs = []
     sourceSets.main.groovy.srcDirs += ["src/main/java"]
 
     ext {
-        spinnakerDependenciesVersion = '2.0.0-rc.11-springBoot2'
+        spinnakerDependenciesVersion = '2.0.0-rc.14-springBoot2'
         if (project.hasProperty('spinnakerDependenciesVersion')) {
           spinnakerDependenciesVersion = project.property('spinnakerDependenciesVersion')
         }
@@ -82,14 +81,6 @@ allprojects {
         JavaPluginConvention convention = project.convention.getPlugin(JavaPluginConvention)
         convention.sourceCompatibility = JavaVersion.VERSION_1_8
         convention.targetCompatibility = JavaVersion.VERSION_1_8
-    }
-
-    bootJar {
-        mainClassName = "com.netflix.spinnaker.igor.Main"
-    }
-
-    jar {
-        enabled = true
     }
 }
 
