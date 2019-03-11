@@ -114,7 +114,7 @@ class BuildController {
         return Collections.emptyList()
     }
 
-    @RequestMapping(value = '/builds/queue/{master}/{item}')
+    @RequestMapping(method = RequestMethod.GET, value = '/builds/queue/{master}/{item}')
     @PreAuthorize("hasPermission(#master, 'BUILD_SERVICE', 'READ')")
     Object getQueueLocation(@PathVariable String master, @PathVariable int item) {
         def buildService = getBuildService(master)
@@ -128,7 +128,7 @@ class BuildController {
         throw new UnsupportedOperationException(String.format("Queued builds are not supported for build service %s", master))
     }
 
-    @RequestMapping(value = '/builds/all/{master:.+}/**')
+    @RequestMapping(method = RequestMethod.GET, value = '/builds/all/{master:.+}/**')
     @PreAuthorize("hasPermission(#master, 'BUILD_SERVICE', 'READ')")
     List<Object> getBuilds(@PathVariable String master, HttpServletRequest request) {
         def job = ((String) request.getAttribute(
@@ -229,7 +229,7 @@ class BuildController {
         }
     }
 
-    @RequestMapping(value = '/builds/properties/{buildNumber}/{fileName}/{master:.+}/**')
+    @RequestMapping(method = RequestMethod.GET, value = '/builds/properties/{buildNumber}/{fileName}/{master:.+}/**')
     @PreAuthorize("hasPermission(#master, 'BUILD_SERVICE', 'READ')")
     Map<String, Object> getProperties(
         @PathVariable String master,

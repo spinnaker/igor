@@ -36,7 +36,7 @@ allprojects {
     sourceSets.main.groovy.srcDirs += ["src/main/java"]
 
     ext {
-        spinnakerDependenciesVersion = '2.0.0-rc.17-springBoot2'
+        spinnakerDependenciesVersion = '2.0.0-rc.18-springBoot2'
         if (project.hasProperty('spinnakerDependenciesVersion')) {
           spinnakerDependenciesVersion = project.property('spinnakerDependenciesVersion')
         }
