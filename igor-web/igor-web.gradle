@@ -48,13 +48,19 @@ dependencies {
     compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.9.6'
     compile 'com.google.code.gson:gson:2.8.2'
     compile 'org.jfrog.artifactory.client:artifactory-java-client-services:2.8.1'
+    compile 'com.google.apis:google-api-services-cloudbuild:v1-rev836-1.25.0'
 
     testCompile 'com.squareup.okhttp:mockwebserver:2.7.0'
+    testCompile 'org.springframework.boot:spring-boot-starter-test'
     testCompile spinnaker.dependency("korkJedisTest")
     testCompile spinnaker.dependency("junitJupiterApi")
     testCompile spinnaker.dependency("assertj")
 
     testRuntimeOnly "org.junit.vintage:junit-vintage-engine:${spinnaker.version('jupiter')}"
+    testCompile 'org.junit.jupiter:junit-jupiter-api:5.2.0'
+    testRuntime 'org.junit.jupiter:junit-jupiter-engine:5.2.0'
+    testCompile 'com.github.tomakehurst:wiremock-jre8:2.22.0'
+    testCompile 'org.mockito:mockito-core:2.6.8'
 }
 
 configurations.all {
