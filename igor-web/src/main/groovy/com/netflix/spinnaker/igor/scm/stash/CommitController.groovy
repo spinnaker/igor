@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import retrofit.RetrofitError
@@ -37,7 +38,7 @@ class CommitController extends AbstractCommitController {
     @Autowired
     StashMaster stashMaster
 
-    @RequestMapping(value = '/{projectKey}/{repositorySlug}/compareCommits')
+    @RequestMapping(method = RequestMethod.GET, value = '/{projectKey}/{repositorySlug}/compareCommits')
     List compareCommits(@PathVariable(value = 'projectKey') String projectKey, @PathVariable(value='repositorySlug') String repositorySlug, @RequestParam Map<String, String> requestParams) {
         super.compareCommits(projectKey, repositorySlug, requestParams)
         CompareCommitsResponse commitsResponse

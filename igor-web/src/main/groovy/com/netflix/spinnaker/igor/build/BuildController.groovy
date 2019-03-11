@@ -31,8 +31,11 @@ import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.kork.web.exceptions.NotFoundException
 import groovy.transform.InheritConstructors
 import groovy.util.logging.Slf4j
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestMethod
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.servlet.HandlerMapping
 import retrofit.RetrofitError
 
@@ -54,7 +57,7 @@ class BuildController {
         this.artifactDecorator = artifactDecorator.orElse(null)
     }
 
-    @RequestMapping(value = '/builds/status/{buildNumber}/{master:.+}/**')
+    @RequestMapping(method = RequestMethod.GET, value = '/builds/status/{buildNumber}/{master:.+}/**')
     GenericBuild getJobStatus(@PathVariable String master, @PathVariable
         Integer buildNumber, HttpServletRequest request) {
         def job = (String) request.getAttribute(
@@ -78,7 +81,7 @@ class BuildController {
         return build
     }
 
-    @RequestMapping(value = '/builds/queue/{master}/{item}')
+    @RequestMapping(method = RequestMethod.GET, value = '/builds/queue/{master}/{item}')
     Object getQueueLocation(@PathVariable String master, @PathVariable int item) {
         def buildService = getBuildService(master)
         if (buildService instanceof JenkinsService) {
@@ -91,7 +94,7 @@ class BuildController {
         throw new UnsupportedOperationException(String.format("Queued builds are not supported for build service %s", master))
     }
 
-    @RequestMapping(value = '/builds/all/{master:.+}/**')
+    @RequestMapping(method = RequestMethod.GET, value = '/builds/all/{master:.+}/**')
     List<Object> getBuilds(@PathVariable String master, HttpServletRequest request) {
         def job = (String) request.getAttribute(
             HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).split('/').drop(4).join('/')
@@ -189,7 +192,7 @@ class BuildController {
         }
     }
 
-    @RequestMapping(value = '/builds/properties/{buildNumber}/{fileName}/{master:.+}/**')
+    @RequestMapping(method = RequestMethod.GET, value = '/builds/properties/{buildNumber}/{fileName}/{master:.+}/**')
     Map<String, Object> getProperties(
         @PathVariable String master,
         @PathVariable Integer buildNumber, @PathVariable

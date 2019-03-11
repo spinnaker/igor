@@ -131,7 +131,7 @@ class InfoController {
         }
     }
 
-    @RequestMapping(value = '/jobs/{master:.+}/**')
+    @RequestMapping(method = RequestMethod.GET, value = '/jobs/{master:.+}/**')
     Object getJobConfig(@PathVariable String master, HttpServletRequest request) {
         def job = (String) request.getAttribute(
             HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).split('/').drop(3).join('/')
