@@ -15,21 +15,46 @@
  */
 package com.netflix.spinnaker.igor.service;
 
-import com.netflix.spinnaker.igor.build.model.GenericBuild;
-import com.netflix.spinnaker.igor.build.model.GenericGitRevision;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.netflix.spinnaker.fiat.model.resources.Permissions;
 import com.netflix.spinnaker.igor.model.BuildServiceProvider;
 
-import java.util.List;
-import java.util.Map;
-
 public interface BuildService {
-    BuildServiceProvider buildServiceProvider();
+    String getName();
 
-    List<GenericGitRevision> getGenericGitRevisions(String job, int buildNumber);
+    BuildServiceProvider getBuildServiceProvider();
 
-    GenericBuild getGenericBuild(String job, int buildNumber);
+    Permissions getPermissions();
 
-    int triggerBuildWithParameters(String job, Map<String, String> queryParameters);
+    @JsonIgnore
+    default BuildServiceView getView() {
+        return new BuildServiceView(this);
+    }
 
-    List<?> getBuilds(String job);
+    class BuildServiceView implements BuildService {
+        final String name;
+        final BuildServiceProvider buildServiceProvider;
+        final Permissions permissions;
+
+        private BuildServiceView(BuildService buildService) {
+            this.name = buildService.getName();
+            this.buildServiceProvider = buildService.getBuildServiceProvider();
+            this.permissions = buildService.getPermissions();
+        }
+
+        @Override
+        public String getName() {
+            return name;
+        }
+
+        @Override
+        public BuildServiceProvider getBuildServiceProvider() {
+            return buildServiceProvider;
+        }
+
+        @Override
+        public Permissions getPermissions() {
+            return permissions;
+        }
+    }
 }
