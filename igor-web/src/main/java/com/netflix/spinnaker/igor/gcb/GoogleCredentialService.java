@@ -18,6 +18,7 @@ package com.netflix.spinnaker.igor.gcb;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.services.cloudbuild.v1.CloudBuildScopes;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.io.FileInputStream;
@@ -29,6 +30,7 @@ import java.io.InputStream;
  * from a supplied path to a JSON key.
  */
 @Component
+@ConditionalOnProperty("gcb.enabled")
 public class GoogleCredentialService {
   GoogleCredential getFromKey(String jsonPath) {
     try {

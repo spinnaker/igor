@@ -24,12 +24,14 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.cloudbuild.v1.CloudBuild;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
  * Factory for calling CloudBuild client library code to create CloudBuild objects
  */
 @Component
+@ConditionalOnProperty("gcb.enabled")
 @RequiredArgsConstructor
 public class CloudBuildFactory {
   private final int connectTimeoutSec = 10;

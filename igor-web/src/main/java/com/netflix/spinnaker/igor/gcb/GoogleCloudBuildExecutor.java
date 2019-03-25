@@ -20,6 +20,7 @@ import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.services.cloudbuild.v1.CloudBuildRequest;
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException;
 import org.apache.http.client.HttpResponseException;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -29,6 +30,7 @@ import java.io.IOException;
  * into appropriate exceptions.
  */
 @Component
+@ConditionalOnProperty("gcb.enabled")
 public class GoogleCloudBuildExecutor {
   public <T> T execute(RequestFactory<T> requestFactory) {
     try {

@@ -26,6 +26,7 @@ import com.netflix.spinnaker.igor.config.GoogleCloudBuildProperties;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -34,6 +35,7 @@ import java.util.Optional;
  * Creates GoogleCloudBuildAccounts
  */
 @Component
+@ConditionalOnProperty("gcb.enabled")
 @RequiredArgsConstructor
 public class GoogleCloudBuildAccountFactory {
   private final GoogleCredentialService credentialService;
