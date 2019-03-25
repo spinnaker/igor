@@ -34,7 +34,7 @@ import java.util.List;
 @RequestMapping("/artifacts")
 public class ArtifactController {
 
-  ArtifactServices artifactServices;
+  private final ArtifactServices artifactServices;
 
   @Autowired
   public ArtifactController(ArtifactServices artifactServices) {

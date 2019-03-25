@@ -20,6 +20,7 @@ package com.netflix.spinnaker.igor.artifacts;
 import com.netflix.spinnaker.igor.model.ArtifactServiceProvider;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 
+import javax.annotation.Nonnull;
 import java.util.List;
 
 /**
@@ -29,15 +30,18 @@ import java.util.List;
  * and retrieving a specific artifact by name and version.
  */
 public interface ArtifactService {
+  @Nonnull
   ArtifactServiceProvider artifactServiceProvider();
 
   /**
    * Used to populate the manual trigger dropdown with options
    */
-  List<String> getArtifactVersions(String name);
+  @Nonnull
+  List<String> getArtifactVersions(@Nonnull String name);
 
   /**
    * Used to fetch a specific artifact for decorating a trigger
    */
-  Artifact getArtifact(String name, String version);
+  @Nonnull
+  Artifact getArtifact(@Nonnull String name, @Nonnull String version);
 }

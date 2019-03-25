@@ -41,8 +41,7 @@ public class ArtifactServices {
 
   public List<String> getServiceNames(ArtifactServiceProvider artifactServiceProvider) {
     return artifactServices.entrySet().stream()
-      .filter(e -> e.getValue() != null)
-      .filter(e -> e.getValue().artifactServiceProvider() == artifactServiceProvider)
+      .filter(e -> e.getValue() != null && e.getValue().artifactServiceProvider() == artifactServiceProvider)
       .map(Map.Entry::getKey)
       .sorted()
       .collect(Collectors.toList());
