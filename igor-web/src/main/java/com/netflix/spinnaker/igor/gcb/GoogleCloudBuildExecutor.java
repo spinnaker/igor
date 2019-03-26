@@ -32,6 +32,7 @@ import java.io.IOException;
 @Component
 @ConditionalOnProperty("gcb.enabled")
 public class GoogleCloudBuildExecutor {
+  //TODO(ezimanyi): Consider adding retry logic here
   public <T> T execute(RequestFactory<T> requestFactory) {
     try {
       CloudBuildRequest<T> request = requestFactory.get();
