@@ -23,9 +23,43 @@ import com.netflix.spinnaker.igor.build.model.GenericGitRevision;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Interface representing a Build Service (CI) host, the permissions needed to access it, and build operations on the
+ * host
+ */
 public interface BuildOperations extends BuildService {
-    List<GenericGitRevision> getGenericGitRevisions(String job, int buildNumber);
-    GenericBuild getGenericBuild(String job, int buildNumber);
-    int triggerBuildWithParameters(String job, Map<String, String> queryParameters);
-    List<?> getBuilds(String job);
+  /**
+   * Get a list of the Spinnaker representation of the Git commits relevant for the given build
+   *
+   * @param job The name of the job
+   * @param buildNumber The build number
+   * @return A list of git revisions relevant for the build
+   */
+  List<GenericGitRevision> getGenericGitRevisions(String job, int buildNumber);
+
+  /**
+   * Return all information of a given build
+   *
+   * @param job The name of the job
+   * @param buildNumber The build number
+   * @return A Spinnaker representation of a build
+   */
+  GenericBuild getGenericBuild(String job, int buildNumber);
+
+  /**
+   * Trigger a build of a given job on the build service host
+   *
+   * @param job The name of the job to be triggered
+   * @param queryParameters A key-value map of parameters to be injected into the build
+   * @return An id identifying the build; preferably the build number of the build
+   */
+  int triggerBuildWithParameters(String job, Map<String, String> queryParameters);
+
+  /**
+   * Returns all/relevant builds for the given job.
+   *
+   * @param job The name of the job
+   * @return A list of builds
+   */
+  List<?> getBuilds(String job);
 }
