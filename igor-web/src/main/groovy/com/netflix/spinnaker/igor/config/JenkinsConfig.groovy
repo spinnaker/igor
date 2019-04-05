@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import com.fasterxml.jackson.module.jaxb.JaxbAnnotationModule
 import com.netflix.spectator.api.Registry
+import com.netflix.spinnaker.fiat.model.resources.Permissions
 import com.netflix.spinnaker.igor.IgorConfigurationProperties
 import com.netflix.spinnaker.igor.config.client.DefaultJenkinsOkHttpClientProvider
 import com.netflix.spinnaker.igor.config.client.DefaultJenkinsRetrofitRequestInterceptorProvider
@@ -29,7 +30,7 @@ import com.netflix.spinnaker.igor.config.client.JenkinsOkHttpClientProvider
 import com.netflix.spinnaker.igor.config.client.JenkinsRetrofitRequestInterceptorProvider
 import com.netflix.spinnaker.igor.jenkins.client.JenkinsClient
 import com.netflix.spinnaker.igor.jenkins.service.JenkinsService
-import com.netflix.spinnaker.igor.service.BuildMasters
+import com.netflix.spinnaker.igor.service.BuildServices
 import com.netflix.spinnaker.kork.telemetry.InstrumentedProxy
 import com.squareup.okhttp.OkHttpClient
 import groovy.transform.CompileStatic
@@ -79,14 +80,14 @@ class JenkinsConfig {
     }
 
     @Bean
-    Map<String, JenkinsService> jenkinsMasters(BuildMasters buildMasters,
+    Map<String, JenkinsService> jenkinsMasters(BuildServices buildServices,
                                                IgorConfigurationProperties igorConfigurationProperties,
                                                @Valid JenkinsProperties jenkinsProperties,
                                                JenkinsOkHttpClientProvider jenkinsOkHttpClientProvider,
                                                JenkinsRetrofitRequestInterceptorProvider jenkinsRetrofitRequestInterceptorProvider,
                                                Registry registry) {
         log.info "creating jenkinsMasters"
-        Map<String, JenkinsService> jenkinsMasters = ( jenkinsProperties?.masters?.collectEntries { JenkinsProperties.JenkinsHost host ->
+        Map<String, JenkinsService> jenkinsMasters = jenkinsProperties?.masters?.collectEntries { JenkinsProperties.JenkinsHost host ->
             log.info "bootstrapping ${host.address} as ${host.name}"
             [(host.name): jenkinsService(
                 host.name,
@@ -105,16 +106,17 @@ class JenkinsConfig {
                         [master: host.name]
                     )
                 ),
-                host.csrf
+                host.csrf,
+                host.permissions.build()
             )]
-        })
+        }
 
-        buildMasters.map.putAll jenkinsMasters
+        buildServices.addServices(jenkinsMasters)
         jenkinsMasters
     }
 
-    static JenkinsService jenkinsService(String jenkinsHostId, JenkinsClient jenkinsClient, Boolean csrf) {
-        return new JenkinsService(jenkinsHostId, jenkinsClient, csrf)
+    static JenkinsService jenkinsService(String jenkinsHostId, JenkinsClient jenkinsClient, Boolean csrf, Permissions permissions) {
+        return new JenkinsService(jenkinsHostId, jenkinsClient, csrf, permissions)
     }
 
     static ObjectMapper getObjectMapper() {

@@ -17,13 +17,15 @@
 
 package com.netflix.spinnaker.igor.travis.service;
 
+import com.netflix.spinnaker.fiat.model.resources.Permissions;
 import com.netflix.spinnaker.hystrix.SimpleJava8HystrixCommand;
 import com.netflix.spinnaker.igor.build.model.GenericBuild;
 import com.netflix.spinnaker.igor.build.model.GenericGitRevision;
 import com.netflix.spinnaker.igor.build.model.GenericJobConfiguration;
 import com.netflix.spinnaker.igor.model.BuildServiceProvider;
 import com.netflix.spinnaker.igor.service.ArtifactDecorator;
-import com.netflix.spinnaker.igor.service.BuildService;
+import com.netflix.spinnaker.igor.service.BuildOperations;
+import com.netflix.spinnaker.igor.service.BuildProperties;
 import com.netflix.spinnaker.igor.travis.TravisCache;
 import com.netflix.spinnaker.igor.travis.client.TravisClient;
 import com.netflix.spinnaker.igor.travis.client.logparser.ArtifactParser;
@@ -55,8 +57,6 @@ import retrofit.RetrofitError;
 import retrofit.client.Response;
 import retrofit.mime.TypedByteArray;
 
-import javax.annotation.Nullable;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -70,7 +70,9 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class TravisService implements BuildService {
+import static net.logstash.logback.argument.StructuredArguments.kv;
+
+public class TravisService implements BuildOperations, BuildProperties {
 
     private static final int TRAVIS_BUILD_RESULT_LIMIT = 25;
 
@@ -83,10 +85,15 @@ public class TravisService implements BuildService {
     private final TravisCache travisCache;
     private final Collection<String> artifactRegexes;
     private final Optional<ArtifactDecorator> artifactDecorator;
+    private final String buildMessageKey;
+    private final Permissions permissions;
     protected AccessToken accessToken;
     private Accounts accounts;
 
-    public TravisService(String travisHostId, String baseUrl, String githubToken, int numberOfRepositories, TravisClient travisClient, TravisCache travisCache, Optional<ArtifactDecorator> artifactDecorator, Collection<String> artifactRegexes) {
+    public TravisService(String travisHostId, String baseUrl, String githubToken, int numberOfRepositories,
+                         TravisClient travisClient, TravisCache travisCache,
+                         Optional<ArtifactDecorator> artifactDecorator, Collection<String> artifactRegexes,
+                         String buildMessageKey, Permissions permissions) {
         this.numberOfRepositories = numberOfRepositories;
         this.groupKey = travisHostId;
         this.gitHubAuth = new GithubAuth(githubToken);
@@ -95,10 +102,17 @@ public class TravisService implements BuildService {
         this.travisCache = travisCache;
         this.artifactDecorator = artifactDecorator;
         this.artifactRegexes = artifactRegexes != null ? new HashSet<>(artifactRegexes) : Collections.emptySet();
+        this.buildMessageKey = buildMessageKey;
+        this.permissions = permissions;
     }
 
     @Override
-    public BuildServiceProvider buildServiceProvider() {
+    public String getName() {
+        return this.groupKey;
+    }
+
+    @Override
+    public BuildServiceProvider getBuildServiceProvider() {
         return BuildServiceProvider.TRAVIS;
     }
 
@@ -132,6 +146,11 @@ public class TravisService implements BuildService {
         String repoSlug = cleanRepoSlug(inputRepoSlug);
         String branch = branchFromRepoSlug(inputRepoSlug);
         RepoRequest repoRequest = new RepoRequest(branch.isEmpty() ? "master" : branch);
+        if (buildMessageKey != null && queryParameters.containsKey(buildMessageKey)) {
+            String buildMessage = queryParameters.get(buildMessageKey);
+            queryParameters.remove(buildMessageKey);
+            repoRequest.setMessage(repoRequest.getMessage() + ": " + buildMessage);
+        }
         repoRequest.setConfig(new Config(queryParameters));
         final TriggerResponse triggerResponse = travisClient.triggerBuild(getAccessToken(), repoSlug, repoRequest);
         if (triggerResponse.getRemainingRequests() > 0) {
@@ -140,6 +159,11 @@ public class TravisService implements BuildService {
         }
 
         return travisCache.setQueuedJob(groupKey, triggerResponse.getRequest().getRepository().getId(), triggerResponse.getRequest().getId());
+    }
+
+    @Override
+    public Permissions getPermissions() {
+        return permissions;
     }
 
     public List<Build> getBuilds() {
@@ -159,7 +183,7 @@ public class TravisService implements BuildService {
     }
 
     public Builds getBuilds(String repoSlug, int buildNumber) {
-        return new SimpleJava8HystrixCommand<>(groupKey, buildCommandKey("getBuilds"), () ->
+        return new SimpleJava8HystrixCommand<>(groupKey, buildCommandKey("getBuildList"), () ->
             travisClient.builds(getAccessToken(), repoSlug, buildNumber)).execute();
     }
 
@@ -168,11 +192,16 @@ public class TravisService implements BuildService {
         return !builds.getBuilds().isEmpty() ? builds.getBuilds().get(0) : null;
     }
 
-    public Map<String, Object> getBuildProperties(String inputRepoSlug, int buildNumber) throws IOException {
-        String repoSlug = cleanRepoSlug(inputRepoSlug);
-
-        Build build = getBuild(repoSlug, buildNumber);
-        return PropertyParser.extractPropertiesFromLog(getLog(build));
+    @Override
+    public Map<String, Object> getBuildProperties(String inputRepoSlug, int buildNumber, String fileName) {
+        try {
+            String repoSlug = cleanRepoSlug(inputRepoSlug);
+            Build build = getBuild(repoSlug, buildNumber);
+            return PropertyParser.extractPropertiesFromLog(getLog(build));
+        } catch (Exception e) {
+            log.error("Unable to get igorProperties '{}'", kv("job", inputRepoSlug), e);
+            return Collections.emptyMap();
+        }
     }
 
     public List<Build> getBuilds(Repo repo) {
@@ -197,6 +226,7 @@ public class TravisService implements BuildService {
             .collect(Collectors.toList());
     }
 
+    @Override
     public List<GenericBuild> getBuilds(String inputRepoSlug) {
         String repoSlug = cleanRepoSlug(inputRepoSlug);
         String branch = branchFromRepoSlug(inputRepoSlug);

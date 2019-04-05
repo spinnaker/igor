@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Schibsted ASA.
+ * Copyright 2019 Pivotal, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.igor.service
+package com.netflix.spinnaker.igor.concourse.client;
 
-import com.netflix.spinnaker.igor.model.BuildServiceProvider
+import com.netflix.spinnaker.igor.concourse.client.model.Pipeline;
+import retrofit.http.GET;
 
-class BuildMasters {
-    Map<String, BuildService> map = new HashMap<String, BuildService>()
+import java.util.Collection;
 
-    Map<String, BuildService> filteredMap(BuildServiceProvider buildServiceProvider) {
-        map.findAll { it.value.buildServiceProvider() ==  buildServiceProvider}
-    }
-
+public interface PipelineService {
+  @GET("/api/v1/pipelines")
+  Collection<Pipeline> pipelines();
 }

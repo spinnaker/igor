@@ -203,4 +203,8 @@ public abstract class CommonPollingMonitor<I extends DeltaItem, T extends Pollin
     protected @Nullable Integer getPartitionUpperThreshold(String partition) {
         return null;
     }
+
+    public void setWorker(Scheduler.Worker worker) {
+        this.worker = worker;
+    }
 }

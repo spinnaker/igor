@@ -8,32 +8,32 @@
  */
 package com.netflix.spinnaker.igor.wercker
 
+import com.netflix.spinnaker.fiat.model.resources.Permissions
 import com.netflix.spinnaker.hystrix.SimpleHystrixCommand
 import com.netflix.spinnaker.igor.build.BuildController
 import com.netflix.spinnaker.igor.build.model.GenericBuild
 import com.netflix.spinnaker.igor.build.model.GenericGitRevision
 import com.netflix.spinnaker.igor.build.model.Result
 import com.netflix.spinnaker.igor.config.WerckerProperties.WerckerHost
+import com.netflix.spinnaker.igor.exceptions.BuildJobError
 import com.netflix.spinnaker.igor.jenkins.client.model.JobConfig
 import com.netflix.spinnaker.igor.model.BuildServiceProvider
-import com.netflix.spinnaker.igor.service.BuildService
-import com.netflix.spinnaker.igor.wercker.model.*
+import com.netflix.spinnaker.igor.service.BuildOperations
+import com.netflix.spinnaker.igor.wercker.model.Application
+import com.netflix.spinnaker.igor.wercker.model.Pipeline
+import com.netflix.spinnaker.igor.wercker.model.QualifiedPipelineName
+import com.netflix.spinnaker.igor.wercker.model.Run
+import com.netflix.spinnaker.igor.wercker.model.RunPayload
 import groovy.util.logging.Slf4j
-
-import java.util.List
-import java.util.Map
-
 import retrofit.RetrofitError
 import retrofit.client.Response
-import retrofit.http.Body
-import retrofit.http.Query
 import retrofit.mime.TypedByteArray
 
 import static com.netflix.spinnaker.igor.model.BuildServiceProvider.WERCKER
 import static net.logstash.logback.argument.StructuredArguments.kv
 
 @Slf4j
-class WerckerService implements BuildService {
+class WerckerService implements BuildOperations {
 
     String groupKey
     WerckerClient werckerClient
@@ -43,11 +43,12 @@ class WerckerService implements BuildService {
     String address
     String master
     WerckerCache cache
+    final Permissions permissions
 
     private static String branch = 'master'
     private static limit = 300
 
-    WerckerService(WerckerHost wercker, WerckerCache cache, WerckerClient werckerClient) {
+    WerckerService(WerckerHost wercker, WerckerCache cache, WerckerClient werckerClient, Permissions permissions) {
         this.groupKey = wercker.name
         this.werckerClient = werckerClient
         this.user = wercker.user
@@ -57,9 +58,14 @@ class WerckerService implements BuildService {
         this.setToken(token)
         this.address = wercker.address
         this.setToken(wercker.token)
+        this.permissions = permissions
     }
 
-    /**
+    @Override
+    String getName() {
+        this.groupKey
+    }
+/**
      * Custom setter for token, in order to re-set the authHeaderValue
      * @param token
      * @return
@@ -69,7 +75,7 @@ class WerckerService implements BuildService {
     }
 
     @Override
-    BuildServiceProvider buildServiceProvider() {
+    BuildServiceProvider getBuildServiceProvider() {
         return WERCKER
     }
 
@@ -83,7 +89,7 @@ class WerckerService implements BuildService {
         QualifiedPipelineName qPipeline = QualifiedPipelineName.of(job)
         String runId = cache.getRunID(groupKey, job, buildNumber)
         if (runId == null) {
-            throw new BuildController.BuildJobError(
+            throw new BuildJobError(
             "Could not find build number ${buildNumber} for job ${job} - no matching run ID!")
         }
         Run run = getRunById(runId)
@@ -174,7 +180,7 @@ class WerckerService implements BuildService {
                     wkrMsg = body.in().text
                 }
                 log.error("Failed to trigger build for pipeline {}. {}", kv("pipelineName", pipelineName), kv("errMsg", wkrMsg))
-                throw new BuildController.BuildJobError(
+                throw new BuildJobError(
                 "Failed to trigger build for pipeline ${pipelineName}! Error from Wercker is: ${wkrMsg}")
             }
         } else {
@@ -262,7 +268,7 @@ class WerckerService implements BuildService {
 
     List<Run> getBuilds(String appAndPipelineName) {
         String pipelineId = getPipelineId(appAndPipelineName)
-        log.debug "getBuilds for ${groupKey} ${appAndPipelineName} ${pipelineId}"
+        log.debug "getBuildList for ${groupKey} ${appAndPipelineName} ${pipelineId}"
         return pipelineId? getRunsForPipeline(pipelineId) : []
     }
 

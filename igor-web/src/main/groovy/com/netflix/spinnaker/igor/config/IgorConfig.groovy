@@ -18,15 +18,24 @@ package com.netflix.spinnaker.igor.config
 
 import com.netflix.hystrix.exception.HystrixRuntimeException
 import com.netflix.spectator.api.Registry
+import com.netflix.spinnaker.fiat.shared.EnableFiatAutoConfig
+import com.netflix.spinnaker.filters.AuthenticatedRequestFilter
+import com.netflix.spinnaker.igor.artifacts.ArtifactServices
 import com.netflix.spinnaker.igor.service.ArtifactDecorator
-import com.netflix.spinnaker.igor.service.BuildMasters
+import com.netflix.spinnaker.igor.service.BuildServices
+import com.netflix.spinnaker.kork.artifacts.parsing.DefaultJinjavaFactory
+import com.netflix.spinnaker.kork.artifacts.parsing.JinjaArtifactExtractor
+import com.netflix.spinnaker.kork.artifacts.parsing.JinjavaFactory
 import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.kork.web.interceptors.MetricsInterceptor
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
+import org.springframework.boot.web.servlet.FilterRegistrationBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.Ordered
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -38,12 +47,14 @@ import retrofit.RetrofitError
 
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+
 /**
  * Converts validation errors into REST Messages
  */
 @Configuration
 @CompileStatic
 @Slf4j
+@EnableFiatAutoConfig
 class IgorConfig extends WebMvcConfigurerAdapter {
     @Autowired
     Registry registry
@@ -61,8 +72,20 @@ class IgorConfig extends WebMvcConfigurerAdapter {
     }
 
     @Bean
-    BuildMasters buildMasters() {
-        new BuildMasters()
+    FilterRegistrationBean authenticatedRequestFilter() {
+        def frb = new FilterRegistrationBean(new AuthenticatedRequestFilter(true))
+        frb.order = Ordered.HIGHEST_PRECEDENCE
+        return frb
+    }
+
+    @Bean
+    BuildServices buildServices() {
+        new BuildServices()
+    }
+
+    @Bean
+    ArtifactServices artifactServices() {
+      new ArtifactServices()
     }
 
     @Bean
@@ -78,6 +101,17 @@ class IgorConfig extends WebMvcConfigurerAdapter {
     @Bean
     RetrySupport retrySupport() {
         return new RetrySupport()
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    JinjavaFactory jinjavaFactory() {
+        return new DefaultJinjavaFactory();
+    }
+
+    @Bean
+    JinjaArtifactExtractor.Factory jinjaArtifactExtractorFactory(JinjavaFactory jinjavaFactory) {
+        return new JinjaArtifactExtractor.Factory(jinjavaFactory);
     }
 
     @ControllerAdvice

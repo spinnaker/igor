@@ -19,7 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.igor.IgorConfigurationProperties;
 import com.netflix.spinnaker.igor.gitlabci.client.GitlabCiClient;
 import com.netflix.spinnaker.igor.gitlabci.service.GitlabCiService;
-import com.netflix.spinnaker.igor.service.BuildMasters;
+import com.netflix.spinnaker.igor.service.BuildServices;
 import com.squareup.okhttp.OkHttpClient;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -36,6 +36,7 @@ import retrofit.converter.JacksonConverter;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Configuration
@@ -45,21 +46,21 @@ public class GitlabCiConfig {
     private static final Logger log = LoggerFactory.getLogger(GitlabCiConfig.class);
 
     @Bean
-    public Map<String, GitlabCiService> gitlabCiMasters(BuildMasters buildMasters,
+    public Map<String, GitlabCiService> gitlabCiMasters(BuildServices buildServices,
                                                         final IgorConfigurationProperties igorConfigurationProperties,
                                                         GitlabCiProperties gitlabCiProperties,
                                                         ObjectMapper objectMapper) {
         log.info("creating gitlabCiMasters");
         Map<String, GitlabCiService> gitlabCiMasters = gitlabCiProperties.getMasters().stream()
-            .collect(Collectors.toMap(
-                gitlabCiHost -> "gitlab-ci-" + gitlabCiHost.getName(),
-                gitlabCiHost -> gitlabCiService(igorConfigurationProperties, gitlabCiHost, objectMapper)
-            ));
-        buildMasters.getMap().putAll(gitlabCiMasters);
+            .map(gitlabCiHost ->
+                gitlabCiService(igorConfigurationProperties, "gitlab-ci-" + gitlabCiHost.getName(), gitlabCiHost, objectMapper))
+            .collect(Collectors.toMap(GitlabCiService::getName, Function.identity()));
+        buildServices.addServices(gitlabCiMasters);
         return gitlabCiMasters;
     }
 
     private static GitlabCiService gitlabCiService(IgorConfigurationProperties igorConfigurationProperties,
+                                                   String name,
                                                    GitlabCiProperties.GitlabCiHost host,
                                                    ObjectMapper objectMapper) {
         return new GitlabCiService(
@@ -68,9 +69,11 @@ public class GitlabCiConfig {
                 host.getPrivateToken(),
                 igorConfigurationProperties.getClient().getTimeout(),
                 objectMapper),
+            name,
             host.getAddress(),
             host.getLimitByMembership(),
-            host.getLimitByOwnership());
+            host.getLimitByOwnership(),
+            host.getPermissions().build());
     }
 
     public static GitlabCiClient gitlabCiClient(String address, String privateToken, int timeout, ObjectMapper objectMapper) {
