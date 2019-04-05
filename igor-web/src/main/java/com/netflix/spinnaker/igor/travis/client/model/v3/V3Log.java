@@ -58,10 +58,16 @@ public class V3Log {
         this.logParts = logParts;
     }
 
+    public boolean isReady() {
+        int numberOfParts = logParts.size() - 1;
+        return numberOfParts == logParts.get(numberOfParts).number && logParts.get(numberOfParts).isFinal();
+    }
+
     @JsonIgnoreProperties(ignoreUnknown = true)
     static class V3LogPart {
         private String content;
         private Integer number;
+        private boolean _final;
 
         public String getContent() {
             return content;
@@ -77,6 +83,14 @@ public class V3Log {
 
         public void setNumber(Integer number) {
             this.number = number;
+        }
+
+        public boolean isFinal() {
+            return _final;
+        }
+
+        public void setFinal(boolean _final) {
+            this._final = _final;
         }
     }
 }
