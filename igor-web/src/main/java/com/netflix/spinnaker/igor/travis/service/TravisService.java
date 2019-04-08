@@ -286,8 +286,6 @@ public class TravisService implements BuildOperations, BuildProperties {
             return "";
         }
         String travisLog = jobIds.stream()
-            .map(this::getJob)
-            .map(Job::getId)
             .map(this::getJobLog)
             .filter(Objects::nonNull)
             .collect(Collectors.joining("\n"));
