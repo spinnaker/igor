@@ -43,6 +43,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -182,7 +183,7 @@ public class TravisBuildMonitor extends CommonPollingMonitor<TravisBuildMonitor.
                 String branchedRepoSlug = build.branchedRepoSlug();
                 int cachedBuild = buildCache.getLastBuild(master, branchedRepoSlug, build.getState().isRunning());
                 GenericBuild genericBuild = TravisBuildConverter.genericBuild(build, travisService.getBaseUrl());
-                List<Integer> jobIds = build.getJobs().stream().map(V3Job::getId).collect(Collectors.toList());
+                List<Integer> jobIds = build.getJobs() != null ? build.getJobs().stream().map(V3Job::getId).collect(Collectors.toList()) : Collections.emptyList();
                 if (build.getNumber() > cachedBuild && !build.spinnakerTriggered() && travisService.isLogReady(jobIds)) {
                 BuildDelta delta = new BuildDelta()
                     .setBranchedRepoSlug(branchedRepoSlug)
