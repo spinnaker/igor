@@ -79,17 +79,17 @@ public class TravisCache {
     }
 
     public void setJobLog(String master, int jobId, String log) {
-      String key = makeKey(LOG_TYPE, master, jobId);
-      redisClientDelegate.withCommandsClient(c -> {
-        c.setex(key, LOG_EXPIRE_SECONDS, log);
-      });
+        String key = makeKey(LOG_TYPE, master, jobId);
+        redisClientDelegate.withCommandsClient(c -> {
+            c.setex(key, LOG_EXPIRE_SECONDS, log);
+        });
     }
 
     public String getJobLog(String master, int jobId) {
-      String key = makeKey(LOG_TYPE, master, jobId);
-      return redisClientDelegate.withCommandsClient(c -> {
-        return c.get(key);
-      });
+        String key = makeKey(LOG_TYPE, master, jobId);
+        return redisClientDelegate.withCommandsClient(c -> {
+            return c.get(key);
+        });
     }
 
     private String makeKey(String type, String master, int id) {
