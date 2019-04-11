@@ -71,7 +71,7 @@ public class V3Log {
     static class V3LogPart {
         private String content;
         private Integer number;
-        private boolean _final;
+        private boolean isFinal;
 
         public String getContent() {
             return content;
@@ -90,11 +90,11 @@ public class V3Log {
         }
 
         public boolean isFinal() {
-            return _final;
+            return isFinal;
         }
 
-        public void setFinal(boolean _final) {
-            this._final = _final;
+        public void setFinal(boolean isFinal) {
+            this.isFinal = isFinal;
         }
     }
 }
