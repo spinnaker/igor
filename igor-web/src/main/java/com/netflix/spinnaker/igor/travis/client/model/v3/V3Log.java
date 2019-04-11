@@ -60,11 +60,11 @@ public class V3Log {
 
     public boolean isReady() {
         if (logParts == null || logParts.isEmpty()) {
-          return false;
+            return false;
         }
         int numberOfParts = logParts.size() - 1;
-      V3LogPart lastLogPart = logParts.get(numberOfParts);
-      return numberOfParts == lastLogPart.number && lastLogPart.isFinal();
+        V3LogPart lastLogPart = logParts.get(numberOfParts);
+        return numberOfParts == lastLogPart.number && lastLogPart.isFinal();
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
