@@ -57,6 +57,7 @@ dependencies {
 
     testCompile 'com.squareup.okhttp:mockwebserver:2.7.0'
     testCompile 'org.springframework.boot:spring-boot-starter-test'
+
     testCompile spinnaker.dependency("korkJedisTest")
     testCompile spinnaker.dependency("junitJupiterApi")
     testCompile spinnaker.dependency("assertj")
