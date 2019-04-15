@@ -17,7 +17,7 @@
 buildscript {
     repositories {
         jcenter()
-        maven { url "http://spinnaker.bintray.com/gradle" }
+        maven { url "https://spinnaker.bintray.com/gradle" }
         maven { url "https://plugins.gradle.org/m2/" }
     }
     dependencies {
@@ -36,7 +36,7 @@ allprojects {
     sourceSets.main.groovy.srcDirs += ["src/main/java"]
 
     ext {
-        spinnakerDependenciesVersion = '2.0.0-rc.20-springBoot2'
+        spinnakerDependenciesVersion = '2.0.0-rc.25-springBoot2'
         if (project.hasProperty('spinnakerDependenciesVersion')) {
           spinnakerDependenciesVersion = project.property('spinnakerDependenciesVersion')
         }

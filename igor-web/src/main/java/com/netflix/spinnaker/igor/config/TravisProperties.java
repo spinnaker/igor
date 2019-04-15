@@ -17,6 +17,7 @@
 
 package com.netflix.spinnaker.igor.config;
 
+import com.netflix.spinnaker.fiat.model.resources.Permissions;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -24,7 +25,7 @@ import javax.validation.Valid;
 import java.util.List;
 
 @ConfigurationProperties(prefix = "travis")
-public class TravisProperties {
+public class TravisProperties implements BuildServerProperties<TravisProperties.TravisHost> {
     private long newBuildGracePeriodSeconds = 10;
     private boolean repositorySyncEnabled = false;
     private int cachedJobTTLDays = 60;
@@ -32,6 +33,13 @@ public class TravisProperties {
     private List<TravisHost> masters;
     @Valid
     private List<String> regexes;
+    /**
+     * Lets you customize the build message used when Spinnaker triggers builds in Travis. If you set a custom parameter
+     * in the Travis stage in Spinnaker with the value of this property as the key (e.g
+     * <code>travis.buildMessage=My customized message</code>, the build message in Travis will be
+     * <em>Triggered from Spinnaker: My customized message</em>. The first part of this message is not customizable.
+     */
+    private String buildMessageKey = "travis.buildMessage";
 
     public boolean getRepositorySyncEnabled() {
         return repositorySyncEnabled;
@@ -69,7 +77,15 @@ public class TravisProperties {
         this.regexes = regexes;
     }
 
-    public long getNewBuildGracePeriodSeconds() {
+    public String getBuildMessageKey() {
+      return buildMessageKey;
+    }
+
+    public void setBuildMessageKey(String buildMessageKey) {
+      this.buildMessageKey = buildMessageKey;
+    }
+
+  public long getNewBuildGracePeriodSeconds() {
         return newBuildGracePeriodSeconds;
     }
 
@@ -77,7 +93,7 @@ public class TravisProperties {
         this.newBuildGracePeriodSeconds = newBuildGracePeriodSeconds;
     }
 
-    public static class TravisHost {
+    public static class TravisHost implements BuildServerProperties.Host {
         @NotEmpty
         private String name;
         @NotEmpty
@@ -88,6 +104,7 @@ public class TravisProperties {
         private String githubToken;
         private int numberOfRepositories = 25;
         private Integer itemUpperThreshold;
+        private Permissions.Builder permissions = new Permissions.Builder();
 
         public String getName() {
             return name;
@@ -137,5 +154,12 @@ public class TravisProperties {
             this.itemUpperThreshold = itemUpperThreshold;
         }
 
+        public Permissions.Builder getPermissions() {
+            return permissions;
+        }
+
+        public void setPermissions(Permissions.Builder permissions) {
+            this.permissions = permissions;
+        }
     }
 }

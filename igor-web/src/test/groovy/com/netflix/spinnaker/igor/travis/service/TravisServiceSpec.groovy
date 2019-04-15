@@ -16,23 +16,29 @@
 
 package com.netflix.spinnaker.igor.travis.service
 
+import com.netflix.spinnaker.fiat.model.resources.Permissions
 import com.netflix.spinnaker.igor.build.artifact.decorator.DebDetailsDecorator
 import com.netflix.spinnaker.igor.build.artifact.decorator.RpmDetailsDecorator
 import com.netflix.spinnaker.igor.build.model.GenericBuild
 import com.netflix.spinnaker.igor.build.model.Result
 import com.netflix.spinnaker.igor.service.ArtifactDecorator
+import com.netflix.spinnaker.igor.travis.TravisCache
 import com.netflix.spinnaker.igor.travis.client.TravisClient
 import com.netflix.spinnaker.igor.travis.client.model.AccessToken
 import com.netflix.spinnaker.igor.travis.client.model.Build
 import com.netflix.spinnaker.igor.travis.client.model.Builds
 import com.netflix.spinnaker.igor.travis.client.model.Commit
+import com.netflix.spinnaker.igor.travis.client.model.RepoRequest
+import com.netflix.spinnaker.igor.travis.client.model.TriggerResponse
+import com.netflix.spinnaker.igor.travis.client.model.v3.Request
 import com.netflix.spinnaker.igor.travis.client.model.v3.TravisBuildType
+import com.netflix.spinnaker.igor.travis.client.model.v3.V3Log
+import com.netflix.spinnaker.igor.travis.client.model.v3.V3Repository
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll
 
 import java.time.Instant
-
 
 class TravisServiceSpec extends Specification{
     @Shared
@@ -42,12 +48,16 @@ class TravisServiceSpec extends Specification{
     TravisService service
 
     @Shared
+    TravisCache travisCache
+
+    @Shared
     Optional<ArtifactDecorator> artifactDecorator
 
     void setup() {
-        client = Mock(TravisClient)
+        client = Mock()
+        travisCache = Mock()
         artifactDecorator = Optional.of(new ArtifactDecorator([new DebDetailsDecorator(), new RpmDetailsDecorator()], null))
-        service = new TravisService('travis-ci', 'http://my.travis.ci', 'someToken', 25, client, null, artifactDecorator, [])
+        service = new TravisService('travis-ci', 'http://my.travis.ci', 'someToken', 25, client, travisCache, artifactDecorator, [], "travis.buildMessage", Permissions.EMPTY)
 
         AccessToken accessToken = new AccessToken()
         accessToken.accessToken = "someToken"
@@ -57,6 +67,12 @@ class TravisServiceSpec extends Specification{
     def "getGenericBuild(build, repoSlug)" () {
         given:
         Build build = Mock(Build)
+        def v3log = new V3Log()
+        def logPart = new V3Log.V3LogPart()
+        logPart.content = ""
+        logPart.final = true
+        logPart.number = 0
+        v3log.logParts = [logPart]
 
         when:
         GenericBuild genericBuild = service.getGenericBuild(build, "some/repo-slug")
@@ -67,7 +83,11 @@ class TravisServiceSpec extends Specification{
         genericBuild.duration == 32
         genericBuild.timestamp == "1458051084000"
 
-        1 * build.number >> 1337
+        2 * travisCache.getJobLog('travis-ci', 42) >>> [null, ""]
+        1 * travisCache.setJobLog('travis-ci', 42, "") >>> [null, ""]
+        1 * client.jobLog(_, 42) >> v3log
+        2 * build.job_ids >> [42]
+        2 * build.number >> 1337
         2 * build.state >> 'passed'
         1 * build.duration >> 32
         1 * build.finishedAt >> Instant.now()
@@ -217,5 +237,31 @@ class TravisServiceSpec extends Specification{
         "my-org/repo/pull_request_master" || TravisBuildType.pull_request
         "m/r/some_pull_request_in_name"   || TravisBuildType.branch
         "my-org/repo/tags"                || TravisBuildType.tag
+    }
+
+    def "set buildMessage from buildProperties"() {
+        given:
+        def response = new TriggerResponse()
+        response.setRemainingRequests(1)
+        def request = new Request()
+        request.setId(1337)
+        def repository = new V3Repository()
+        repository.setId(42)
+        request.setRepository(repository)
+        response.setRequest(request)
+
+        when:
+        int buildNumber = service.triggerBuildWithParameters("my/slug/branch", ["travis.buildMessage": "My build message"])
+
+        then:
+        1 * client.triggerBuild("token someToken", "my/slug", { RepoRequest repoRequest ->
+            assert repoRequest.branch == "branch"
+            assert repoRequest.config.env == null
+            assert repoRequest.message == "Triggered from Spinnaker: My build message"
+            return repoRequest
+        }) >> response
+        1 * travisCache.setQueuedJob("travis-ci", 42, 1337) >> 1
+
+        buildNumber == 1
     }
 }

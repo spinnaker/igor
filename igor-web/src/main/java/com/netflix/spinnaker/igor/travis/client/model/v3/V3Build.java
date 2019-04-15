@@ -68,11 +68,17 @@ public class V3Build {
     }
 
     public GenericGitRevision genericGitRevision() {
-        return new GenericGitRevision(branch.getName(), branch.getName(), commit.getSha());
+        return GenericGitRevision.builder()
+          .name(branch.getName())
+          .branch(branch.getName())
+          .sha1(commit.getSha())
+          .build();
     }
 
     public boolean spinnakerTriggered() {
-        return ("api".equals(eventType) && commit != null && "Triggered from spinnaker".equals(commit.getMessage()));
+        return ("api".equals(eventType) && commit != null && commit.getMessage() != null
+            && (commit.getMessage().startsWith("Triggered from spinnaker")
+            || commit.getMessage().startsWith("Triggered from Spinnaker")));
     }
 
     public String toString() {
