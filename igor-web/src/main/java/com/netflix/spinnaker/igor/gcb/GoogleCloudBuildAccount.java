@@ -22,6 +22,8 @@ import com.google.api.services.cloudbuild.v1.model.Operation;
 import com.netflix.spinnaker.kork.web.exceptions.NotFoundException;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Map;
+
 /**
  * Generates authenticated requests to the Google Cloud Build API for a single configured account, delegating to
  * GoogleCloudBuildExecutor to execute these requests.
@@ -33,8 +35,10 @@ public class GoogleCloudBuildAccount {
   private final GoogleCloudBuildExecutor executor;
   private final GoogleCloudBuildCache googleCloudBuildCache;
 
-  public Operation createBuild(Build build) {
-    return executor.execute(() -> cloudBuild.projects().builds().create(projectId, build));
+  @SuppressWarnings("unchecked")
+  public Map<String, Object> createBuild(Build build) {
+    Operation operation = executor.execute(() -> cloudBuild.projects().builds().create(projectId, build));
+    return (Map<String, Object>) operation.getMetadata().get("build");
   }
 
   public void updateBuild(String buildId, String status, String serializedBuild) {

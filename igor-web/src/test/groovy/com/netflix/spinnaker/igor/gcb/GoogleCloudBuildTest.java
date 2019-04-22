@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.igor.gcb;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
@@ -86,12 +87,13 @@ public class GoogleCloudBuildTest {
   public void presentAccountTest() throws Exception {
     String buildRequest = objectMapper.writeValueAsString(buildRequest());
     String buildResponse = objectMapper.writeValueAsString(buildResponse());
+    String operationResponse = objectMapper.writeValueAsString(operationResponse());
     stubCloudBuildService.stubFor(
       WireMock
         .post(urlEqualTo("/v1/projects/spinnaker-gcb-test/builds"))
         .withHeader("Authorization", equalTo("Bearer test-token"))
         .withRequestBody(equalToJson(buildRequest))
-        .willReturn(aResponse().withStatus(200).withBody(buildResponse))
+        .willReturn(aResponse().withStatus(200).withBody(operationResponse))
     );
 
     mockMvc.perform(
@@ -184,16 +186,20 @@ public class GoogleCloudBuildTest {
     return new Build().setSteps(Collections.singletonList(buildStep)).setOptions(buildOptions);
   }
 
-  private Operation buildResponse() {
+  private Build buildResponse() {
     Build build = buildRequest();
     build.setId("9f7a39db-b605-437f-aac1-f1ec3b798105");
     build.setStatus("QUEUED");
     build.setProjectId("spinnaker-gcb-test");
     build.setCreateTime("2019-03-26T16:00:08.659446379Z");
 
+    return build;
+  }
+
+  private Operation operationResponse() {
     Map<String, Object> metadata = new HashMap<>();
     metadata.put("@type", "type.googleapis.com/google.devtools.cloudbuild.v1.BuildOperationMetadata");
-    metadata.put("build", build);
+    metadata.put("build", buildResponse());
 
     Operation operation = new Operation();
     operation.setName("operations/build/spinnaker-gcb-test/operationid");
