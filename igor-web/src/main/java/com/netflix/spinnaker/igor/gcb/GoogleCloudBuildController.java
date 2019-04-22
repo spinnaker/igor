@@ -31,6 +31,7 @@ import java.util.List;
 @RequestMapping(value = "/gcb")
 public class GoogleCloudBuildController {
   private final GoogleCloudBuildAccountRepository googleCloudBuildAccountRepository;
+  private final GoogleCloudBuildParser googleCloudBuildParser;
 
   @RequestMapping(value = "/accounts", method = RequestMethod.GET)
   List<String> getAccounts() {
@@ -38,7 +39,8 @@ public class GoogleCloudBuildController {
   }
 
   @RequestMapping(value = "/builds/create/{account}", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
-  Operation createBuild(@PathVariable String account, @RequestBody Build build) {
+  Operation createBuild(@PathVariable String account, @RequestBody String buildString) {
+    Build build = googleCloudBuildParser.parse(buildString, Build.class);
     return googleCloudBuildAccountRepository.getGoogleCloudBuild(account).createBuild(build);
   }
 }

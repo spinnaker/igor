@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.google.api.services.cloudbuild.v1.model.Build;
+import com.google.api.services.cloudbuild.v1.model.BuildOptions;
 import com.google.api.services.cloudbuild.v1.model.BuildStep;
 import com.google.api.services.cloudbuild.v1.model.Operation;
 import com.netflix.spinnaker.igor.config.GoogleCloudBuildConfig;
@@ -119,7 +120,9 @@ public class GoogleCloudBuildTest {
     args.add("Hello, world!");
 
     BuildStep buildStep = new BuildStep().setArgs(args).setName("hello");
-    return new Build().setSteps(Collections.singletonList(buildStep));
+    BuildOptions buildOptions = new BuildOptions().setLogging("LEGACY");
+
+    return new Build().setSteps(Collections.singletonList(buildStep)).setOptions(buildOptions);
   }
 
   private Operation buildResponse() {
