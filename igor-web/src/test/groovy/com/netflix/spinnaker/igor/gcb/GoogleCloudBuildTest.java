@@ -23,7 +23,9 @@ import com.google.api.services.cloudbuild.v1.model.Build;
 import com.google.api.services.cloudbuild.v1.model.BuildOptions;
 import com.google.api.services.cloudbuild.v1.model.BuildStep;
 import com.google.api.services.cloudbuild.v1.model.Operation;
+import com.netflix.spinnaker.igor.RedisConfig;
 import com.netflix.spinnaker.igor.config.GoogleCloudBuildConfig;
+import com.netflix.spinnaker.igor.config.LockManagerConfig;
 import com.netflix.spinnaker.kork.web.exceptions.GenericExceptionHandlers;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -43,6 +45,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -53,8 +56,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(classes = {
   GoogleCloudBuildConfig.class,
   GoogleCloudBuildController.class,
+  RedisConfig.class,
+  LockManagerConfig.class,
   GenericExceptionHandlers.class,
-  WireMockConfig.class
+  GoogleCloudBuildTestConfig.class
 })
 @TestPropertySource(properties = {"spring.config.location=classpath:gcb/gcb-test.yml"})
 public class GoogleCloudBuildTest {
@@ -98,6 +103,60 @@ public class GoogleCloudBuildTest {
       .andExpect(content().json(buildResponse));
 
     assertThat(stubCloudBuildService.findUnmatchedRequests().getRequests()).isEmpty();
+  }
+
+  @Test
+  public void updateBuildTest() throws Exception {
+    String buildId = "f0fc7c14-6035-4e5c-bda1-4848a73af5b4";
+    String working = "WORKING";
+    String success = "SUCCESS";
+    String queued = "QUEUED";
+
+    Build workingBuild = buildRequest().setId(buildId).setStatus(working);
+    mockMvc.perform(
+      put(String.format("/gcb/builds/gcb-account/%s?status=%s", buildId, working))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(workingBuild))
+    ).andExpect(status().is(200));
+
+    assertThat(stubCloudBuildService.findUnmatchedRequests().getRequests()).isEmpty();
+
+    mockMvc.perform(
+      get(String.format("/gcb/builds/gcb-account/%s", buildId))
+        .accept(MediaType.APPLICATION_JSON)
+    ).andExpect(status().is(200)).andExpect(content().json(objectMapper.writeValueAsString(workingBuild)));
+
+    Build successfulBuild = buildRequest().setId(buildId).setStatus(success);
+    mockMvc.perform(
+      put(String.format("/gcb/builds/gcb-account/%s?status=%s", buildId, success))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(successfulBuild))
+    ).andExpect(status().is(200));
+
+    assertThat(stubCloudBuildService.findUnmatchedRequests().getRequests()).isEmpty();
+
+    mockMvc.perform(
+      get(String.format("/gcb/builds/gcb-account/%s", buildId))
+        .accept(MediaType.APPLICATION_JSON)
+    ).andExpect(status().is(200)).andExpect(content().json(objectMapper.writeValueAsString(successfulBuild)));
+
+    // Test that an out-of-order update back to "QUEUED" does not affect the cached value
+    Build queuedBuild = buildRequest().setId(buildId).setStatus(queued);
+    mockMvc.perform(
+      put(String.format("/gcb/builds/gcb-account/%s?status=%s", buildId, queued))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(queuedBuild))
+    ).andExpect(status().is(200));
+
+    assertThat(stubCloudBuildService.findUnmatchedRequests().getRequests()).isEmpty();
+
+    mockMvc.perform(
+      get(String.format("/gcb/builds/gcb-account/%s", buildId))
+        .accept(MediaType.APPLICATION_JSON)
+    ).andExpect(status().is(200)).andExpect(content().json(objectMapper.writeValueAsString(successfulBuild)));
   }
 
   @Test

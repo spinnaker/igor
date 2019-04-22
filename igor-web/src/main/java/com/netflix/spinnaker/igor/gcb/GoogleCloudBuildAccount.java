@@ -19,6 +19,7 @@ package com.netflix.spinnaker.igor.gcb;
 import com.google.api.services.cloudbuild.v1.CloudBuild;
 import com.google.api.services.cloudbuild.v1.model.Build;
 import com.google.api.services.cloudbuild.v1.model.Operation;
+import com.netflix.spinnaker.kork.web.exceptions.NotFoundException;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -30,8 +31,17 @@ public class GoogleCloudBuildAccount {
   private final String projectId;
   private final CloudBuild cloudBuild;
   private final GoogleCloudBuildExecutor executor;
+  private final GoogleCloudBuildCache googleCloudBuildCache;
 
   public Operation createBuild(Build build) {
     return executor.execute(() -> cloudBuild.projects().builds().create(projectId, build));
+  }
+
+  public void updateBuild(String buildId, String status, String serializedBuild) {
+    googleCloudBuildCache.updateBuild(buildId, status, serializedBuild);
+  }
+
+  public String getBuild(String buildId) {
+    return googleCloudBuildCache.getBuild(buildId);
   }
 }
