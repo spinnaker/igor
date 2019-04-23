@@ -16,8 +16,8 @@
 
 buildscript {
     ext {
-      korkVersion = "4.1.0-rc.6-springBoot2"
-      fiatVersion = "1.0.0-rc.7-springBoot2"
+      korkVersion = "4.1.0-rc.10+springBoot2"
+      fiatVersion = "1.0.0-rc.8+springBoot2"
     }
     repositories {
         jcenter()
@@ -25,13 +25,19 @@ buildscript {
         maven { url "https://plugins.gradle.org/m2/" }
     }
     dependencies {
-        classpath 'com.netflix.spinnaker.gradle:spinnaker-dev-plugin:5.2.2'
+        classpath 'com.netflix.spinnaker.gradle:spinnaker-dev-plugin:6.0.0'
+        if (Boolean.valueOf(enablePublishing)) {
+          classpath 'com.netflix.spinnaker.gradle:spinnaker-gradle-project:6.0.0'
+        }
     }
 }
 
 allprojects {
     group = "com.netflix.spinnaker.igor"
     apply plugin: 'spinnaker.base-project'
+    if (Boolean.valueOf(enablePublishing)) {
+      apply plugin: 'spinnaker.project'
+    }
     apply plugin: 'java-library'
     apply plugin: 'groovy'
 
