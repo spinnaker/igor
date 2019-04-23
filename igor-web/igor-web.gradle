@@ -83,9 +83,3 @@ dependencies {
     testRuntime "org.junit.jupiter:junit-jupiter-engine"
     testImplementation "com.github.tomakehurst:wiremock-jre8:2.22.0"
 }
-
-configurations.all {
-    exclude group: 'javax.servlet', module: 'servlet-api'
-    exclude group: "org.slf4j", module: "slf4j-log4j12"
-    exclude group: "org.mortbay.jetty", module: "servlet-api"
-}
