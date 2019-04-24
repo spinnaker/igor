@@ -52,7 +52,7 @@ public class Plan {
     public Resource getResource() {
       String resourceId = id;
       ResourceShape shape = get;
-      if(shape == null && onSuccess != null) {
+      if (shape == null && onSuccess != null) {
         shape = onSuccess.getStep().put;
         resourceId = onSuccess.getStep().id;
       }
