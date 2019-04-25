@@ -48,8 +48,6 @@ class Main extends SpringBootServletInitializer {
     ]
 
     static {
-        System.setProperty("spring.main.allow-bean-definition-overriding", "true");
-
         /**
          * We often operate in an environment where we expect resolution of DNS names for remote dependencies to change
          * frequently, so it's best to tell the JVM to avoid caching DNS results internally.
