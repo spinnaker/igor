@@ -16,8 +16,8 @@
 
 buildscript {
     ext {
-      korkVersion = "4.1.0-rc.10+springBoot2"
-      fiatVersion = "1.0.0-rc.8+springBoot2"
+      korkVersion = "5.0.0"
+      fiatVersion = "1.0.0"
     }
     repositories {
         jcenter()
@@ -54,14 +54,6 @@ allprojects {
       if (System.getProperty('DEBUG', 'false') == 'true') {
         jvmArgs '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8188'
       }
-    }
-
-
-    //c&p this because NetflixOss reverts it to 1.7 and ends up getting applied last..
-    project.plugins.withType(JavaBasePlugin) {
-        JavaPluginConvention convention = project.convention.getPlugin(JavaPluginConvention)
-        convention.sourceCompatibility = JavaVersion.VERSION_1_8
-        convention.targetCompatibility = JavaVersion.VERSION_1_8
     }
 }
 
