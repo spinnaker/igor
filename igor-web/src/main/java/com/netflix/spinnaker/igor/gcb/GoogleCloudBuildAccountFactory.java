@@ -33,13 +33,15 @@ public class GoogleCloudBuildAccountFactory {
   private final GoogleCredentialService credentialService;
   private final GoogleCloudBuildClient.Factory googleCloudBuildClientFactory;
   private final GoogleCloudBuildCache.Factory googleCloudBuildCacheFactory;
+  private final GoogleCloudBuildParser googleCloudBuildParser;
 
   public GoogleCloudBuildAccount build(GoogleCloudBuildProperties.Account account) {
     GoogleCredential credential = getCredential(account);
 
     return new GoogleCloudBuildAccount(
       googleCloudBuildClientFactory.create(credential, account.getProject()),
-      googleCloudBuildCacheFactory.create(account.getName())
+      googleCloudBuildCacheFactory.create(account.getName()),
+      googleCloudBuildParser
     );
   }
 

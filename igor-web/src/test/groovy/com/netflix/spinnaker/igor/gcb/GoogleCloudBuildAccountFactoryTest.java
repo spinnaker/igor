@@ -29,6 +29,7 @@ public class GoogleCloudBuildAccountFactoryTest {
   private GoogleCredentialService googleCredentialService = mock(GoogleCredentialService.class);
   private GoogleCloudBuildClient.Factory googleCloudBuildClientFactory = mock(GoogleCloudBuildClient.Factory.class);
   private GoogleCloudBuildCache.Factory googleCloudBuildCacheFactory = mock(GoogleCloudBuildCache.Factory.class);
+  private GoogleCloudBuildParser googleCloudBuildParser = new GoogleCloudBuildParser();
 
   private GoogleCredential googleCredential = mock(GoogleCredential.class);
   private GoogleCloudBuildClient googleCloudBuildClient = mock(GoogleCloudBuildClient.class);
@@ -36,7 +37,8 @@ public class GoogleCloudBuildAccountFactoryTest {
   private GoogleCloudBuildAccountFactory googleCloudBuildAccountFactory = new GoogleCloudBuildAccountFactory(
     googleCredentialService,
     googleCloudBuildClientFactory,
-    googleCloudBuildCacheFactory
+    googleCloudBuildCacheFactory,
+    googleCloudBuildParser
   );
 
   @Test

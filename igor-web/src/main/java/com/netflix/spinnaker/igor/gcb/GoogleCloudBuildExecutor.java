@@ -16,7 +16,6 @@
 
 package com.netflix.spinnaker.igor.gcb;
 
-import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.services.cloudbuild.v1.CloudBuildRequest;
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException;
 import org.apache.http.client.HttpResponseException;

@@ -20,8 +20,6 @@ import com.google.api.services.cloudbuild.v1.model.Build;
 import com.google.api.services.cloudbuild.v1.model.Operation;
 import lombok.RequiredArgsConstructor;
 
-import java.util.Map;
-
 /**
  * Handles getting and updating build information for a single account. Delegates operations to either the
  * GoogleCloudBuildCache or GoogleCloudBuildClient.
@@ -30,11 +28,12 @@ import java.util.Map;
 public class GoogleCloudBuildAccount {
   private final GoogleCloudBuildClient client;
   private final GoogleCloudBuildCache cache;
+  private final GoogleCloudBuildParser googleCloudBuildParser;
 
   @SuppressWarnings("unchecked")
-  public Map<String, Object> createBuild(Build build) {
+  public Build createBuild(Build build) {
     Operation operation = client.createBuild(build);
-    return (Map<String, Object>) operation.getMetadata().get("build");
+    return googleCloudBuildParser.convert(operation.getMetadata().get("build"), Build.class);
   }
 
   public void updateBuild(String buildId, String status, String serializedBuild) {
