@@ -39,34 +39,34 @@ import java.security.GeneralSecurityException;
 @ConditionalOnProperty("gcb.enabled")
 @EnableConfigurationProperties({GoogleCloudBuildProperties.class, IgorConfigurationProperties.class})
 public class GoogleCloudBuildConfig {
-    @Bean
-    HttpTransport httpTransport() throws IOException, GeneralSecurityException {
-      return GoogleNetHttpTransport.newTrustedTransport();
-    }
+  @Bean
+  HttpTransport httpTransport() throws IOException, GeneralSecurityException {
+    return GoogleNetHttpTransport.newTrustedTransport();
+  }
 
-    @Bean
-    GoogleCloudBuildAccountRepository googleCloudBuildAccountRepository(
-        GoogleCloudBuildAccountFactory googleCloudBuildAccountFactory,
-        GoogleCloudBuildProperties googleCloudBuildProperties
-    ) {
-        GoogleCloudBuildAccountRepository credentials = new GoogleCloudBuildAccountRepository();
-        googleCloudBuildProperties.getAccounts().forEach(a -> {
-            GoogleCloudBuildAccount account = googleCloudBuildAccountFactory.build(a);
-            credentials.registerAccount(a.getName(), account);
-        });
-        return credentials;
-    }
+  @Bean
+  GoogleCloudBuildAccountRepository googleCloudBuildAccountRepository(
+    GoogleCloudBuildAccountFactory googleCloudBuildAccountFactory,
+    GoogleCloudBuildProperties googleCloudBuildProperties
+  ) {
+    GoogleCloudBuildAccountRepository credentials = new GoogleCloudBuildAccountRepository();
+    googleCloudBuildProperties.getAccounts().forEach(a -> {
+      GoogleCloudBuildAccount account = googleCloudBuildAccountFactory.build(a);
+      credentials.registerAccount(a.getName(), account);
+    });
+    return credentials;
+  }
 
-    @Bean
-    GoogleCloudBuildCache.Factory googleCloudBuildCacheFactory(
-      IgorConfigurationProperties igorConfigurationProperties,
-      RedisClientDelegate redisClientDelegate,
-      LockService lockService
-    ) {
-      return new GoogleCloudBuildCache.Factory(
-        lockService,
-        redisClientDelegate,
-        igorConfigurationProperties.getSpinnaker().getJedis().getPrefix()
-      );
-    }
+  @Bean
+  GoogleCloudBuildCache.Factory googleCloudBuildCacheFactory(
+    IgorConfigurationProperties igorConfigurationProperties,
+    RedisClientDelegate redisClientDelegate,
+    LockService lockService
+  ) {
+    return new GoogleCloudBuildCache.Factory(
+      lockService,
+      redisClientDelegate,
+      igorConfigurationProperties.getSpinnaker().getJedis().getPrefix()
+    );
+  }
 }
