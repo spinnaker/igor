@@ -19,10 +19,7 @@ package com.netflix.spinnaker.igor.config;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.HttpTransport;
 import com.netflix.spinnaker.igor.IgorConfigurationProperties;
-import com.netflix.spinnaker.igor.gcb.GoogleCloudBuildAccount;
-import com.netflix.spinnaker.igor.gcb.GoogleCloudBuildAccountFactory;
-import com.netflix.spinnaker.igor.gcb.GoogleCloudBuildAccountRepository;
-import com.netflix.spinnaker.igor.gcb.GoogleCloudBuildCache;
+import com.netflix.spinnaker.igor.gcb.*;
 import com.netflix.spinnaker.igor.polling.LockService;
 import com.netflix.spinnaker.kork.jedis.RedisClientDelegate;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -33,6 +30,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.util.Optional;
 
 @Configuration
 @ComponentScan("com.netflix.spinnaker.igor.gcb")
@@ -67,6 +65,18 @@ public class GoogleCloudBuildConfig {
       lockService,
       redisClientDelegate,
       igorConfigurationProperties.getSpinnaker().getJedis().getPrefix()
+    );
+  }
+
+  @Bean
+  GoogleCloudBuildClient.Factory googleCloudBuildClientFactory(
+    CloudBuildFactory cloudBuildFactory,
+    GoogleCloudBuildExecutor googleCloudBuildExecutor
+  ) {
+    return new GoogleCloudBuildClient.Factory(
+      cloudBuildFactory,
+      googleCloudBuildExecutor,
+      Optional.ofNullable(getClass().getPackage().getImplementationVersion()).orElse("Unknown")
     );
   }
 }
