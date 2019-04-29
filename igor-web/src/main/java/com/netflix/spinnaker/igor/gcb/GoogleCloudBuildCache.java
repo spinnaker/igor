@@ -20,6 +20,7 @@ import com.netflix.spinnaker.igor.polling.LockService;
 import com.netflix.spinnaker.kork.jedis.RedisClientDelegate;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.Duration;
 import java.util.Map;
@@ -29,6 +30,7 @@ import java.util.Map;
  * receives PubSub build notifications and sends them to igor.
  */
 @RequiredArgsConstructor(access=AccessLevel.PRIVATE)
+@Slf4j
 public class GoogleCloudBuildCache {
   private static final int inProgressTtlSeconds = 60 * 10;
   private static final int completedTtlSeconds = 60 * 60 * 24;
@@ -82,6 +84,7 @@ public class GoogleCloudBuildCache {
         return inProgressTtlSeconds;
       }
     } catch (IllegalArgumentException e) {
+      log.warn("Received unknown Google Cloud Build Status: {}", statusString);
       return inProgressTtlSeconds;
     }
   }
