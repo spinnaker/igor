@@ -31,16 +31,24 @@ public class GoogleCloudBuildAccount {
   private final GoogleCloudBuildParser googleCloudBuildParser;
 
   @SuppressWarnings("unchecked")
-  public Build createBuild(Build build) {
-    Operation operation = client.createBuild(build);
-    return googleCloudBuildParser.convert(operation.getMetadata().get("build"), Build.class);
+  public Build createBuild(Build buildRequest) {
+    Operation operation = client.createBuild(buildRequest);
+    Build buildResponse = googleCloudBuildParser.convert(operation.getMetadata().get("build"), Build.class);
+    this.updateBuild(buildResponse.getId(), buildResponse.getStatus(), googleCloudBuildParser.serialize(buildResponse));
+    return buildResponse;
   }
 
   public void updateBuild(String buildId, String status, String serializedBuild) {
     cache.updateBuild(buildId, status, serializedBuild);
   }
 
-  public String getBuild(String buildId) {
-    return cache.getBuild(buildId);
+  public Build getBuild(String buildId) {
+    String buildString = cache.getBuild(buildId);
+    if (buildString == null) {
+      Build build = client.getBuild(buildId);
+      buildString = googleCloudBuildParser.serialize(build);
+      this.updateBuild(buildId, build.getStatus(), buildString);
+    }
+    return googleCloudBuildParser.parse(buildString, Build.class);
   }
 }

@@ -70,7 +70,24 @@ class GoogleCloudBuildAccountSpec extends Specification {
 
     then:
     1 * cache.getBuild(buildId) >> serializedBuild
-    result == serializedBuild
+    result == build
+  }
+
+  def "getBuild falls back to polling when nothing is in the cache, and updates the cache"() {
+    given:
+    def buildId = "5ecc2461-761b-41a7-b325-210ad9b5a2b5"
+    def status = "WORKING"
+    def build = getBuild(status)
+    def serializedBuild = parser.serialize(build)
+
+    when:
+    def result = googleCloudBuildAccount.getBuild(buildId)
+
+    then:
+    1 * cache.getBuild(buildId) >> null
+    1 * client.getBuild(buildId) >> build
+    1 * cache.updateBuild(buildId, status, serializedBuild)
+    result == build
   }
 
   private static Build getBuild(String status) {

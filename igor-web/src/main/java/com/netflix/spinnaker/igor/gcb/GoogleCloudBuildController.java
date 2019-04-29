@@ -57,10 +57,6 @@ public class GoogleCloudBuildController {
 
   @RequestMapping(value = "/builds/{account}/{buildId}", method = RequestMethod.GET)
   Build getBuild(@PathVariable String account, @PathVariable String buildId) {
-    String serializedBuild =  googleCloudBuildAccountRepository.getGoogleCloudBuild(account).getBuild(buildId);
-    if (serializedBuild == null) {
-      throw new NotFoundException(String.format("Build %s in account %s was not found", buildId, account));
-    }
-    return googleCloudBuildParser.parse(serializedBuild, Build.class);
+    return googleCloudBuildAccountRepository.getGoogleCloudBuild(account).getBuild(buildId);
   }
 }

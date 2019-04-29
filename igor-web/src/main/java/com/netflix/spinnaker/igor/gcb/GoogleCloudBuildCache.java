@@ -30,6 +30,9 @@ import java.util.Map;
  */
 @RequiredArgsConstructor(access=AccessLevel.PRIVATE)
 public class GoogleCloudBuildCache {
+  private static final int inProgressTtlSeconds = 60 * 10;
+  private static final int completedTtlSeconds = 60 * 60 * 24;
+
   private final LockService lockService;
   private final RedisClientDelegate redisClientDelegate;
   private final String keyPrefix;
@@ -62,10 +65,25 @@ public class GoogleCloudBuildCache {
     redisClientDelegate.withCommandsClient(c -> {
       String oldStatus = c.hget(key, "status");
       if (allowUpdate(oldStatus, status)) {
+        int ttlSeconds = getTtlSeconds(status);
         c.hset(key, "status", status);
         c.hset(key, "build", build);
+        c.expire(key, ttlSeconds);
       }
     });
+  }
+
+  private int getTtlSeconds(String statusString) {
+    try {
+      GoogleCloudBuildStatus status = GoogleCloudBuildStatus.valueOf(statusString);
+      if (status.isComplete()) {
+        return completedTtlSeconds;
+      } else {
+        return inProgressTtlSeconds;
+      }
+    } catch (IllegalArgumentException e) {
+      return inProgressTtlSeconds;
+    }
   }
 
   // As we may be processing build notifications out of order, only allow an update of the cache if
