@@ -62,4 +62,8 @@ public class GoogleCloudBuildAccount {
     Build build = getBuild(buildId);
     return googleCloudBuildArtifactFetcher.getArtifacts(build);
   }
+
+  public List<Artifact> extractArtifacts(Build build) {
+    return googleCloudBuildArtifactFetcher.getArtifacts(build);
+  }
 }

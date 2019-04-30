@@ -70,4 +70,14 @@ public class GoogleCloudBuildController {
   List<Artifact> getArtifacts(@PathVariable String account, @PathVariable String buildId) {
     return googleCloudBuildAccountRepository.getGoogleCloudBuild(account).getArtifacts(buildId);
   }
+
+  @RequestMapping(
+      value = "/artifacts/extract/{account}",
+      method = RequestMethod.PUT,
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  List<Artifact> extractArtifacts(
+      @PathVariable String account, @RequestBody String serializedBuild) {
+    Build build = googleCloudBuildParser.parse(serializedBuild, Build.class);
+    return googleCloudBuildAccountRepository.getGoogleCloudBuild(account).extractArtifacts(build);
+  }
 }
