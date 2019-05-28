@@ -30,7 +30,11 @@ import com.netflix.spinnaker.igor.history.EchoService;
 import com.netflix.spinnaker.igor.history.model.GenericBuildContent;
 import com.netflix.spinnaker.igor.history.model.GenericBuildEvent;
 import com.netflix.spinnaker.igor.model.BuildServiceProvider;
-import com.netflix.spinnaker.igor.polling.*;
+import com.netflix.spinnaker.igor.polling.CommonPollingMonitor;
+import com.netflix.spinnaker.igor.polling.DeltaItem;
+import com.netflix.spinnaker.igor.polling.LockService;
+import com.netflix.spinnaker.igor.polling.PollContext;
+import com.netflix.spinnaker.igor.polling.PollingDelta;
 import com.netflix.spinnaker.igor.service.BuildServices;
 import com.netflix.spinnaker.igor.travis.client.model.Repo;
 import com.netflix.spinnaker.igor.travis.client.model.v3.TravisBuildState;
@@ -226,7 +230,7 @@ public class TravisBuildMonitor
                       : Collections.emptyList();
               if (build.getNumber() > cachedBuild
                   && !build.spinnakerTriggered()
-                  && travisService.isLogReady(jobIds)) {
+                  && travisService.isLogReady(build)) {
                 BuildDelta delta =
                     new BuildDelta()
                         .setBranchedRepoSlug(branchedRepoSlug)
@@ -264,10 +268,7 @@ public class TravisBuildMonitor
     if (!buildDelta.getBuild().spinnakerTriggered()) {
       if (echoService.isPresent()) {
         log.info(
-            "({}) pushing event for :"
-                + branchedSlug
-                + ":"
-                + String.valueOf(buildDelta.getBuild().getNumber()),
+            "({}) pushing event for :" + branchedSlug + ":" + buildDelta.getBuild().getNumber(),
             kv("master", master));
 
         GenericProject project = new GenericProject(branchedSlug, buildDelta.getGenericBuild());
