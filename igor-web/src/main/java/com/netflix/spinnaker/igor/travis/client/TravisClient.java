@@ -82,8 +82,7 @@ public interface TravisClient {
       @Header("Authorization") String accessToken,
       @Query("member") String login,
       @Query("active") boolean active,
-      @Query("limit") int limit,
-      @Query("offset") int offset);
+      @Query("limit") int limit);
 
   @GET("/repos/{repositoryId}")
   public abstract Repo repo(

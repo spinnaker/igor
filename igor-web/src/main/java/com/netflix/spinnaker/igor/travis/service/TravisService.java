@@ -64,7 +64,6 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import net.logstash.logback.argument.StructuredArguments;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -311,17 +310,11 @@ public class TravisService implements BuildOperations, BuildProperties {
                   .filter(Account::isUser)
                   .flatMap(
                       account ->
-                          IntStream.range(0, calculatePagination(numberOfRepositories))
-                              .mapToObj(
-                                  page ->
-                                      travisClient.repos(
-                                          getAccessToken(),
-                                          account.getLogin(),
-                                          true,
-                                          TRAVIS_BUILD_RESULT_LIMIT,
-                                          page * TRAVIS_BUILD_RESULT_LIMIT))
-                              .flatMap(repos -> repos.getRepos().stream())
-                              .collect(Collectors.toList()).stream())
+                          travisClient
+                              .repos(
+                                  getAccessToken(), account.getLogin(), true, numberOfRepositories)
+                              .getRepos().stream())
+                  .distinct()
                   .collect(Collectors.toList());
             },
             (ignored) -> Collections.emptyList())
@@ -559,14 +552,6 @@ public class TravisService implements BuildOperations, BuildProperties {
     }
 
     return TravisBuildType.unknown;
-  }
-
-  protected int calculatePagination(int numberOfBuilds) {
-    int intermediate = numberOfBuilds / TRAVIS_BUILD_RESULT_LIMIT;
-    if (numberOfBuilds % TRAVIS_BUILD_RESULT_LIMIT > 0) {
-      intermediate += 1;
-    }
-    return intermediate;
   }
 
   private static String extractBranchFromRepoSlug(String inputRepoSlug) {

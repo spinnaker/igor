@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.Instant;
+import lombok.EqualsAndHashCode;
 import org.simpleframework.xml.Default;
 import org.simpleframework.xml.Root;
 
@@ -28,6 +29,7 @@ import org.simpleframework.xml.Root;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Root(strict = false)
+@EqualsAndHashCode
 public class Repo {
   private int id;
   private String slug;

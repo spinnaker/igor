@@ -210,21 +210,6 @@ class TravisServiceSpec extends Specification{
     }
 
     @Unroll
-    def "calculate pagination correctly"() {
-        expect:
-        service.calculatePagination(buildsToTrack) == pages
-
-        where:
-        buildsToTrack || pages
-        75            || 3
-        79            || 4
-        2             || 1
-        15            || 1
-        26            || 2
-        25            || 1
-    }
-
-    @Unroll
     def "resolve travis build type from input repo slug"() {
         expect:
         service.travisBuildTypeFromRepoSlug(inputRepoSlug) == expectedTravisBuildType
