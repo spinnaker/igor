@@ -39,14 +39,12 @@ import com.netflix.spinnaker.igor.service.BuildServices;
 import com.netflix.spinnaker.igor.travis.client.model.Repo;
 import com.netflix.spinnaker.igor.travis.client.model.v3.TravisBuildState;
 import com.netflix.spinnaker.igor.travis.client.model.v3.V3Build;
-import com.netflix.spinnaker.igor.travis.client.model.v3.V3Job;
 import com.netflix.spinnaker.igor.travis.service.TravisBuildConverter;
 import com.netflix.spinnaker.igor.travis.service.TravisService;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -216,7 +214,7 @@ public class TravisBuildMonitor
     List<BuildDelta> results = new ArrayList<>();
     builds.stream()
         .map(build -> setTracking(build, master))
-        .filter(filterNewBuildsPredicate())
+        .filter(filterNewBuildsPredicate(master))
         .forEach(
             build -> {
               String branchedRepoSlug = build.branchedRepoSlug();
@@ -224,13 +222,7 @@ public class TravisBuildMonitor
                   buildCache.getLastBuild(master, branchedRepoSlug, build.getState().isRunning());
               GenericBuild genericBuild =
                   TravisBuildConverter.genericBuild(build, travisService.getBaseUrl());
-              List<Integer> jobIds =
-                  build.getJobs() != null
-                      ? build.getJobs().stream().map(V3Job::getId).collect(Collectors.toList())
-                      : Collections.emptyList();
-              if (build.getNumber() > cachedBuild
-                  && !build.spinnakerTriggered()
-                  && travisService.isLogReady(build)) {
+              if (build.getNumber() > cachedBuild && !build.spinnakerTriggered()) {
                 BuildDelta delta =
                     new BuildDelta()
                         .setBranchedRepoSlug(branchedRepoSlug)
@@ -252,7 +244,7 @@ public class TravisBuildMonitor
   }
 
   private V3Build setTracking(V3Build build, String master) {
-    if (!filterNewBuildsPredicate().test(build)) {
+    if (!filterNewBuildsPredicate(master).test(build)) {
       buildCache.setTracking(
           master, build.getRepository().getSlug(), build.getId(), getPollInterval() * 5);
       log.debug("({}) tracking set up for {}", kv("master", master), build.toString());
@@ -335,7 +327,8 @@ public class TravisBuildMonitor
     return (int) TimeUnit.DAYS.toSeconds(travisProperties.getCachedJobTTLDays());
   }
 
-  private Predicate<V3Build> filterNewBuildsPredicate() {
+  private Predicate<V3Build> filterNewBuildsPredicate(String master) {
+    final TravisService travisService = (TravisService) buildServices.getService(master);
     /*
     NewBuildGracePeriodSeconds is here because the travis API needs some time in order to fully represent the build in
     the api. This can be overridden by travis.newBuildGracePeriod.
@@ -343,8 +336,9 @@ public class TravisBuildMonitor
     Instant threshold =
         Instant.now().minus(travisProperties.getNewBuildGracePeriodSeconds(), ChronoUnit.SECONDS);
     return build ->
-        !build.getState().isRunning()
-            || (build.getFinishedAt() != null && build.getFinishedAt().isBefore(threshold));
+        (!build.getState().isRunning()
+                || (build.getFinishedAt() != null && build.getFinishedAt().isBefore(threshold)))
+            && travisService.isLogReady(build);
   }
 
   private List<Repo> filterOutOldBuilds(List<Repo> repos) {
