@@ -29,7 +29,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Data
 @Slf4j
 public class TravisProperties implements BuildServerProperties<TravisProperties.TravisHost> {
-  private long newBuildGracePeriodSeconds;
+  @Deprecated private long newBuildGracePeriodSeconds;
   private boolean repositorySyncEnabled = false;
   private int cachedJobTTLDays = 60;
   @Valid private List<TravisHost> masters;
@@ -43,6 +43,7 @@ public class TravisProperties implements BuildServerProperties<TravisProperties.
    */
   private String buildMessageKey = "travis.buildMessage";
 
+  @Deprecated
   public void setNewBuildGracePeriodSeconds(long newBuildGracePeriodSeconds) {
     log.warn(
         "The 'travis.newBuildGracePeriodSeconds' property is no longer in use and the value will be ignored.");
@@ -67,7 +68,7 @@ public class TravisProperties implements BuildServerProperties<TravisProperties.
       log.warn(
           "The 'travis.numberOfRepositories' property is no longer in use and the value will be ignored. "
               + "If you want to limit the number of builds retrieved per polling cycle, you can use the property "
-              + "'travis.numberOfJobs' (default: 300).");
+              + "'travis.[master].numberOfJobs' (default: 300).");
       this.numberOfRepositories = numberOfRepositories;
     }
   }
