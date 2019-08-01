@@ -57,8 +57,8 @@ public class TravisProperties implements BuildServerProperties<TravisProperties.
     @NotEmpty private String address;
     @NotEmpty private String githubToken;
     @Deprecated private int numberOfRepositories;
-    /** Defines how many jobs Igor should retrieve per polling cycle. Defaults to 300. */
-    private int numberOfJobs = 300;
+    /** Defines how many jobs Igor should retrieve per polling cycle. Defaults to 100. */
+    private int numberOfJobs = 100;
 
     private Integer itemUpperThreshold;
     private Permissions.Builder permissions = new Permissions.Builder();
@@ -68,7 +68,7 @@ public class TravisProperties implements BuildServerProperties<TravisProperties.
       log.warn(
           "The 'travis.numberOfRepositories' property is no longer in use and the value will be ignored. "
               + "If you want to limit the number of builds retrieved per polling cycle, you can use the property "
-              + "'travis.[master].numberOfJobs' (default: 300).");
+              + "'travis.[master].numberOfJobs' (default: 100).");
       this.numberOfRepositories = numberOfRepositories;
     }
   }

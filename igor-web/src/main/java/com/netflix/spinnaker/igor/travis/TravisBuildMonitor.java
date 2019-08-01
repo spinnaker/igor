@@ -43,6 +43,7 @@ import com.netflix.spinnaker.security.AuthenticatedRequest;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -100,27 +101,7 @@ public class TravisBuildMonitor
 
     List<BuildDelta> builds =
         travisService.getLatestBuilds().stream()
-            .flatMap(
-                b -> {
-                  int lastBuild =
-                      buildCache.getLastBuild(
-                          master, b.branchedRepoSlug(), b.getState().isRunning());
-                  return Stream.of(b)
-                      .filter(build -> !build.spinnakerTriggered())
-                      .filter(build -> build.getNumber() > lastBuild)
-                      .filter(build -> build.getState() == TravisBuildState.passed)
-                      .filter(travisService::isLogReady)
-                      .map(
-                          build ->
-                              BuildDelta.builder()
-                                  .branchedRepoSlug(build.branchedRepoSlug())
-                                  .build(build)
-                                  .genericBuild(travisService.getGenericBuild(build, true))
-                                  .travisBaseUrl(travisService.getBaseUrl())
-                                  .currentBuildNum(build.getNumber())
-                                  .previousBuildNum(lastBuild)
-                                  .build());
-                })
+            .flatMap(build -> createBuildDelta(master, travisService, build))
             .collect(Collectors.toList());
 
     return BuildPollingDelta.builder().master(master).items(builds).build();
@@ -129,40 +110,113 @@ public class TravisBuildMonitor
   @Override
   protected void commitDelta(BuildPollingDelta delta, boolean sendEvents) {
     final String master = delta.getMaster();
+    final TravisService travisService = (TravisService) buildServices.getService(master);
 
-    delta
-        .getItems()
-        .forEach(
-            item -> {
-              V3Build build = item.getBuild();
+    delta.getItems().forEach(item -> processBuild(sendEvents, master, travisService, item));
 
-              if (build.getNumber()
-                  > buildCache.getLastBuild(
-                      master, build.getRepository().getSlug(), build.getState().isRunning())) {
-                buildCache.setLastBuild(
-                    master,
-                    build.getRepository().getSlug(),
-                    build.getNumber(),
-                    build.getState().isRunning(),
-                    buildCacheJobTTLSeconds());
-                if (sendEvents) {
-                  sendEventForBuild(item, build.getRepository().getSlug(), master);
-                }
-              }
+    // Find id of processed builds
+    Set<Integer> processedBuilds =
+        delta.getItems().stream()
+            .map(BuildDelta::getBuild)
+            .map(V3Build::getId)
+            .collect(Collectors.toSet());
 
-              if (build.getNumber() > item.previousBuildNum) {
-                buildCache.setLastBuild(
+    // Check for tracked builds that have fallen out of the tracking window (can happen for long
+    // running Travis jobs)
+    buildCache.getTrackedBuilds(master).stream()
+        .mapToInt(build -> Integer.parseInt(build.get("buildId")))
+        .filter(id -> !processedBuilds.contains(id))
+        .mapToObj(travisService::getV3Build)
+        .filter(
+            build ->
+                !build.getState().isRunning()
+                    && (build.getState() != TravisBuildState.passed
+                        || travisService.isLogReady(build)))
+        .peek(
+            build ->
+                log.info(
+                    "(master={}) Found tracked build missing from the API: {}:{}:{}. If you see this message a lot, "
+                        + "consider increasing the 'travis.{}.numberOfJobs' property.",
                     master,
                     build.branchedRepoSlug(),
                     build.getNumber(),
-                    build.getState().isRunning(),
-                    buildCacheJobTTLSeconds());
-              }
+                    build.getState(),
+                    master))
+        .flatMap(build -> createBuildDelta(master, travisService, build))
+        .forEach(buildDelta -> processBuild(sendEvents, master, travisService, buildDelta));
+  }
 
-              if (sendEvents) {
-                sendEventForBuild(item, build.branchedRepoSlug(), master);
-              }
-            });
+  private Stream<? extends BuildDelta> createBuildDelta(
+      String master, TravisService travisService, V3Build v3Build) {
+    int lastBuild =
+        buildCache.getLastBuild(master, v3Build.branchedRepoSlug(), v3Build.getState().isRunning());
+    return Stream.of(v3Build)
+        .filter(build -> !build.spinnakerTriggered())
+        .filter(build -> build.getNumber() > lastBuild)
+        .map(
+            build ->
+                BuildDelta.builder()
+                    .branchedRepoSlug(build.branchedRepoSlug())
+                    .build(build)
+                    .genericBuild(
+                        travisService.getGenericBuild(
+                            build,
+                            build.getState() == TravisBuildState.passed
+                                && travisService.isLogReady(build)))
+                    .travisBaseUrl(travisService.getBaseUrl())
+                    .currentBuildNum(build.getNumber())
+                    .previousBuildNum(lastBuild)
+                    .build());
+  }
+
+  private void processBuild(
+      boolean sendEvents, String master, TravisService travisService, BuildDelta item) {
+    V3Build build = item.getBuild();
+    switch (build.getState()) {
+      case created:
+      case started:
+        buildCache.setTracking(
+            master,
+            build.getRepository().getSlug(),
+            build.getId(),
+            (int) TimeUnit.HOURS.toMinutes(5));
+        break;
+      case passed:
+        if (!travisService.isLogReady(build)) {
+          break;
+        }
+        if (build.getNumber()
+            > buildCache.getLastBuild(
+                master, build.getRepository().getSlug(), build.getState().isRunning())) {
+          buildCache.setLastBuild(
+              master,
+              build.getRepository().getSlug(),
+              build.getNumber(),
+              build.getState().isRunning(),
+              buildCacheJobTTLSeconds());
+          if (sendEvents) {
+            sendEventForBuild(item, build.getRepository().getSlug(), master);
+          }
+        }
+
+        if (build.getNumber() > item.previousBuildNum) {
+          buildCache.setLastBuild(
+              master,
+              build.branchedRepoSlug(),
+              build.getNumber(),
+              build.getState().isRunning(),
+              buildCacheJobTTLSeconds());
+        }
+
+        if (sendEvents) {
+          sendEventForBuild(item, build.branchedRepoSlug(), master);
+        }
+        // Fall through
+      case failed:
+      case errored:
+      case canceled:
+        buildCache.deleteTracking(master, build.getRepository().getSlug(), build.getId());
+    }
   }
 
   @Override
@@ -175,7 +229,7 @@ public class TravisBuildMonitor
     if (!buildDelta.getBuild().spinnakerTriggered()) {
       if (echoService.isPresent()) {
         log.info(
-            "({}) pushing event for :" + branchedSlug + ":" + buildDelta.getBuild().getNumber(),
+            "({}) pushing event for: " + branchedSlug + ":" + buildDelta.getBuild().getNumber(),
             kv("master", master));
 
         GenericProject project = new GenericProject(branchedSlug, buildDelta.getGenericBuild());

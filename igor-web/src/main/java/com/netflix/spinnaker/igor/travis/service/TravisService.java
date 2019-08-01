@@ -332,7 +332,14 @@ public class TravisService implements BuildOperations, BuildProperties {
 
   public List<V3Build> getLatestBuilds() {
     Map<V3Build, List<V3Job>> jobs =
-        getJobs(numberOfJobs, TravisBuildState.passed).stream()
+        getJobs(
+                numberOfJobs,
+                TravisBuildState.passed,
+                TravisBuildState.started,
+                TravisBuildState.errored,
+                TravisBuildState.failed,
+                TravisBuildState.canceled)
+            .stream()
             .collect(
                 Collectors.groupingBy(V3Job::getBuild, LinkedHashMap::new, Collectors.toList()));
 
