@@ -65,6 +65,8 @@ public class TravisBuildMonitor
   private final TravisProperties travisProperties;
   private final Optional<EchoService> echoService;
 
+  public static final int TRACKING_TTL = (int) TimeUnit.HOURS.toMinutes(5);
+
   @Autowired
   public TravisBuildMonitor(
       IgorConfigurationProperties properties,
@@ -176,10 +178,7 @@ public class TravisBuildMonitor
       case created:
       case started:
         buildCache.setTracking(
-            master,
-            build.getRepository().getSlug(),
-            build.getId(),
-            (int) TimeUnit.HOURS.toMinutes(5));
+            master, build.getRepository().getSlug(), build.getId(), TRACKING_TTL);
         break;
       case passed:
         if (!travisService.isLogReady(build)) {

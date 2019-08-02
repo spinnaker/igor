@@ -119,7 +119,7 @@ class TravisServiceSpec extends Specification {
         (1..expectedNumberOfPages).each { page ->
             1 * client.jobs(
                 "token someToken",
-                TravisBuildState.passed.toString(),
+                [TravisBuildState.passed, TravisBuildState.started, TravisBuildState.errored, TravisBuildState.failed, TravisBuildState.canceled].join(","),
                 "job.build,build.log_complete",
                 service.getLimit(page, numberOfJobs),
                 (page - 1) * TravisService.TRAVIS_BUILD_RESULT_LIMIT) >> partitionedJobs[page - 1]

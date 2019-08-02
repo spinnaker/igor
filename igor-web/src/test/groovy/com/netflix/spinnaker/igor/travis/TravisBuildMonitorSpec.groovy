@@ -23,7 +23,9 @@ import com.netflix.spinnaker.igor.history.EchoService
 import com.netflix.spinnaker.igor.polling.PollContext
 import com.netflix.spinnaker.igor.service.BuildServices
 import com.netflix.spinnaker.igor.travis.client.model.v3.TravisBuildState
+import com.netflix.spinnaker.igor.travis.client.model.v3.V3Branch
 import com.netflix.spinnaker.igor.travis.client.model.v3.V3Build
+import com.netflix.spinnaker.igor.travis.client.model.v3.V3Commit
 import com.netflix.spinnaker.igor.travis.client.model.v3.V3Repository
 import com.netflix.spinnaker.igor.travis.service.TravisBuildConverter
 import com.netflix.spinnaker.igor.travis.service.TravisService
@@ -54,6 +56,7 @@ class TravisBuildMonitorSpec extends Specification {
             Optional.empty()
         )
         travisService.isLogReady(_) >> true
+        buildCache.getTrackedBuilds(MASTER) >> []
     }
 
     void 'flag a new build on master, but do not send event on repo if a newer build is present at repo level'() {
@@ -190,6 +193,53 @@ class TravisBuildMonitorSpec extends Specification {
         1 * echoService.postEvent({
             it.content.project.name == "test-org/test-repo/different_branch" &&
                 it.content.project.lastBuild.number == 3
+        })
+    }
+
+    def "should keep track of started builds and monitor them even if they disappear from the Travis API"() {
+        V3Build build = new V3Build()
+        V3Repository repository = Mock(V3Repository)
+
+        build.commit = Mock(V3Commit)
+        build.commit.isTag() >> false
+        build.commit.isPullRequest() >> false
+        build.branch = new V3Branch()
+        build.branch.name = "my_branch"
+        build.id = 1337
+        build.number = 4
+        build.state = TravisBuildState.started
+        build.jobs = []
+        build.repository = repository
+        repository.slug >> 'test-org/test-repo'
+
+        when:
+        TravisBuildMonitor.BuildPollingDelta buildPollingDelta = travisBuildMonitor.generateDelta(new PollContext(MASTER))
+        travisBuildMonitor.commitDelta(buildPollingDelta, true)
+
+        build.state = TravisBuildState.passed
+        buildPollingDelta = travisBuildMonitor.generateDelta(new PollContext(MASTER))
+        travisBuildMonitor.commitDelta(buildPollingDelta, true)
+
+        then:
+        2 * travisService.getLatestBuilds() >>> [ [ build ], [] ]
+        1 * buildCache.setTracking(MASTER, build.getRepository().getSlug(), 1337, TravisBuildMonitor.TRACKING_TTL)
+        2 * buildCache.getTrackedBuilds(MASTER) >> [ [ buildId: "1337" ] ]
+        1 * travisService.getV3Build(1337) >> build
+        2 * travisService.getGenericBuild(_, _) >> { V3Build b, boolean fetchLogs ->
+            TravisBuildConverter.genericBuild(b, MASTER)
+        }
+        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/my_branch', true) >> 3
+        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/my_branch', false) >> 3
+        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo/my_branch', 4, false, CACHED_JOB_TTL_SECONDS)
+        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo', 4, false, CACHED_JOB_TTL_SECONDS)
+
+        1 * echoService.postEvent({
+            it.content.project.name == "test-org/test-repo"
+            it.content.project.lastBuild.number == 4
+        })
+        1 * echoService.postEvent({
+            it.content.project.name == "test-org/test-repo/my_branch"
+            it.content.project.lastBuild.number == 4
         })
     }
 }
