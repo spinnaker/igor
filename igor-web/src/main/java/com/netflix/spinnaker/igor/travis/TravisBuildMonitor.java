@@ -40,6 +40,8 @@ import com.netflix.spinnaker.igor.travis.client.model.v3.TravisBuildState;
 import com.netflix.spinnaker.igor.travis.client.model.v3.V3Build;
 import com.netflix.spinnaker.igor.travis.service.TravisService;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -98,6 +100,7 @@ public class TravisBuildMonitor
 
   @Override
   protected BuildPollingDelta generateDelta(PollContext ctx) {
+    final Instant startTime = Instant.now();
     final String master = ctx.partitionName;
     final TravisService travisService = (TravisService) buildServices.getService(master);
 
@@ -106,11 +109,17 @@ public class TravisBuildMonitor
             .flatMap(build -> createBuildDelta(master, travisService, build))
             .collect(Collectors.toList());
 
+    log.info(
+        "({}) generateDelta: Took {}ms to generate polling delta",
+        kv("master", master),
+        Duration.between(startTime, Instant.now()));
+
     return BuildPollingDelta.builder().master(master).items(builds).build();
   }
 
   @Override
   protected void commitDelta(BuildPollingDelta delta, boolean sendEvents) {
+    Instant startTime = Instant.now();
     final String master = delta.getMaster();
     final TravisService travisService = (TravisService) buildServices.getService(master);
 
@@ -146,6 +155,20 @@ public class TravisBuildMonitor
                     master))
         .flatMap(build -> createBuildDelta(master, travisService, build))
         .forEach(buildDelta -> processBuild(sendEvents, master, travisService, buildDelta));
+
+    log.info(
+        "({}) commitDelta: Took {}ms to commit polling delta",
+        kv("master", master),
+        Duration.between(startTime, Instant.now()));
+
+    if (travisProperties.isRepositorySyncEnabled()) {
+      startTime = Instant.now();
+      travisService.syncRepos();
+      log.info(
+          "({}) repositorySync: Took {}ms to sync repositories",
+          kv("master", master),
+          Duration.between(startTime, Instant.now()).toMillis());
+    }
   }
 
   private Stream<? extends BuildDelta> createBuildDelta(
