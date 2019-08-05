@@ -112,7 +112,7 @@ public class TravisBuildMonitor
     log.info(
         "({}) generateDelta: Took {}ms to generate polling delta",
         kv("master", master),
-        Duration.between(startTime, Instant.now()));
+        Duration.between(startTime, Instant.now()).toMillis());
 
     return BuildPollingDelta.builder().master(master).items(builds).build();
   }
@@ -159,7 +159,7 @@ public class TravisBuildMonitor
     log.info(
         "({}) commitDelta: Took {}ms to commit polling delta",
         kv("master", master),
-        Duration.between(startTime, Instant.now()));
+        Duration.between(startTime, Instant.now()).toMillis());
 
     if (travisProperties.isRepositorySyncEnabled()) {
       startTime = Instant.now();
