@@ -23,6 +23,8 @@ import com.netflix.spinnaker.fiat.model.resources.Permissions;
 import com.netflix.spinnaker.hystrix.SimpleJava8HystrixCommand;
 import com.netflix.spinnaker.igor.build.model.GenericBuild;
 import com.netflix.spinnaker.igor.build.model.GenericGitRevision;
+import com.netflix.spinnaker.igor.build.model.GenericJobConfiguration;
+import com.netflix.spinnaker.igor.build.model.JobConfiguration;
 import com.netflix.spinnaker.igor.build.model.Result;
 import com.netflix.spinnaker.igor.model.BuildServiceProvider;
 import com.netflix.spinnaker.igor.service.ArtifactDecorator;
@@ -36,9 +38,9 @@ import com.netflix.spinnaker.igor.travis.client.model.AccessToken;
 import com.netflix.spinnaker.igor.travis.client.model.Build;
 import com.netflix.spinnaker.igor.travis.client.model.Builds;
 import com.netflix.spinnaker.igor.travis.client.model.Commit;
-import com.netflix.spinnaker.igor.travis.client.model.Config;
 import com.netflix.spinnaker.igor.travis.client.model.EmptyObject;
 import com.netflix.spinnaker.igor.travis.client.model.GithubAuth;
+import com.netflix.spinnaker.igor.travis.client.model.v3.Config;
 import com.netflix.spinnaker.igor.travis.client.model.v3.RepoRequest;
 import com.netflix.spinnaker.igor.travis.client.model.v3.Request;
 import com.netflix.spinnaker.igor.travis.client.model.v3.TravisBuildState;
@@ -233,7 +235,7 @@ public class TravisService implements BuildOperations, BuildProperties {
   public Map<String, Object> getBuildProperties(
       String inputRepoSlug, GenericBuild build, String fileName) {
     try {
-      V3Build v3build = getV3Build(Integer.valueOf(build.getId()));
+      V3Build v3build = getV3Build(Integer.parseInt(build.getId()));
       return PropertyParser.extractPropertiesFromLog(getLog(v3build));
     } catch (Exception e) {
       log.error("Unable to get igorProperties '{}'", kv("job", inputRepoSlug), e);
@@ -463,6 +465,33 @@ public class TravisService implements BuildOperations, BuildProperties {
       parseAndDecorateArtifacts(getLog(build), genericBuild);
     }
     return genericBuild;
+  }
+
+  @Override
+  public JobConfiguration getJobConfig(String inputRepoSlug) {
+    String repoSlug = cleanRepoSlug(inputRepoSlug);
+    V3Builds builds = travisClient.v3builds(getAccessToken(), repoSlug, 1, "job.config");
+    final Optional<Config> config =
+        builds.getBuilds().stream()
+            .findFirst()
+            .flatMap(build -> build.getJobs().stream().findFirst())
+            .map(V3Job::getConfig);
+    return new GenericJobConfiguration(
+        extractRepoFromRepoSlug(repoSlug),
+        extractRepoFromRepoSlug(repoSlug),
+        repoSlug,
+        true,
+        getUrl(repoSlug),
+        false,
+        config.map(Config::getParameterDefinitionList).orElse(null));
+  }
+
+  private static String extractRepoFromRepoSlug(String repoSlug) {
+    return repoSlug.split("/")[1];
+  }
+
+  public String getUrl(String repoSlug) {
+    return baseUrl + "/" + repoSlug;
   }
 
   public Map<String, Integer> queuedBuild(int queueId) {

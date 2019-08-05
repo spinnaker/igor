@@ -53,4 +53,6 @@ public class V3Job {
 
   @JsonProperty("private")
   private Boolean isPrivate;
+
+  private Config config;
 }

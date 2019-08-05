@@ -19,7 +19,6 @@ package com.netflix.spinnaker.igor.travis.client.model.v3;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonRootName;
-import com.netflix.spinnaker.igor.travis.client.model.Config;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonRootName("request")
