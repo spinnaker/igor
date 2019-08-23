@@ -24,7 +24,7 @@ Relevant properties:
 
 Relevant metrics:
 
-| *Property* | *Type* | *Description* |
+| *Metric* | *Type* | *Description* |
 | --- | --- | --- |
 | `pollingMonitor.newItems` | gauge | represents the number of new items cached by a given monitor during a polling cycle |
 | `pollingMonitor.itemsOverThreshold` | gauge | 0 if deltaSize < threshold, deltaSize otherwise |
