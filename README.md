@@ -11,9 +11,9 @@ Igor runs a number of pollers that all share the same common architecture. At a 
 
 Features:
 
-- *locking*: pollers can optionally acquire a distributed lock in the storage system before attempting to complete a polling cycle. This makes it possible to run Igor in a high-availability configuration and scale it horizontally.
-- *safeguards*: abnormally large delta sizes can indicate a problem (e.g. lost or corrupt cache data) and cause downstream issues. If a polling cycle results in a delta size above the threshold
 - *health*: Igor has a `HealthIndicator` that reports `Down` if no pollers are running or if they have not had a successful polling cycle in a long time
+- *locking*: pollers can optionally acquire a distributed lock in the storage system before attempting to complete a polling cycle. This makes it possible to run Igor in a high-availability configuration and scale it horizontally.
+- *safeguards*: abnormally large delta sizes can indicate a problem (e.g. lost or corrupt cache data) and cause downstream issues. If a polling cycle results in a delta size above the threshold, the new items will not be cached and events will not be submitted to echo to prevent a trigger storm. Manual action will be needed to resolve this, such as using the fast-forward admin endpoint: `/admin/pollers/fastforward/{monitorName}[?partition={partition}]`. Fast-forwarding means that all pending cache state will be polled and saved, but will not send Echo notifications.
 
 Relevant properties:
 
@@ -53,10 +53,10 @@ redis:
 
 The following SCM services are supported:
 
-- Stash
+- Bitbucket
 - Github
 - Gitlab
-- Bitbucket
+- Stash
 
 `Commit` controller classes expose APIs to retrieve lists of commits, such as `/github/{{projectKey}}/{{repositorySlug}}/compareCommits?from={{fromHash}}&to={{toHash}}`
 
@@ -91,14 +91,15 @@ gitlab:
 
 The following CI services are supported:
 
-- Jenkins
-- Gitlab CI
-- Wercker
-- Travis
 - Artifactory
 - Concourse
+- Gitlab CI
+- Google Cloud Build (GCB)
+- Jenkins
+- Travis
+- Wercker
 
-For each of these services, a poller can be enabled (e.g. with `jenkins.enabled`) that will start monitoring new builds/pipelines/artifacts, caching them and submitting events to echo, thus supporting pipeline triggers.
+For each of these services, a poller can be enabled (e.g. with `jenkins.enabled`) that will start monitoring new builds/pipelines/artifacts, caching them and submitting events to echo, thus supporting pipeline triggers. GCB is a bit different in that it doesn't poll and requires setting up [pubsub subscriptions](https://www.spinnaker.io/setup/ci/gcb/).
 
 The `BuildController` class also exposes APIs for services that support them such as:
 
