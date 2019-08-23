@@ -6,21 +6,21 @@ Igor runs a number of pollers that all share the same common architecture. At a 
 
 - periodically get a list of items from an external resource (e.g. builds on a Jenkins master)
 - compare that list against their own persisted cache of items (the difference is called _delta size_)
-- send an `echo` event for each new item
+- send an echo event for each new item
 - cache the new list of items
 
 Features:
 
-- *health*: Igor has a `HealthIndicator` that reports `Down` if no pollers are running or if they have not had a successful polling cycle in a long time
-- *locking*: pollers can optionally acquire a distributed lock in the storage system before attempting to complete a polling cycle. This makes it possible to run Igor in a high-availability configuration and scale it horizontally.
-- *safeguards*: abnormally large delta sizes can indicate a problem (e.g. lost or corrupt cache data) and cause downstream issues. If a polling cycle results in a delta size above the threshold, the new items will not be cached and events will not be submitted to echo to prevent a trigger storm. Manual action will be needed to resolve this, such as using the fast-forward admin endpoint: `/admin/pollers/fastforward/{monitorName}[?partition={partition}]`. Fast-forwarding means that all pending cache state will be polled and saved, but will not send Echo notifications.
+- *health*: igor has a `HealthIndicator` that reports `Down` if no pollers are running or if they have not had a successful polling cycle in a long time
+- *locking*: pollers can optionally acquire a distributed lock in the storage system before attempting to complete a polling cycle. This makes it possible to run igor in a high-availability configuration and scale it horizontally.
+- *safeguards*: abnormally large delta sizes can indicate a problem (e.g. lost or corrupt cache data) and cause downstream issues. If a polling cycle results in a delta size above the threshold, the new items will not be cached and events will not be submitted to echo to prevent a trigger storm. Manual action will be needed to resolve this, such as using the fast-forward admin endpoint: `/admin/pollers/fastforward/{monitorName}[?partition={partition}]`. Fast-forwarding means that all pending cache state will be polled and saved, but will not send echo notifications.
 
 Relevant properties:
 
 | *Property* | *Default value* | *Description* |
 | --- | --- | --- |
 | `spinnaker.build.pollInterval` | `60` | Interval in seconds between polling cycles |
-| `spinnaker.pollingSafeguard.itemUpperThreshold` | `1000` | Defines the upper threshold for number of new items before a cache update cycle will be rejected | `locking.enabled` | `false` | Enables distributed locking so that Igor can run on multiple nodes without interference |
+| `spinnaker.pollingSafeguard.itemUpperThreshold` | `1000` | Defines the upper threshold for number of new items before a cache update cycle will be rejected | `locking.enabled` | `false` | Enables distributed locking so that igor can run on multiple nodes without interference |
 
 Relevant metrics:
 
@@ -60,7 +60,7 @@ The following SCM services are supported:
 
 `Commit` controller classes expose APIs to retrieve lists of commits, such as `/github/{{projectKey}}/{{repositorySlug}}/compareCommits?from={{fromHash}}&to={{toHash}}`
 
-At the moment Igor only exposes read APIs, there are no pollers and no triggers involving SCM services directly.
+At the moment, igor only exposes read APIs, there are no pollers and no triggers involving SCM services directly.
 
 Relevant properties:
 
@@ -153,14 +153,14 @@ travis:
   - /Upload https?:\/\/.+\/(.+\.(deb|rpm))/
 ```
 
-When parsing artifact information from Travis builds, Igor uses a default regex
+When parsing artifact information from Travis builds, igor uses a default regex
 that will match on output from the `art` CLI tool.  Different regexes than the
 default may be configured using the `regexes` list.
 
 
 ## Integration with Docker Registry
 
-Clouddriver can be [configured to poll your registries](http://www.spinnaker.io/v1.0/docs/target-deployment-configuration#section-docker-registry). When that is the case, Igor can then create a poller that will list the registries indexed by clouddriver, check each one for new images and submit events to echo (hence allowing Docker triggers)
+Clouddriver can be [configured to poll your registries](http://www.spinnaker.io/v1.0/docs/target-deployment-configuration#section-docker-registry). When that is the case, igor can then create a poller that will list the registries indexed by clouddriver, check each one for new images and submit events to echo (hence allowing Docker triggers)
 
 Relevant properties:
 
@@ -168,11 +168,11 @@ Relevant properties:
 - requires `services.clouddriver.baseUrl` to be configured
 
 
-# Running Igor
+# Running igor
 
 Igor requires redis server to be up and running.
 
-Start Igor via `./gradlew bootRun`. Or by following the instructions using the [Spinnaker installation scripts](https://www.github.com/spinnaker/spinnaker).
+Start igor via `./gradlew bootRun`. Or by following the instructions using the [Spinnaker installation scripts](https://www.github.com/spinnaker/spinnaker).
 
 
 ## Debugging
@@ -182,4 +182,4 @@ To start the JVM in debug mode, set the Java system property `DEBUG=true`:
 ./gradlew -DDEBUG=true
 ```
 
-The JVM will then listen for a debugger to be attached on port 8188.  The JVM will _not_ wait for the debugger to be attached before starting Igor; the relevant JVM arguments can be seen and modified as needed in `build.gradle`.
+The JVM will then listen for a debugger to be attached on port 8188.  The JVM will _not_ wait for the debugger to be attached before starting igor; the relevant JVM arguments can be seen and modified as needed in `build.gradle`.
