@@ -1,4 +1,4 @@
-Igor is a service that provides a single point of integration with CI and SCM services for Spinnaker.
+Igor is a service that provides a single point of integration with Continuous Integration (CI) and Source Control Management (SCM) services for Spinnaker.
 
 # Common Polling Architecture
 
