@@ -7,7 +7,7 @@ Igor runs a number of pollers that all share the same common architecture. At a 
 - periodically get a list of items from an external resource (e.g. builds on a Jenkins master)
 - compare that list against their own persisted cache of items (the difference is called _delta size_)
 - send an `echo` event for each new item
-- caches the new list of items
+- cache the new list of items
 
 Features:
 
