@@ -12,7 +12,7 @@ Igor runs a number of pollers that all share the same common architecture. At a 
 Features:
 
 - *locking*: pollers can optionally acquire a distributed lock in the storage system before attempting to complete a polling cycle. This makes it possible to run Igor in a high-availability configuration and scale it horizontally.
-- *safe guards*: abnormally large delta sizes can indicate a problem (e.g. lost or corrupt cache data) and cause downstream issues. If a polling cycle results in a delta size above the threshold
+- *safeguards*: abnormally large delta sizes can indicate a problem (e.g. lost or corrupt cache data) and cause downstream issues. If a polling cycle results in a delta size above the threshold
 - *health*: Igor has a `HealthIndicator` that reports `Down` if no pollers are running or if they have not had a successful polling cycle in a long time
 
 Relevant properties:
