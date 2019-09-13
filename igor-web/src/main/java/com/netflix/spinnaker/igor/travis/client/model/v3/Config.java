@@ -90,10 +90,8 @@ public class Config {
   @JsonSetter("global_env")
   @SuppressWarnings("unchecked")
   public void setGlobalEnv(Object globalEnv) {
-    if (globalEnv == null) {
-      this.globalEnv = null;
-    } else if (globalEnv instanceof String) {
-      // Matches KEY=VALUE pairs. See ConfigSpec for matching examples
+    if (globalEnv instanceof String) {
+      // Matches space separated KEY=VALUE pairs. See ConfigSpec for matching examples
       Pattern pattern = Pattern.compile("(\\S*?)=(?>(?>[\"'])(.*?)(?>[\"'])|(\\S*))");
       Matcher matcher = pattern.matcher((String) globalEnv);
       List<String> env = new ArrayList<>();

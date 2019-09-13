@@ -113,7 +113,7 @@ class ConfigSpec extends Specification {
                                                                                           "A_USER=user@schibsted.com",
                                                                                           "A_PWD=[secure]",
                                                                                           "KEY_ID=SOMEKEYID",
-                                                                                          "SOME_SECRET=[secure]" ,
+                                                                                          "SOME_SECRET=[secure]",
                                                                                           "ROLE=arn:aws:iam::0123456789:role/MyRole",
                                                                                           "KEY=whatabout=this\\\\",
                                                                                           "KEY2=and=this\\\\"]
