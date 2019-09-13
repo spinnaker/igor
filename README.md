@@ -92,7 +92,6 @@ gitlab:
 The following CI services are supported:
 
 - Artifactory
-- Nexus
 - Concourse
 - Gitlab CI
 - Google Cloud Build (GCB)
