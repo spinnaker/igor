@@ -70,7 +70,7 @@ class InfoController {
     @Autowired(required = false)
     ConcourseProperties concourseProperties
 
-    @Autowired(required =false)
+    @Autowired(required = false)
     GoogleCloudBuildProperties gcbProperties
 
     @RequestMapping(value = '/masters', method = RequestMethod.GET)
