@@ -195,18 +195,17 @@ class DockerMonitor extends CommonPollingMonitor<ImageDelta, DockerPollingDelta>
 
         if (keelService.isPresent()) {
           String imageReference = image.repository + ":" + image.tag
-          Artifact artifact = new Artifact(
-            "DOCKER_IMAGE",
-            false,
-            image.repository,
-            image.tag,
-            image.account,
-            imageId,
-            [fullname: imageReference, registry: image.account, tag: image.tag],
-            null,
-            image.registry,
-            null
-          )
+          Artifact artifact = Artifact.builder()
+            .type("DOCKER")
+            .customKind(false)
+            .name(image.repository)
+            .version(image.tag)
+            .location(image.account)
+            .reference(imageId)
+            .metadata([fullname: imageReference, registry: image.account, tag: image.tag],)
+            .provenance(image.registry)
+            .build()
+
           Map artifactEvent = [
             payload: [artifacts: [artifact], details: [:]],
             eventName: "spinnaker_artifacts_docker"

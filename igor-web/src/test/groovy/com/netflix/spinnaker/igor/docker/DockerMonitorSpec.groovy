@@ -108,7 +108,7 @@ class DockerMonitorSpec extends Specification {
           def artifacts = event.payload.artifacts
           assert artifacts.size() == 1
           assert artifacts[0].name == "repository"
-          assert artifacts[0].type == "DOCKER_IMAGE"
+          assert artifacts[0].type == "DOCKER"
           return true
         })
     }
