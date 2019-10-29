@@ -15,41 +15,41 @@
  */
 package com.netflix.spinnaker.igor.config;
 
-import com.netflix.spinnaker.config.OkHttpClientConfiguration;
-import com.netflix.spinnaker.igor.IgorConfigurationProperties;
+import com.jakewharton.retrofit.Ok3Client;
 import com.netflix.spinnaker.igor.keel.KeelService;
 import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger;
-import com.squareup.okhttp.OkHttpClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import retrofit.Endpoint;
 import retrofit.Endpoints;
 import retrofit.RestAdapter;
-import retrofit.client.OkClient;
+import retrofit.converter.JacksonConverter;
 
 @ConditionalOnProperty("services.keel.base-url")
 @Configuration
 public class KeelConfig {
 
   @Bean
-  RestAdapter.LogLevel retrofitLogLevel(
+  public RestAdapter.LogLevel retrofitLogLevel(
       @Value("${retrofit.log-level:BASIC}") String retrofitLogLevel) {
     return RestAdapter.LogLevel.valueOf(retrofitLogLevel);
   }
 
   @Bean
-  KeelService keelService(
-      OkHttpClientConfiguration okHttpClientConfig,
-      IgorConfigurationProperties igorProperties,
-      RestAdapter.LogLevel logLevel) {
-    String address = igorProperties.getServices().getKeel().getBaseUrl();
+  public Endpoint keelEndpoint(@Value("${services.keel.base-url}") String keelBaseUrl) {
+    return Endpoints.newFixedEndpoint(keelBaseUrl);
+  }
 
-    OkHttpClient client = okHttpClientConfig.create();
+  @Bean
+  public KeelService keelService(
+      Endpoint keelEndpoint, Ok3Client ok3Client, RestAdapter.LogLevel retrofitLogLevel) {
     return new RestAdapter.Builder()
-        .setEndpoint(Endpoints.newFixedEndpoint(address))
-        .setClient(new OkClient(client))
-        .setLogLevel(logLevel)
+        .setEndpoint(keelEndpoint)
+        .setConverter(new JacksonConverter())
+        .setClient(ok3Client)
+        .setLogLevel(retrofitLogLevel)
         .setLog(new Slf4jRetrofitLogger(KeelService.class))
         .build()
         .create(KeelService.class);
