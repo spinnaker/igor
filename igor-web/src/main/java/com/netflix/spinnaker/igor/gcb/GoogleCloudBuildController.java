@@ -96,7 +96,7 @@ public class GoogleCloudBuildController {
   }
 
   @RequestMapping(
-      value = "/triggers/run/{account}/{triggerId}",
+      value = "/triggers/{account}/{triggerId}/run",
       method = RequestMethod.POST,
       consumes = MediaType.APPLICATION_JSON_VALUE)
   @PreAuthorize("hasPermission(#account, 'BUILD_SERVICE', 'WRITE')")

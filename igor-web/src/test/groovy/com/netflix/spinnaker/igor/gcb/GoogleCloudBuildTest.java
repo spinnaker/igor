@@ -213,7 +213,7 @@ public class GoogleCloudBuildTest {
   }
 
   @Test
-  public void testListTrigersWorksWhenNoTrigersDefined() throws Exception {
+  public void testListTrigersWorkWhenNoTrigerDefined() throws Exception {
     String emptyListResponse =
         objectMapper.writeValueAsString(listBuildTriggersResponse(Arrays.asList()));
     stubCloudBuildService.stubFor(
@@ -230,7 +230,7 @@ public class GoogleCloudBuildTest {
   }
 
   @Test
-  public void runTriggerSuccessfullyTest() throws Exception {
+  public void runTriggerWorksSuccessfullyTest() throws Exception {
     String buildResponse = objectMapper.writeValueAsString(buildResponse());
     String operationResponse = objectMapper.writeValueAsString(operationResponse());
     String repoSource = objectMapper.writeValueAsString(repoSource("master"));
@@ -242,7 +242,7 @@ public class GoogleCloudBuildTest {
 
     mockMvc
         .perform(
-            post("/gcb/triggers/run/gcb-account/my-id")
+            post("/gcb/triggers/gcb-account/my-id/run")
                 .accept(MediaType.APPLICATION_JSON)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(repoSource))
