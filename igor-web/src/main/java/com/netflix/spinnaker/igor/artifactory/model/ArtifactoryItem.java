@@ -23,8 +23,6 @@ import javax.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Data
 public class ArtifactoryItem {
@@ -32,7 +30,6 @@ public class ArtifactoryItem {
   private String repo;
   private String path;
   private List<ArtifactoryArtifact> artifacts;
-  protected Logger log = LoggerFactory.getLogger(getClass());
 
   @Nullable
   public Artifact toMatchableArtifact(ArtifactoryRepositoryType repositoryType, String baseUrl) {
@@ -76,7 +73,6 @@ public class ArtifactoryItem {
 
         return artifactBuilder.build();
       case HELM:
-        log.info("SIRI in helm");
         String filePath = null;
         if (baseUrl != null) {
           filePath = baseUrl + "/webapp/#/artifacts/browse/tree/General/" + repo + "/" + name;
@@ -91,8 +87,6 @@ public class ArtifactoryItem {
                 .version(helmVersion)
                 .provenance(repo)
                 .location(filePath);
-
-        log.info("SIRI: artifactBuilderHelm values" + artifactBuilderHelm.toString());
         return artifactBuilderHelm.build();
     }
     return null;

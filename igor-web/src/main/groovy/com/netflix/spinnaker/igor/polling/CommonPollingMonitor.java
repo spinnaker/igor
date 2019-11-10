@@ -141,12 +141,10 @@ public abstract class CommonPollingMonitor<I extends DeltaItem, T extends Pollin
   @Override
   public void pollSingle(PollContext ctx) {
     if (lockService.isPresent()) {
-
       // Lock duration of the full poll interval; if the work is completed ahead of that time, it'll
       // be released.
       // If anything, this will mean builds are polled more often, rather than less.
       final String lockName = format("%s.%s", getName(), ctx.partitionName);
-      log.info("lockname is:" + lockName);
       lockService
           .get()
           .acquire(lockName, Duration.ofSeconds(getPollInterval()), () -> internalPollSingle(ctx));
@@ -174,7 +172,6 @@ public abstract class CommonPollingMonitor<I extends DeltaItem, T extends Pollin
                 itemsOverThresholdId.withTags(
                     "monitor", monitorName, "partition", ctx.partitionName))
             .set(deltaSize);
-
         if (ctx.fastForward) {
           log.warn(
               "Fast forwarding items ({}) in {} {}",
@@ -182,7 +179,6 @@ public abstract class CommonPollingMonitor<I extends DeltaItem, T extends Pollin
               kv("monitor", monitorName),
               kv("partition", ctx.partitionName));
           sendEvents = false;
-
         } else {
           log.error(
               "Number of items ({}) to cache exceeds upper threshold ({}) in {} {}",
