@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 
 class ArtifactoryItemTest {
   @Test
-  void toMatchableArtifact() {
+  void toMatchableArtifactMaven() {
     ArtifactoryItem artifact = new ArtifactoryItem();
     artifact.setName("1.0.1.pom");
     artifact.setPath("io/pivotal/spinnaker/demo/0.1.0-dev.20+d9a14fb");
@@ -44,6 +44,25 @@ class ArtifactoryItemTest {
         .isEqualTo(
             "http://localhost:8080/webapp/#/artifacts/browse/tree/General/libs-demo-local/io/pivotal"
                 + "/spinnaker/demo/0.1.0-dev.20+d9a14fb/1.0.1.pom");
+  }
+
+  @Test
+  void toMatchableArtifactHelm() {
+    ArtifactoryItem artifact = new ArtifactoryItem();
+    artifact.setName("my-app-0.0.1.tgz");
+    artifact.setPath(".");
+    artifact.setRepo("demo-helm-local");
+
+    Artifact matchableArtifact =
+        artifact.toMatchableArtifact(ArtifactoryRepositoryType.Helm, "http://localhost:8080");
+    assertThat(matchableArtifact).isNotNull();
+    assertThat(matchableArtifact.getType()).isEqualTo("helm/file");
+    assertThat(matchableArtifact.getVersion()).isEqualTo("0.0.1");
+    assertThat(matchableArtifact.getName()).isEqualTo("my-app-0.0.1.tgz");
+    assertThat(matchableArtifact.getLocation())
+        .isEqualTo(
+            "http://localhost:8080/webapp/#/artifacts/browse/tree/General/demo-helm-local/"
+                + "my-app-0.0.1.tgz");
   }
 
   @Test

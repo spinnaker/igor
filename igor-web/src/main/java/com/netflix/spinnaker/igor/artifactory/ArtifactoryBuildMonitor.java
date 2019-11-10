@@ -95,6 +95,7 @@ public class ArtifactoryBuildMonitor
                       .setPassword(search.getPassword())
                       .setAccessToken(search.getAccessToken())
                       .setUrl(search.getBaseUrl())
+                      .setIgnoreSSLIssues(true)
                       .setIgnoreSSLIssues(search.isIgnoreSslIssues())
                       .build();
 
@@ -103,8 +104,8 @@ public class ArtifactoryBuildMonitor
               long lookbackFromCurrent =
                   System.currentTimeMillis()
                       - (getPollInterval() * 1000 + (lookBackWindowMins * 60 * 1000));
+              // this
               String modified = "\"modified\":{\"$last\":\"" + lookBackWindowMins + "minutes\"}";
-
               Long cursor = cache.getLastPollCycleTimestamp(search);
               if (cursor == null) {
                 if (!igorProperties.getSpinnaker().getBuild().isHandleFirstBuilds()) {
@@ -119,6 +120,7 @@ public class ArtifactoryBuildMonitor
               }
               cache.setLastPollCycleTimestamp(search, System.currentTimeMillis());
 
+              log.info("SIRI: repotype is: " + search.getRepositoryType());
               String aqlQuery =
                   "items.find({"
                       + "\"repo\":\""
@@ -132,9 +134,11 @@ public class ArtifactoryBuildMonitor
                           : search.getGroupId().replace('.', '/') + "/")
                       + "*\"},"
                       + "\"name\": {\"$match\":\""
-                      + "*.pom\"}"
+                      + "*."
+                      + search.getSearchPattern()
+                      + "\"}"
                       + "}).include(\"path\",\"repo\",\"name\", \"artifact.module.build\")";
-
+              log.info(" AQL query " + aqlQuery);
               ArtifactoryRequest aqlRequest =
                   new ArtifactoryRequestImpl()
                       .method(ArtifactoryRequest.Method.POST)
@@ -145,6 +149,7 @@ public class ArtifactoryBuildMonitor
 
               try {
                 ArtifactoryResponse aqlResponse = client.restCall(aqlRequest);
+                log.info("SIRI: response " + aqlResponse);
                 if (aqlResponse.isSuccessResponse()) {
                   List<ArtifactoryItem> results =
                       aqlResponse.parseBody(ArtifactoryQueryResults.class).getResults();
@@ -154,7 +159,7 @@ public class ArtifactoryBuildMonitor
                       search.getPartitionName(),
                       Collections.singletonList(
                           new ArtifactDelta(
-                              System.currentTimeMillis(), search.getRepoType(), results)));
+                              System.currentTimeMillis(), search.getRepositoryType(), results)));
                 }
 
                 log.warn(

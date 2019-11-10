@@ -17,5 +17,6 @@
 package com.netflix.spinnaker.igor.artifactory.model;
 
 public enum ArtifactoryRepositoryType {
-  Maven,
+  MAVEN,
+  HELM;
 }

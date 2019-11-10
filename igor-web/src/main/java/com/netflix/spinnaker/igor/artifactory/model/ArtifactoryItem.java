@@ -23,6 +23,8 @@ import javax.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Data
 public class ArtifactoryItem {
@@ -30,11 +32,12 @@ public class ArtifactoryItem {
   private String repo;
   private String path;
   private List<ArtifactoryArtifact> artifacts;
+  protected Logger log = LoggerFactory.getLogger(getClass());
 
   @Nullable
-  public Artifact toMatchableArtifact(ArtifactoryRepositoryType repoType, String baseUrl) {
-    switch (repoType) {
-      case Maven:
+  public Artifact toMatchableArtifact(ArtifactoryRepositoryType repositoryType, String baseUrl) {
+    switch (repositoryType) {
+      case MAVEN:
         String[] pathParts = path.split("/");
         String version = pathParts[pathParts.length - 1];
         String artifactId = pathParts[pathParts.length - 2];
@@ -72,8 +75,32 @@ public class ArtifactoryItem {
         }
 
         return artifactBuilder.build();
+      case HELM:
+        log.info("SIRI in helm");
+        String filePath = null;
+        if (baseUrl != null) {
+          filePath = baseUrl + "/webapp/#/artifacts/browse/tree/General/" + repo + "/" + name;
+        }
+
+        String helmVersion = getHelmFileVersion(name);
+        Artifact.ArtifactBuilder artifactBuilderHelm =
+            Artifact.builder()
+                .type("helm/file")
+                .reference("")
+                .name(name)
+                .version(helmVersion)
+                .provenance(repo)
+                .location(filePath);
+
+        log.info("SIRI: artifactBuilderHelm values" + artifactBuilderHelm.toString());
+        return artifactBuilderHelm.build();
     }
     return null;
+  }
+
+  public String getHelmFileVersion(String artifactName) {
+    int lastIndex = artifactName.lastIndexOf("-");
+    return artifactName.substring(lastIndex + 1).replace(".tgz", "").trim();
   }
 
   @Data

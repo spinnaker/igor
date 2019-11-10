@@ -38,6 +38,7 @@ public class ArtifactoryController {
 
   @GetMapping("/names")
   List<String> getArtifactoryNames() {
+
     return artifactoryProperties.getSearches().stream()
         .map(ArtifactorySearch::getName)
         .collect(Collectors.toList());
