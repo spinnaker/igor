@@ -136,9 +136,10 @@ public class ArtifactoryBuildMonitor
                           : search.getGroupId().replace('.', '/') + "/")
                       + "*\"},"
                       + "\"name\": {\"$match\":\""
-                      + "*.pom\"}"
+                      + "*."
+                      + search.getSearchPattern()
+                      + "\"}"
                       + "}).include(\"path\",\"repo\",\"name\", \"artifact.module.build\")";
-
               ArtifactoryRequest aqlRequest =
                   new ArtifactoryRequestImpl()
                       .method(ArtifactoryRequest.Method.POST)
@@ -158,7 +159,7 @@ public class ArtifactoryBuildMonitor
                       search.getPartitionName(),
                       Collections.singletonList(
                           new ArtifactDelta(
-                              System.currentTimeMillis(), search.getRepoType(), results)));
+                              System.currentTimeMillis(), search.getRepositoryType(), results)));
                 }
 
                 log.warn(
