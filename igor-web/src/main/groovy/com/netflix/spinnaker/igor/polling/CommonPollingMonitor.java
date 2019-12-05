@@ -155,7 +155,7 @@ public abstract class CommonPollingMonitor<I extends DeltaItem, T extends Pollin
   }
 
   /**
-   * Method to construct a lockName and sanitise it to remove special charecters as per kork
+   * Method to construct a lockName and sanitise it to remove special characters as per kork
    * validation
    *
    * @param name

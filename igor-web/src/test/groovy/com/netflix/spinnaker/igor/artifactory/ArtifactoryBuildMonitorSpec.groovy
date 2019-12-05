@@ -21,6 +21,8 @@ import com.netflix.spinnaker.igor.IgorConfigurationProperties
 import com.netflix.spinnaker.igor.artifactory.model.ArtifactorySearch
 import com.netflix.spinnaker.igor.config.ArtifactoryProperties
 import com.netflix.spinnaker.igor.history.EchoService
+import com.netflix.spinnaker.igor.polling.LockService
+import com.netflix.spinnaker.igor.polling.PollContext
 import com.squareup.okhttp.mockwebserver.MockResponse
 import com.squareup.okhttp.mockwebserver.MockWebServer
 import rx.schedulers.Schedulers
@@ -29,12 +31,13 @@ import spock.lang.Specification
 class ArtifactoryBuildMonitorSpec extends Specification {
   ArtifactoryCache cache = Mock(ArtifactoryCache)
   EchoService echoService = Mock()
+  LockService lockService = Mock()
   IgorConfigurationProperties igorConfigurationProperties = new IgorConfigurationProperties()
   ArtifactoryBuildMonitor monitor
 
   MockWebServer mockArtifactory = new MockWebServer()
 
-  ArtifactoryBuildMonitor monitor(contextRoot) {
+  ArtifactoryBuildMonitor monitor1(contextRoot) {
     monitor = new ArtifactoryBuildMonitor(
       igorConfigurationProperties,
       new NoopRegistry(),
@@ -49,10 +52,34 @@ class ArtifactoryBuildMonitorSpec extends Specification {
         )
       ])
     )
-
     monitor.worker = Schedulers.immediate().createWorker()
 
     return monitor
+  }
+
+  ArtifactoryBuildMonitor monitor2(contextRoot) {
+    monitor = new ArtifactoryBuildMonitor(
+      igorConfigurationProperties,
+      new NoopRegistry(),
+      Optional.empty(),
+      Optional.of(lockService),
+      Optional.of(echoService),
+      cache,
+      new ArtifactoryProperties(searches: [
+        new ArtifactorySearch(
+          baseUrl: "http://localhost:64610",
+          repo: 'test-repo',
+        )
+      ])
+    )
+    monitor.worker = Schedulers.immediate().createWorker()
+
+    return monitor
+  }
+
+  PollContext mockContext(String partitionName) {
+    PollContext context = new PollContext(partitionName)
+    return context
   }
 
   def 'should handle any failure to talk to artifactory graciously' () {
@@ -60,7 +87,7 @@ class ArtifactoryBuildMonitorSpec extends Specification {
     mockArtifactory.enqueue(new MockResponse().setResponseCode(400))
 
     when:
-    monitor('').poll(false)
+    monitor1('').poll(false)
 
     then:
     notThrown(Exception)
@@ -71,10 +98,24 @@ class ArtifactoryBuildMonitorSpec extends Specification {
     mockArtifactory.enqueue(new MockResponse().setResponseCode(200).setBody('{"results": []}'))
 
     when:
-    monitor(contextRoot).poll(false)
+    monitor1(contextRoot).poll(false)
 
     then:
     mockArtifactory.takeRequest().path == "/${contextRoot}api/search/aql"
+
+    where:
+    contextRoot << ['artifactory/', '']
+  }
+
+  def 'strips out invalid characters when creating a lock name'() {
+    given:
+    mockArtifactory.enqueue(new MockResponse().setResponseCode(200).setBody('{"results": []}'))
+
+    when:
+    monitor2(contextRoot).poll(false)
+
+    then:
+    1 * lockService.acquire("artifactoryPublishingMonitor.httplocalhost64610test-repo", _, _)
 
     where:
     contextRoot << ['artifactory/', '']
