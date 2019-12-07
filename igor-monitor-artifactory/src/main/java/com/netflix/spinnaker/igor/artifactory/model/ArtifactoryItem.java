@@ -36,8 +36,8 @@ public class ArtifactoryItem {
 
   @Nullable
   public Artifact toMatchableArtifact(ArtifactoryRepositoryType repositoryType, String baseUrl) {
-    switch (repositoryType) {
-      case MAVEN:
+    switch (repositoryType.getRepoTypeString()) {
+      case "Maven":
         String[] pathParts = path.split("/");
         String version = pathParts[pathParts.length - 1];
         String artifactId = pathParts[pathParts.length - 2];
@@ -75,7 +75,7 @@ public class ArtifactoryItem {
         }
 
         return artifactBuilder.build();
-      case HELM:
+      case "HELM":
         String filePath = null;
         if (baseUrl != null) {
           filePath = baseUrl + "/webapp/#/artifacts/browse/tree/General/" + repo + "/" + name;
