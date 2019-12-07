@@ -18,10 +18,9 @@ package com.netflix.spinnaker.igor.build
 
 import com.netflix.spinnaker.fiat.model.Authorization
 import com.netflix.spinnaker.fiat.model.resources.Permissions
-import com.netflix.spinnaker.igor.config.GitlabCiProperties
+import com.netflix.spinnaker.igor.config.GoogleCloudBuildProperties
 import com.netflix.spinnaker.igor.config.JenkinsConfig
 import com.netflix.spinnaker.igor.config.JenkinsProperties
-import com.netflix.spinnaker.igor.config.TravisProperties
 import com.netflix.spinnaker.igor.jenkins.service.JenkinsService
 import com.netflix.spinnaker.igor.model.BuildServiceProvider
 import com.netflix.spinnaker.igor.service.BuildOperations
@@ -52,9 +51,7 @@ class InfoControllerSpec extends Specification {
     MockMvc mockMvc
     BuildCache cache
     BuildServices buildServices
-    JenkinsProperties jenkinsProperties
-    TravisProperties travisProperties
-    GitlabCiProperties gitlabCiProperties
+    GoogleCloudBuildProperties gcbProperties
 
     @Shared
     JenkinsService service
@@ -70,20 +67,26 @@ class InfoControllerSpec extends Specification {
         server = new MockWebServer()
     }
 
-    void createMocks(Map<String, BuildOperations> buildServices) {
+    void createMocks(Map<String, BuildOperations> buildServices, List<GoogleCloudBuildProperties.Account> gcbAccounts = null) {
         cache = Mock(BuildCache)
         this.buildServices = new BuildServices()
         this.buildServices.addServices(buildServices)
-        jenkinsProperties = Mock(JenkinsProperties)
-        travisProperties = Mock(TravisProperties)
-        gitlabCiProperties = Mock(GitlabCiProperties)
+        if (gcbAccounts != null) {
+          this.gcbProperties = new GoogleCloudBuildProperties()
+          this.gcbProperties.accounts = gcbAccounts
+        }
         mockMvc = MockMvcBuilders.standaloneSetup(
             new InfoController(buildCache: cache,
                 buildServices: this.buildServices,
-                jenkinsProperties: jenkinsProperties,
-                travisProperties: travisProperties,
-                gitlabCiProperties: gitlabCiProperties))
+                gcbProperties: gcbProperties))
             .build()
+    }
+
+    GoogleCloudBuildProperties.Account createGCBAccount(String name) {
+      GoogleCloudBuildProperties.Account account = new GoogleCloudBuildProperties.Account()
+      account.setName(name)
+      account.setProject('blah')
+      return account
     }
 
     void 'is able to get a list of jenkins buildMasters'() {
@@ -98,6 +101,51 @@ class InfoControllerSpec extends Specification {
         response.contentAsString == '["build.buildServices.blah","master1","master2"]'
     }
 
+    void 'is able to get a list of google cloud build accounts'() {
+      given:
+      createMocks([:], [createGCBAccount("account1"), createGCBAccount("account2")])
+
+      when:
+      MockHttpServletResponse response = mockMvc.perform(get('/buildServices')
+        .accept(MediaType.APPLICATION_JSON)).andReturn().response
+
+      then:
+      def actualAccounts = new JsonSlurper().parseText(response.contentAsString).collect { it.name };
+      ['account1', 'account2'] == actualAccounts
+
+    }
+
+    void 'buildServices return empty permissions list if no permisions have been defined'() {
+      given:
+      createMocks([:], [createGCBAccount("account1")])
+
+      when:
+      MockHttpServletResponse response = mockMvc.perform(get('/buildServices')
+        .accept(MediaType.APPLICATION_JSON)).andReturn().response
+
+      then:
+      def actualAccounts = new JsonSlurper().parseText(response.contentAsString);
+      actualAccounts.size == 1
+      actualAccounts[0].permissions == [:]
+
+    }
+
+    void 'buildServices returns correctly if gcb is not defined'() {
+      given:
+      JenkinsService jenkinsService1 = new JenkinsService('master2', null, false, Permissions.EMPTY)
+      createMocks(['master2': jenkinsService1])
+
+      when:
+      MockHttpServletResponse response = mockMvc.perform(get('/buildServices')
+        .accept(MediaType.APPLICATION_JSON)).andReturn().response
+
+      then:
+      def actualAccounts = new JsonSlurper().parseText(response.contentAsString);
+      actualAccounts.size == 1
+      actualAccounts[0].name == 'master2'
+
+    }
+
     void 'is able to get a list of buildServices with permissions'() {
         given:
         JenkinsService jenkinsService1 = new JenkinsService('jenkins-foo', null, false, Permissions.EMPTY)
@@ -109,11 +157,18 @@ class InfoControllerSpec extends Specification {
             new Permissions.Builder()
                 .add(Authorization.READ, ['group-3', 'group-4'])
                 .add(Authorization.WRITE, 'group-3').build(), false)
+
+        GoogleCloudBuildProperties.Account gcbAccount = createGCBAccount('gcbAccount');
+        gcbAccount.setPermissions(new Permissions.Builder()
+          .add(Authorization.READ, ['group-5', 'group-6'])
+          .add(Authorization.WRITE, ['group-5'])
+        )
+
         createMocks([
             'jenkins-foo': jenkinsService1,
             'jenkins-bar': jenkinsService2,
             'travis-baz': travisService
-        ])
+        ], [gcbAccount])
 
         when:
         MockHttpServletResponse response = mockMvc.perform(get('/buildServices')
@@ -154,6 +209,18 @@ class InfoControllerSpec extends Specification {
                         ],
                         "WRITE": [
                             "group-3"
+                        ]
+                    }
+                },
+                {   "name": "gcbAccount",
+                    "buildServiceProvider": "GCB",
+                    "permissions": {
+                        "READ": [
+                            "group-5",
+                            "group-6"
+                        ],
+                        "WRITE": [
+                            "group-5"
                         ]
                     }
                 }

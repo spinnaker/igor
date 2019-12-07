@@ -16,11 +16,13 @@
 
 package com.netflix.spinnaker.igor.gcb;
 
-import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.services.cloudbuild.v1.CloudBuild;
 import com.google.api.services.cloudbuild.v1.model.Build;
+import com.google.api.services.cloudbuild.v1.model.ListBuildTriggersResponse;
 import com.google.api.services.cloudbuild.v1.model.Operation;
+import com.google.api.services.cloudbuild.v1.model.RepoSource;
 import com.google.api.services.storage.Storage;
+import com.google.auth.oauth2.GoogleCredentials;
 import java.io.IOException;
 import java.io.InputStream;
 import lombok.AccessLevel;
@@ -43,9 +45,9 @@ public class GoogleCloudBuildClient {
     private final GoogleCloudBuildExecutor executor;
     private final String applicationName;
 
-    public GoogleCloudBuildClient create(GoogleCredential credential, String projectId) {
-      CloudBuild cloudBuild = cloudBuildFactory.getCloudBuild(credential, applicationName);
-      Storage cloudStorage = cloudBuildFactory.getCloudStorage(credential, applicationName);
+    public GoogleCloudBuildClient create(GoogleCredentials credentials, String projectId) {
+      CloudBuild cloudBuild = cloudBuildFactory.getCloudBuild(credentials, applicationName);
+      Storage cloudStorage = cloudBuildFactory.getCloudStorage(credentials, applicationName);
       return new GoogleCloudBuildClient(projectId, cloudBuild, cloudStorage, executor);
     }
   }
@@ -56,6 +58,15 @@ public class GoogleCloudBuildClient {
 
   public Build getBuild(String buildId) {
     return executor.execute(() -> cloudBuild.projects().builds().get(projectId, buildId));
+  }
+
+  public ListBuildTriggersResponse listTriggers() {
+    return executor.execute(() -> cloudBuild.projects().triggers().list(projectId));
+  }
+
+  public Operation runTrigger(String triggerId, RepoSource repoSource) {
+    return executor.execute(
+        () -> cloudBuild.projects().triggers().run(projectId, triggerId, repoSource));
   }
 
   public InputStream fetchStorageObject(String bucket, String object, Long version)
