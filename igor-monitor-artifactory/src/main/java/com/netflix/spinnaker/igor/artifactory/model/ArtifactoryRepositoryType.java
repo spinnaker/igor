@@ -13,18 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.netflix.spinnaker.igor.artifactory.model;
 
 public enum ArtifactoryRepositoryType {
-  MAVEN("Maven"),
-  HELM("HELM");
-  String repoTypeString;
+  MAVEN("Maven", ".pom"),
+  HELM("HELM", ".tgz");
 
-  ArtifactoryRepositoryType(String repoTypeString) {
+  private final String repoTypeString;
+  private final String artifactExtension;
+
+  ArtifactoryRepositoryType(String repoTypeString, String extension) {
     this.repoTypeString = repoTypeString;
+    this.artifactExtension = extension;
   }
 
-  public String getRepoTypeString() {
-    return repoTypeString;
+  public String getArtifactExtension() {
+    return artifactExtension;
   }
 }

@@ -35,9 +35,9 @@ public class ArtifactoryItem {
   private List<ArtifactoryArtifact> artifacts;
 
   @Nullable
-  public Artifact toMatchableArtifact(ArtifactoryRepositoryType repositoryType, String baseUrl) {
-    switch (repositoryType.getRepoTypeString()) {
-      case "Maven":
+  public Artifact toMatchableArtifact(ArtifactoryRepositoryType repoType, String baseUrl) {
+    switch (repoType) {
+      case MAVEN:
         String[] pathParts = path.split("/");
         String version = pathParts[pathParts.length - 1];
         String artifactId = pathParts[pathParts.length - 2];
@@ -75,13 +75,14 @@ public class ArtifactoryItem {
         }
 
         return artifactBuilder.build();
-      case "HELM":
+
+      case HELM:
         String filePath = null;
         if (baseUrl != null) {
           filePath = baseUrl + "/webapp/#/artifacts/browse/tree/General/" + repo + "/" + name;
         }
 
-        String helmVersion = getHelmFileVersion(name);
+        String helmVersion = getHelmFileVersion(name, repoType.getArtifactExtension());
         Artifact.ArtifactBuilder artifactBuilderHelm =
             Artifact.builder()
                 .type("helm/file")
@@ -95,9 +96,8 @@ public class ArtifactoryItem {
     return null;
   }
 
-  public String getHelmFileVersion(String artifactName) {
-    int lastIndex = artifactName.lastIndexOf("-");
-    return artifactName.substring(lastIndex + 1).replace(".tgz", "").trim();
+  private String getHelmFileVersion(String artifactName, String artifactExtension) {
+    return artifactName.replaceFirst(String.format("^.*-([^-]+)\\%s$", artifactExtension), "$1");
   }
 
   @Data

@@ -22,7 +22,7 @@ import lombok.Data;
 @Data
 public class ArtifactorySearch {
   private String name;
-  private String repoType;
+  private ArtifactoryRepositoryType repoType = ArtifactoryRepositoryType.MAVEN;
   private String baseUrl;
   private String repo;
 
@@ -39,12 +39,8 @@ public class ArtifactorySearch {
   /** Filter published artifact searches to just this group id. */
   @Nullable private String groupId;
 
-  /** Filter name of the artifact in the search to this pattern * */
-  @Nullable private String searchPattern;
-
-  /** Repotype returned based on repositoryType specified in search * */
-  public ArtifactoryRepositoryType getRepositoryType() {
-    return ArtifactoryRepositoryType.valueOf(repoType.toUpperCase());
+  public String getArtifactExtension() {
+    return repoType.getArtifactExtension();
   }
 
   public String getPartitionName() {
