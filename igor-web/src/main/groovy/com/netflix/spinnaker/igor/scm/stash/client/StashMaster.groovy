@@ -17,12 +17,16 @@
 package com.netflix.spinnaker.igor.scm.stash.client
 
 import com.netflix.spinnaker.igor.config.StashProperties
+import com.netflix.spinnaker.igor.scm.AbstractScmMaster
+import com.netflix.spinnaker.kork.web.exceptions.NotFoundException
 import com.squareup.okhttp.Credentials
+import groovy.util.logging.Slf4j
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import retrofit.Endpoints
 import retrofit.RequestInterceptor
 import retrofit.RestAdapter
+import retrofit.RetrofitError
 import retrofit.client.OkClient
 import retrofit.converter.SimpleXMLConverter
 
@@ -31,7 +35,38 @@ import javax.validation.Valid
 /**
  * Wrapper class for a collection of Stash clients
  */
-class StashMaster {
+@Slf4j
+class StashMaster extends AbstractScmMaster {
     StashClient stashClient
     String baseUrl
+
+  List<String> listDirectory(String projectKey, String repositorySlug, String path, String at) {
+    try {
+      return stashClient.listDirectory(projectKey, repositorySlug, path, at).toChildFilenames()
+    } catch (RetrofitError e) {
+      if (e.getKind() == RetrofitError.Kind.NETWORK) {
+        throw new NotFoundException("Could not find the server ${baseUrl}")
+      }
+      log.error(
+        "Failed to fetch file from {}/{}/{}, reason: {}",
+        projectKey, repositorySlug, path, e.message
+      )
+      throw e
+    }
+  }
+
+  String getTextFileContents(String projectKey, String repositorySlug, String path, String at) {
+    try {
+      return stashClient.getTextFileContents(projectKey, repositorySlug, path, at).toTextContents()
+    } catch (RetrofitError e) {
+      if (e.getKind() == RetrofitError.Kind.NETWORK) {
+        throw new NotFoundException("Could not find the server ${baseUrl}")
+      }
+      log.error(
+        "Failed to fetch file from {}/{}/{}, reason: {}",
+        projectKey, repositorySlug, path, e.message
+      )
+      throw e
+    }
+  }
 }

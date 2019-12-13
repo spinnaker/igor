@@ -19,10 +19,13 @@ package com.netflix.spinnaker.igor.scm.stash
 import com.netflix.spinnaker.igor.scm.AbstractCommitController
 import com.netflix.spinnaker.igor.scm.stash.client.StashMaster
 import com.netflix.spinnaker.igor.scm.stash.client.model.CompareCommitsResponse
+import com.netflix.spinnaker.igor.scm.stash.client.model.DirectoryListingResponse
+import com.netflix.spinnaker.igor.scm.stash.client.model.TextLinesResponse
 import com.netflix.spinnaker.kork.web.exceptions.NotFoundException
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestMethod
