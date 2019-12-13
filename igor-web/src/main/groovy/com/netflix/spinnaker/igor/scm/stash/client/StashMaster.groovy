@@ -34,39 +34,4 @@ import javax.validation.Valid
 class StashMaster {
     StashClient stashClient
     String baseUrl
-
-    @Bean
-    @ConditionalOnProperty('stash.base-url')
-    StashMaster stashMaster(@Valid StashProperties stashProperties) {
-        log.info "bootstrapping ${stashProperties.baseUrl}"
-        new StashMaster(
-            stashClient : stashClient(stashProperties.baseUrl, stashProperties.username, stashProperties.password), baseUrl: stashProperties.baseUrl)
-    }
-
-    StashClient stashClient(String address, String username, String password) {
-        new RestAdapter.Builder()
-            .setEndpoint(Endpoints.newFixedEndpoint(address))
-            .setRequestInterceptor(new BasicAuthRequestInterceptor(username, password))
-            .setClient(new OkClient())
-            .setConverter(new SimpleXMLConverter())
-            .build()
-            .create(StashClient(address:address))
-
-    }
-
-    static class BasicAuthRequestInterceptor implements RequestInterceptor {
-
-        private final String username
-        private final String password
-
-        BasicAuthRequestInterceptor(String username, String password) {
-            this.username = username
-            this.password = password
-        }
-
-        @Override
-        void intercept(RequestInterceptor.RequestFacade request) {
-            request.addHeader("Authorization", Credentials.basic(username, password))
-        }
-    }
 }
