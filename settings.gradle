@@ -16,7 +16,10 @@
 
 rootProject.name='igor'
 
-include 'igor-web', 'igor-bom'
+include 'igor-bom',
+  'igor-core',
+  'igor-monitor-artifactory',
+  'igor-web'
 
 def setBuildFile(project) {
     project.buildFileName = "${project.name}.gradle"
