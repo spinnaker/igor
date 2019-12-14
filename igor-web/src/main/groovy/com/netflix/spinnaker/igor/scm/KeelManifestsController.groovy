@@ -16,13 +16,13 @@
 
 package com.netflix.spinnaker.igor.scm
 
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.netflix.spinnaker.igor.scm.bitbucket.client.BitBucketMaster
 import com.netflix.spinnaker.igor.scm.github.client.GitHubMaster
 import com.netflix.spinnaker.igor.scm.gitlab.client.GitLabMaster
 import com.netflix.spinnaker.igor.scm.stash.client.StashMaster
-import com.netflix.spinnaker.igor.scm.stash.client.model.DirectoryListingResponse
-import com.netflix.spinnaker.igor.scm.stash.client.model.TextLinesResponse
-import com.netflix.spinnaker.kork.web.exceptions.NotFoundException
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.GetMapping
@@ -30,7 +30,6 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import retrofit.RetrofitError
 
 /**
  * Exposes APIs to retrieve keel declarative manifests from source control repos.
@@ -51,6 +50,9 @@ class KeelManifestsController {
   @Autowired(required = false)
   BitBucketMaster bitBucketMaster
 
+  ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory()).
+    disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+
   static final String KEEL_MANIFESTS_BASE_PATH = ".netflix/spinnaker"
 
   // Note: we expose a restricted endpoint here (as opposed to a full pass-thru to the SCM APIs) to limit the exposure
@@ -67,14 +69,17 @@ class KeelManifestsController {
   }
 
   @GetMapping(path = '/{scmType}/{projectKey}/{repositorySlug}/manifests/{manifest}')
-  String getKeelManifest(@PathVariable String scmType,
+  Map<String, Object> getKeelManifest(@PathVariable String scmType,
                          @PathVariable String projectKey,
                          @PathVariable String repositorySlug,
+
+
                          @PathVariable String manifest,
                          @RequestParam(required = false, defaultValue = 'refs/heads/master') String at) {
     String path = "${KEEL_MANIFESTS_BASE_PATH}/${manifest}"
     log.info("Retrieving keel manifest from ${projectKey}:${repositorySlug}/${path}")
-    return getScmMaster(scmType).getTextFileContents(projectKey, repositorySlug, path, at)
+    String manifestContents = getScmMaster(scmType).getTextFileContents(projectKey, repositorySlug, path, at)
+    return yamlMapper.readValue(manifestContents, Map.class)
   }
 
   private ScmMaster getScmMaster(String scmType) {
