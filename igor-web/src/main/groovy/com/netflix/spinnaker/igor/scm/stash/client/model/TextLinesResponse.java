@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.igor.scm.stash.client.model;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -25,7 +26,7 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = false)
 public class TextLinesResponse extends AbstractStashResponse {
-  private List<Map<String, String>> lines;
+  private List<Map<String, String>> lines = Collections.emptyList();
 
   public String toTextContents() {
     return lines.stream().map(line -> line.get("text")).collect(Collectors.joining("\n"));

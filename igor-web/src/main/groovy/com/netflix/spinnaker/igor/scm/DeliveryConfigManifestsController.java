@@ -23,8 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** Exposes APIs to retrieve keel declarative manifests from source control repos. */
 @RestController
-@RequestMapping("/keel")
-public class KeelManifestsController {
+@RequestMapping("/delivery-config/manifests")
+public class DeliveryConfigManifestsController {
   private static final String KEEL_MANIFESTS_BASE_PATH = ".netflix/spinnaker";
   private static final Logger log = LoggerFactory.getLogger(AbstractCommitController.class);
 
@@ -33,38 +33,41 @@ public class KeelManifestsController {
   private final Optional<GitLabMaster> gitLabMaster;
   private final Optional<BitBucketMaster> bitBucketMaster;
 
-  private ObjectMapper yamlMapper;
+  private final ObjectMapper jsonMapper;
+  private final ObjectMapper yamlMapper;
 
-  public KeelManifestsController(
+  public DeliveryConfigManifestsController(
       Optional<StashMaster> stashMaster,
       Optional<GitHubMaster> gitHubMaster,
       Optional<GitLabMaster> gitLabMaster,
-      Optional<BitBucketMaster> bitBucketMaster) {
+      Optional<BitBucketMaster> bitBucketMaster,
+      ObjectMapper jsonMapper) {
     this.stashMaster = stashMaster;
     this.gitHubMaster = gitHubMaster;
     this.gitLabMaster = gitLabMaster;
     this.bitBucketMaster = bitBucketMaster;
+    this.jsonMapper = jsonMapper;
     this.yamlMapper =
         new ObjectMapper(new YAMLFactory())
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
   }
 
-  @GetMapping(path = "/{scmType}/{projectKey}/{repositorySlug}/manifests")
-  public List<String> listKeelManifests(
-      @PathVariable String scmType,
-      @PathVariable final String projectKey,
-      @PathVariable final String repositorySlug,
+  @GetMapping("/")
+  public List<String> listManifests(
+      @RequestParam String scmType,
+      @RequestParam final String projectKey,
+      @RequestParam final String repositorySlug,
       @RequestParam(required = false, defaultValue = "refs/heads/master") String at) {
     final String path = KEEL_MANIFESTS_BASE_PATH;
     log.debug("Listing keel manifests at " + projectKey + ":" + repositorySlug + "/" + path);
     return getScmMaster(scmType).listDirectory(projectKey, repositorySlug, path, at);
   }
 
-  @GetMapping(path = "/{scmType}/{projectKey}/{repositorySlug}/manifests/{manifest}")
-  public ResponseEntity<Map<String, Object>> getKeelManifest(
-      @PathVariable String scmType,
-      @PathVariable final String projectKey,
-      @PathVariable final String repositorySlug,
+  @GetMapping(path = "/{manifest}")
+  public ResponseEntity<Map<String, Object>> getManifest(
+      @RequestParam String scmType,
+      @RequestParam final String projectKey,
+      @RequestParam final String repositorySlug,
       @PathVariable final String manifest,
       @RequestParam(required = false, defaultValue = "refs/heads/master") String at) {
     // TODO: make base path configurable
@@ -73,8 +76,16 @@ public class KeelManifestsController {
     String manifestContents =
         getScmMaster(scmType).getTextFileContents(projectKey, repositorySlug, path, at);
     try {
-      // TODO: support both JSON and YAML formats
-      return new ResponseEntity<>(yamlMapper.readValue(manifestContents, Map.class), HttpStatus.OK);
+      Map<String, Object> parsedManifest = null;
+      if (manifest.endsWith(".yml") || manifest.endsWith(".yaml")) {
+        parsedManifest = yamlMapper.readValue(manifestContents, Map.class);
+      } else if (manifest.endsWith(".json")) {
+        parsedManifest = jsonMapper.readValue(manifestContents, Map.class);
+      } else {
+        throw new IllegalArgumentException(
+            String.format("Unrecognized file format for {}. Please use YAML or JSON.", manifest));
+      }
+      return new ResponseEntity<>(parsedManifest, HttpStatus.OK);
     } catch (Exception e) {
       log.error(
           "Error reading or parsing contents of delivery config manifest {}: {}",
