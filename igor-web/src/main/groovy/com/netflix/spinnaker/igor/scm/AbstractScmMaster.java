@@ -14,6 +14,6 @@ public class AbstractScmMaster implements ScmMaster {
   }
 
   public String getTextFileContents(String projectKey, String repositorySlug, String path) {
-    return getTextFileContents(projectKey, repositorySlug, path, "refs/master/HEAD");
+    return getTextFileContents(projectKey, repositorySlug, path, ScmMaster.DEFAULT_GIT_REF);
   }
 }
