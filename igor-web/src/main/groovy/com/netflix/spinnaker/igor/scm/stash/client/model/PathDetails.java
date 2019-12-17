@@ -14,12 +14,17 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.igor.scm
+package com.netflix.spinnaker.igor.scm.stash.client.model;
 
-/**
- * Abstracts underlying implementation details of each SCM system under a common interface.
- */
-interface ScmMaster {
-  List<String> listDirectory(String projectKey, String repositorySlug, String path, String at)
-  String getTextFileContents(String projectKey, String repositorySlug, String path, String at)
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.List;
+import lombok.Data;
+
+@Data
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class PathDetails {
+  private List<String> components;
+  private String parent;
+  private String name;
+  private String extension;
 }

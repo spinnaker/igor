@@ -14,16 +14,18 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.igor.scm
+package com.netflix.spinnaker.igor.scm.stash.client.model;
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.List;
+import lombok.Data;
 
-class AbstractScmMaster implements ScmMaster {
-  List<String> listDirectory(String projectKey, String repositorySlug, String path, String at) {
-    throw new NotImplementedException()
-  }
-
-  String getTextFileContents(String projectKey, String repositorySlug, String path, String at = 'refs/master/HEAD') {
-    throw new NotImplementedException()
-  }
+@Data
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class DirectoryChildren {
+  private int size;
+  private int limit;
+  private int start;
+  private boolean isLastPage;
+  private List<DirectoryChild> values;
 }

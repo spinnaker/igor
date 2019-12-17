@@ -14,19 +14,15 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.igor.scm.stash.client.model
+package com.netflix.spinnaker.igor.scm.stash.client.model;
 
-import java.util.stream.Collectors
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.Data;
 
-class TextLinesResponse extends AbstractStashResponse {
-  List<Map<String, String>> lines
-
-
-  String toTextContents() {
-    if (lines == null) {
-      return "null"
-    } else {
-      return lines.stream().map { it.get("text") }.collect(Collectors.joining("\n"))
-    }
-  }
+@Data
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class DirectoryChild {
+  private PathDetails path;
+  private String type;
+  private int size;
 }

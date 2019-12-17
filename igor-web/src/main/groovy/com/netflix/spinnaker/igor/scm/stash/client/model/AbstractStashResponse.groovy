@@ -20,7 +20,6 @@ abstract class AbstractStashResponse {
     int size
     int limit
     boolean isLastPage
-    List<?> values
     int start
     int authorCount
     int nextPageStart
