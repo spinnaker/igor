@@ -16,21 +16,10 @@
 
 package com.netflix.spinnaker.igor.scm.stash.client
 
-import com.netflix.spinnaker.igor.config.StashProperties
 import com.netflix.spinnaker.igor.scm.AbstractScmMaster
 import com.netflix.spinnaker.kork.web.exceptions.NotFoundException
-import com.squareup.okhttp.Credentials
 import groovy.util.logging.Slf4j
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
-import org.springframework.context.annotation.Bean
-import retrofit.Endpoints
-import retrofit.RequestInterceptor
-import retrofit.RestAdapter
 import retrofit.RetrofitError
-import retrofit.client.OkClient
-import retrofit.converter.SimpleXMLConverter
-
-import javax.validation.Valid
 
 /**
  * Wrapper class for a collection of Stash clients
