@@ -43,7 +43,7 @@ class DeliveryConfigManifestsControllerSpec extends Specification {
 
   void setup() {
       controller = new DeliveryConfigManifestsController(
-        Optional.of(new DeliveryConfigProperties(manifestBasePath: ".netflix")),
+        Optional.of(new DeliveryConfigProperties(manifestBasePath: ".spinnaker")),
         Optional.of(new StashMaster(stashClient: client, baseUrl : STASH_ADDRESS)),
         Optional.empty(),
         Optional.empty(),
@@ -53,7 +53,7 @@ class DeliveryConfigManifestsControllerSpec extends Specification {
 
   void 'list manifests'() {
     given:
-    1 * client.listDirectory(project, repo, ".netflix/dir", ref) >> expectedResponse
+    1 * client.listDirectory(project, repo, ".spinnaker/dir", ref) >> expectedResponse
 
     when:
     List<String> response = controller.listManifests(scmType, project, repo, dir, extension, ref)
@@ -77,7 +77,7 @@ class DeliveryConfigManifestsControllerSpec extends Specification {
 
   void 'get yaml manifest'() {
     given:
-    1 * client.getTextFileContents(project, repo, ".netflix/dir/manifest.yml", ref) >> expectedResponse
+    1 * client.getTextFileContents(project, repo, ".spinnaker/dir/manifest.yml", ref) >> expectedResponse
 
     when:
     ResponseEntity<Map<String, Object>> response = controller.getManifest(scmType, project, repo, manifest, dir, ref)
@@ -105,7 +105,7 @@ class DeliveryConfigManifestsControllerSpec extends Specification {
 
   void 'get json manifest'() {
     given:
-    1 * client.getTextFileContents(project, repo, ".netflix/dir/manifest.json", ref) >> expectedResponse
+    1 * client.getTextFileContents(project, repo, ".spinnaker/dir/manifest.json", ref) >> expectedResponse
 
     when:
     ResponseEntity<Map<String, Object>> response = controller.getManifest(scmType, project, repo, manifest, dir, ref)
@@ -130,7 +130,7 @@ class DeliveryConfigManifestsControllerSpec extends Specification {
 
   void 'retrieving anything other than yaml or json returns a 400'() {
     given:
-    1 * client.getTextFileContents(project, repo, ".netflix/dir/somefile", ref) >> expectedResponse
+    1 * client.getTextFileContents(project, repo, ".spinnaker/dir/somefile", ref) >> expectedResponse
 
     when:
     ResponseEntity<Map<String, Object>> response = controller.getManifest(scmType, project, repo, manifest, dir, ref)

@@ -106,7 +106,7 @@ class StashClientSpec extends Specification {
     setResponse('application/json', listDirectoryResponse)
 
     when:
-    DirectoryListingResponse dirListResponse = client.listDirectory('foo', 'repo', '.netflix', ScmMaster.DEFAULT_GIT_REF)
+    DirectoryListingResponse dirListResponse = client.listDirectory('foo', 'repo', '.spinnaker', ScmMaster.DEFAULT_GIT_REF)
 
     then:
     dirListResponse.children.size == 2
@@ -156,12 +156,12 @@ class StashClientSpec extends Specification {
     {
       "path": {
         "components": [
-          ".netflix"
+          ".spinnaker"
         ],
         "parent": "",
-        "name": ".netflix",
+        "name": ".spinnaker",
         "extension": "netflix",
-        "toString": ".netflix"
+        "toString": ".spinnaker"
       },
       "revision": "refs/heads/master",
       "children": {

@@ -22,5 +22,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Data
 @ConfigurationProperties
 public class DeliveryConfigProperties {
-  String manifestBasePath = ".netflix";
+  String manifestBasePath = ".spinnaker";
 }
