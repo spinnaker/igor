@@ -139,18 +139,63 @@ class StashClientSpec extends Specification {
     textFileContentsResponse.lines[0].text == "bananas!"
   }
 
-  final String compareCommitsResponse = '\n' +
-    '{"values":[{"id":"adc708bb1251ac8177474d6a1b40f738f2dc44dc","displayId":"adc708bb125","author":' +
-    '{"name":"jcoder","emailAddress":"jcoder@code.com","id":1817,"displayName":"Joe Coder","active":true,' +
-    '"slug":"jcoder","type":"NORMAL"},"authorTimestamp":1432081865000,"message":"don\'t call evaluate if user ' +
-    'is null","parents":[{"id":"70a121a7e8f86c54467a43bd29066e5ff1174510","displayId":"70a121a7e8f"}]},' +
-    '{"id":"70a121a7e8f86c54467a43bd29066e5ff1174510","displayId":"70a121a7e8f","author":{"name":"jcoder",' +
-    '"emailAddress":"jcoder@code.com","id":1817,"displayName":"Joe Coder","active":true,"slug":"jcoder",' +
-    '"type":"NORMAL"},"authorTimestamp":1432081404000,"message":"Merge branch \'my-work\' ' +
-    'into master","parents":[{"id":' +
-    '"3c3b942b09767e01c25e42bcb65a6630e8b2fc75","displayId":"3c3b942b097"},{"id":' +
-    '"13881c94156429084910e6ca417c48fcb6d74be8","displayId":"13881c94156"}]}],"size":2,"isLastPage":false,' +
-    '"start":0,"limit":2,"nextPageStart":2}'
+  final String compareCommitsResponse = """
+    {
+      "values":[
+        {
+          "id":"adc708bb1251ac8177474d6a1b40f738f2dc44dc",
+          "displayId":"adc708bb125",
+          "author":{
+            "name":"jcoder",
+            "emailAddress":"jcoder@code.com",
+            "id":1817,
+            "displayName":"Joe Coder",
+            "active":true,
+            "slug":"jcoder",
+            "type":"NORMAL"
+          },
+          "authorTimestamp":1432081865000,
+          "message":"don't call evaluate if user is null",
+          "parents":[
+            {
+              "id":"70a121a7e8f86c54467a43bd29066e5ff1174510",
+              "displayId":"70a121a7e8f"
+            }
+          ]
+        },
+        {
+          "id":"70a121a7e8f86c54467a43bd29066e5ff1174510",
+          "displayId":"70a121a7e8f",
+          "author":{
+            "name":"jcoder",
+            "emailAddress":"jcoder@code.com",
+            "id":1817,
+            "displayName":"Joe Coder",
+            "active":true,
+            "slug":"jcoder",
+            "type":"NORMAL"
+          },
+          "authorTimestamp":1432081404000,
+          "message":"Merge branch 'my-work' into master",
+          "parents":[
+            {
+              "id":"3c3b942b09767e01c25e42bcb65a6630e8b2fc75",
+              "displayId":"3c3b942b097"
+            },
+            {
+              "id":"13881c94156429084910e6ca417c48fcb6d74be8",
+              "displayId":"13881c94156"
+            }
+          ]
+        }
+      ],
+      "size":2,
+      "isLastPage":false,
+      "start":0,
+      "limit":2,
+      "nextPageStart":2
+    }
+    """
 
   final String listDirectoryResponse = """
     {
