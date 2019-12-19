@@ -18,7 +18,7 @@ package com.netflix.spinnaker.igor.scm
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
-import com.netflix.spinnaker.igor.config.DeliveryConfigProperties
+import com.netflix.spinnaker.igor.config.ManagedDeliveryConfigProperties
 import com.netflix.spinnaker.igor.scm.stash.client.StashClient
 import com.netflix.spinnaker.igor.scm.stash.client.StashMaster
 import com.netflix.spinnaker.igor.scm.stash.client.model.DirectoryChild
@@ -31,9 +31,9 @@ import org.springframework.http.ResponseEntity
 import spock.lang.Specification
 import spock.lang.Subject
 
-class DeliveryConfigManifestsControllerSpec extends Specification {
+class ManagedDeliveryScmServiceSpec extends Specification {
   @Subject
-  DeliveryConfigManifestsController controller
+  ManagedDeliveryScmService service
 
   StashClient client = Mock(StashClient)
   final STASH_ADDRESS = "https://stash.com"
@@ -42,8 +42,8 @@ class DeliveryConfigManifestsControllerSpec extends Specification {
   ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory())
 
   void setup() {
-      controller = new DeliveryConfigManifestsController(
-        Optional.of(new DeliveryConfigProperties(manifestBasePath: ".spinnaker")),
+      service = new ManagedDeliveryScmService(
+        Optional.of(new ManagedDeliveryConfigProperties(manifestBasePath: ".spinnaker")),
         Optional.of(new StashMaster(stashClient: client, baseUrl : STASH_ADDRESS)),
         Optional.empty(),
         Optional.empty(),
@@ -51,20 +51,20 @@ class DeliveryConfigManifestsControllerSpec extends Specification {
         jsonMapper)
   }
 
-  void 'list manifests'() {
+  void 'list delivery config manifests'() {
     given:
     1 * client.listDirectory(project, repo, ".spinnaker/dir", ref) >> expectedResponse
 
     when:
-    List<String> response = controller.listManifests(scmType, project, repo, dir, extension, ref)
+    List<String> response = service.listDeliveryConfigManifests(scmType, project, repo, dir, extension, ref)
 
     then:
     response == expectedResponse.toChildFilenames()
 
     where:
     scmType = 'stash'
-    project = 'key'
-    repo = 'slug'
+    project = 'proj'
+    repo = 'repo'
     dir = 'dir'
     extension = 'yml'
     ref = 'refs/heads/master'
@@ -75,21 +75,20 @@ class DeliveryConfigManifestsControllerSpec extends Specification {
     )
   }
 
-  void 'get yaml manifest'() {
+  void 'get delivery config manifest that is in yaml format'() {
     given:
     1 * client.getTextFileContents(project, repo, ".spinnaker/dir/manifest.yml", ref) >> expectedResponse
 
     when:
-    ResponseEntity<Map<String, Object>> response = controller.getManifest(scmType, project, repo, manifest, dir, ref)
+    Map<String, Object> response = service.getDeliveryConfigManifest(scmType, project, repo, dir, manifest, ref)
 
     then:
-    response == new ResponseEntity<>(yamlMapper.readValue(expectedResponse.toTextContents(), Map.class),
-      HttpStatus.OK)
+    response == yamlMapper.readValue(expectedResponse.toTextContents(), Map.class)
 
     where:
     scmType = 'stash'
-    project = 'key'
-    repo = 'slug'
+    project = 'proj'
+    repo = 'repo'
     manifest = 'manifest.yml'
     dir = 'dir'
     ref = 'refs/heads/master'
@@ -103,51 +102,26 @@ class DeliveryConfigManifestsControllerSpec extends Specification {
     )
   }
 
-  void 'get json manifest'() {
+  void 'get delivery config manifest that is in json format'() {
     given:
     1 * client.getTextFileContents(project, repo, ".spinnaker/dir/manifest.json", ref) >> expectedResponse
 
     when:
-    ResponseEntity<Map<String, Object>> response = controller.getManifest(scmType, project, repo, manifest, dir, ref)
+    Map<String, Object> response = service.getDeliveryConfigManifest(scmType, project, repo, dir, manifest, ref)
 
     then:
-    response == new ResponseEntity<>(jsonMapper.readValue(expectedResponse.toTextContents(), Map.class),
-      HttpStatus.OK)
+    response == jsonMapper.readValue(expectedResponse.toTextContents(), Map.class)
 
     where:
     scmType = 'stash'
-    project = 'key'
-    repo = 'slug'
+    project = 'proj'
+    repo = 'repo'
     manifest = 'manifest.json'
     dir = 'dir'
     ref = 'refs/heads/master'
     expectedResponse = new TextLinesResponse(
       lines: [
         [ text: '{ "apiVersion": "foo", "kind": "Foo", "metadata": {}, "spec": {} }']
-      ]
-    )
-  }
-
-  void 'retrieving anything other than yaml or json returns a 400'() {
-    given:
-    1 * client.getTextFileContents(project, repo, ".spinnaker/dir/somefile", ref) >> expectedResponse
-
-    when:
-    ResponseEntity<Map<String, Object>> response = controller.getManifest(scmType, project, repo, manifest, dir, ref)
-
-    then:
-    response == new ResponseEntity<>([:], HttpStatus.BAD_REQUEST)
-
-    where:
-    scmType = 'stash'
-    project = 'key'
-    repo = 'slug'
-    manifest = 'somefile'
-    dir = 'dir'
-    ref = 'refs/heads/master'
-    expectedResponse = new TextLinesResponse(
-      lines: [
-        [ text: "blah" ]
       ]
     )
   }

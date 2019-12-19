@@ -20,7 +20,7 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @Data
-@ConfigurationProperties
-public class DeliveryConfigProperties {
+@ConfigurationProperties(prefix = "managed-delivery-config")
+public class ManagedDeliveryConfigProperties {
   String manifestBasePath = ".spinnaker";
 }
