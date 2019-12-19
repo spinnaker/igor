@@ -90,7 +90,10 @@ public class ManagedDeliveryScmService {
 
     final String path =
         configProperties.getManifestBasePath() + "/" + ((directory != null) ? directory : "");
-    log.debug("Listing keel manifests at " + project + ":" + repository + "/" + path);
+
+    log.debug(
+        "Listing keel manifests at " + scmType + "://" + project + "/" + repository + "/" + path);
+
     return getScmMaster(scmType)
         .listDirectory(project, repository, path, (ref != null) ? ref : ScmMaster.DEFAULT_GIT_REF)
         .stream()
@@ -125,10 +128,9 @@ public class ManagedDeliveryScmService {
 
     final String path =
         (configProperties.getManifestBasePath()
-                + "/"
-                + ((directory != null) ? directory + "/" : "")
-                + manifest)
-            .replace("/./", "/");
+            + "/"
+            + ((directory != null) ? directory + "/" : "")
+            + manifest);
 
     log.debug(
         "Retrieving delivery config manifest from " + project + ":" + repository + "/" + path);
