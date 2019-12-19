@@ -26,6 +26,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import retrofit.RetrofitError;
 
 /** Exposes APIs to retrieve Managed Delivery declarative manifests from source control repos. */
 @RestController
@@ -81,16 +82,26 @@ public class ManagedDeliveryScmController {
           HttpStatus.OK);
     } catch (Exception e) {
       HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
+      Object errorDetails = e.getMessage();
       if (e instanceof IllegalArgumentException) {
         status = HttpStatus.BAD_REQUEST;
+      } else if (e instanceof RetrofitError) {
+        RetrofitError re = (RetrofitError) e;
+        if (re.getKind() == RetrofitError.Kind.HTTP
+            && re.getResponse().getStatus() == HttpStatus.NOT_FOUND.value()) {
+          status = HttpStatus.NOT_FOUND;
+          errorDetails = re.getBodyAs(Map.class);
+        } else {
+          errorDetails = "Error calling downstream system: " + re.getMessage();
+        }
       }
-      return buildErrorResponse(status, e.getMessage());
+      return buildErrorResponse(status, errorDetails);
     }
   }
 
   private ResponseEntity<Map<String, Object>> buildErrorResponse(
-      HttpStatus status, String errorMessage) {
-    Map<String, Object> error = Collections.singletonMap("error", errorMessage);
+      HttpStatus status, Object errorDetails) {
+    Map<String, Object> error = Collections.singletonMap("error", errorDetails);
     return new ResponseEntity<>(error, status);
   }
 }

@@ -16,8 +16,13 @@
 
 package com.netflix.spinnaker.igor.scm
 
+import org.springframework.boot.test.json.JacksonTester
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import retrofit.RetrofitError
+import retrofit.client.Response
+import retrofit.converter.JacksonConverter
+import retrofit.mime.TypedString
 import spock.lang.Specification
 import spock.lang.Subject
 
@@ -96,6 +101,34 @@ class ManagedDeliveryScmControllerSpec extends Specification {
     dir = 'dir'
     ref = 'refs/heads/master'
     expectedResponse = [error: "oops!"]
+  }
+
+  void '404 error from service is propagated'() {
+    given:
+    1 * service.getDeliveryConfigManifest(scmType, project, repo, dir, manifest, ref) >> {
+      throw new RetrofitError("oops!", "http://nada",
+        new Response("http://nada", 404, "", [], new TypedString('{"detail": "oops!"}')),
+        new JacksonConverter(),
+        null,
+        RetrofitError.Kind.HTTP,
+        null
+      )
+    }
+
+    when:
+    ResponseEntity<Map<String, Object>> response = controller.getDeliveryConfigManifest(scmType, project, repo, manifest, dir, ref)
+
+    then:
+    response == new ResponseEntity<>(expectedResponse, HttpStatus.NOT_FOUND)
+
+    where:
+    scmType = 'stash'
+    project = 'proj'
+    repo = 'repo'
+    manifest = 'somefile'
+    dir = 'dir'
+    ref = 'refs/heads/master'
+    expectedResponse = [error: [detail: "oops!"]]
   }
 
   void 'other exceptions from service cause a 500'() {
