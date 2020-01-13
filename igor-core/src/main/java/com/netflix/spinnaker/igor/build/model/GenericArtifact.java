@@ -15,11 +15,13 @@
  */
 package com.netflix.spinnaker.igor.build.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.Map;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.apache.commons.lang3.ObjectUtils;
 
 @ToString
 @Data
@@ -47,4 +49,9 @@ public class GenericArtifact {
   private String type;
   private String version;
   private Map<String, String> metadata;
+
+  @JsonIgnore
+  public boolean isDecorated() {
+    return ObjectUtils.anyNotNull(type, name, version, reference);
+  }
 }

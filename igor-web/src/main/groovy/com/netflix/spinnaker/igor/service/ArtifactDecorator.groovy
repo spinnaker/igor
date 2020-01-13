@@ -52,7 +52,7 @@ class ArtifactDecorator {
 
     List<GenericArtifact> decorate(GenericArtifact genericArtifact) {
         List<ArtifactDetailsDecorator> filteredDecorators = artifactDetailsDecorators.findAll { it.handles(genericArtifact) }
-        if (!filteredDecorators) {
+        if (!filteredDecorators || genericArtifact.isDecorated()) {
             return [genericArtifact]
         }
         if (filteredDecorators.size() > 1) {
