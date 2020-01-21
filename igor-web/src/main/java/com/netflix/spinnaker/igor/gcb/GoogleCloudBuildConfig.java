@@ -48,15 +48,15 @@ class GoogleCloudBuildConfig {
   GoogleCloudBuildAccountRepository googleCloudBuildAccountRepository(
       GoogleCloudBuildAccountFactory googleCloudBuildAccountFactory,
       GoogleCloudBuildProperties googleCloudBuildProperties) {
-    GoogleCloudBuildAccountRepository credentials = new GoogleCloudBuildAccountRepository();
+    GoogleCloudBuildAccountRepository.Builder builder = GoogleCloudBuildAccountRepository.builder();
     googleCloudBuildProperties
         .getAccounts()
         .forEach(
             a -> {
               GoogleCloudBuildAccount account = googleCloudBuildAccountFactory.build(a);
-              credentials.registerAccount(a.getName(), account);
+              builder.registerAccount(a.getName(), account);
             });
-    return credentials;
+    return builder.build();
   }
 
   @Bean
