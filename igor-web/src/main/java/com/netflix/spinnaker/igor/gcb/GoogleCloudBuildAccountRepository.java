@@ -26,18 +26,18 @@ import java.util.stream.Collectors;
  * Keeps track of all registered instances of GoogleCloudBuildAccount and returns the appropriate
  * account when it is requested by name.
  */
-public class GoogleCloudBuildAccountRepository {
+final class GoogleCloudBuildAccountRepository {
   private final Map<String, GoogleCloudBuildAccount> accounts = new HashMap<>();
 
-  public void registerAccount(String name, GoogleCloudBuildAccount account) {
+  void registerAccount(String name, GoogleCloudBuildAccount account) {
     accounts.put(name, account);
   }
 
-  public List<String> getAccounts() {
+  List<String> getAccounts() {
     return accounts.keySet().stream().sorted().collect(Collectors.toList());
   }
 
-  public GoogleCloudBuildAccount getGoogleCloudBuild(String name) {
+  GoogleCloudBuildAccount getGoogleCloudBuild(String name) {
     GoogleCloudBuildAccount account = accounts.get(name);
     if (account == null) {
       throw new NotFoundException(

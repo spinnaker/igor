@@ -32,10 +32,10 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @ConditionalOnProperty("gcb.enabled")
-public class GoogleCloudBuildParser {
+final class GoogleCloudBuildParser {
   private final JacksonFactory jacksonFactory = JacksonFactory.getDefaultInstance();
 
-  public final <T> T parse(String input, Class<T> destinationClass) {
+  <T> T parse(String input, Class<T> destinationClass) {
     try {
       return jacksonFactory.createJsonParser(input).parse(destinationClass);
     } catch (IOException e) {
@@ -43,12 +43,12 @@ public class GoogleCloudBuildParser {
     }
   }
 
-  public final <T> T convert(Object input, Class<T> destinationClass) {
+  <T> T convert(Object input, Class<T> destinationClass) {
     String inputString = serialize(input);
     return parse(inputString, destinationClass);
   }
 
-  public final String serialize(Object input) {
+  String serialize(Object input) {
     try {
       Writer writer = new StringWriter();
       JsonGenerator generator = jacksonFactory.createJsonGenerator(writer);

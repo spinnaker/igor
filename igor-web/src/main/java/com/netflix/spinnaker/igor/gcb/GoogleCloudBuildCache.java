@@ -30,7 +30,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @Slf4j
-public class GoogleCloudBuildCache {
+class GoogleCloudBuildCache {
   private static final int inProgressTtlSeconds = 60 * 10;
   private static final int completedTtlSeconds = 60 * 60 * 24;
 
@@ -39,21 +39,21 @@ public class GoogleCloudBuildCache {
   private final String keyPrefix;
   private final String lockPrefix;
 
-  @RequiredArgsConstructor
-  public static class Factory {
+  @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+  static class Factory {
     private final LockService lockService;
     private final RedisClientDelegate redisClientDelegate;
     private final String baseKeyPrefix;
     private static final String baseLockPrefix = "googleCloudBuild";
 
-    public GoogleCloudBuildCache create(String accountName) {
+    GoogleCloudBuildCache create(String accountName) {
       String keyPrefix = String.format("%s:%s", baseKeyPrefix, accountName);
       String lockPrefix = String.format("%s.%s", baseLockPrefix, accountName);
       return new GoogleCloudBuildCache(lockService, redisClientDelegate, keyPrefix, lockPrefix);
     }
   }
 
-  public String getBuild(String buildId) {
+  String getBuild(String buildId) {
     String key = new GoogleCloudBuildKey(keyPrefix, buildId).toString();
     return redisClientDelegate.withCommandsClient(
         c -> {
@@ -111,7 +111,7 @@ public class GoogleCloudBuildCache {
     }
   }
 
-  public void updateBuild(String buildId, String status, String build) {
+  void updateBuild(String buildId, String status, String build) {
     String lockName = String.format("%s.%s", lockPrefix, buildId);
     lockService.acquire(
         lockName,
@@ -121,8 +121,8 @@ public class GoogleCloudBuildCache {
         });
   }
 
-  @RequiredArgsConstructor
-  static class GoogleCloudBuildKey {
+  @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+  static final class GoogleCloudBuildKey {
     private final String prefix;
     private final String id;
 

@@ -25,14 +25,15 @@ import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 
 /**
  * Handles getting and updating build information for a single account. Delegates operations to
  * either the GoogleCloudBuildCache or GoogleCloudBuildClient.
  */
-@RequiredArgsConstructor
-public class GoogleCloudBuildAccount {
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+class GoogleCloudBuildAccount {
   private static final String BUILD_TAG = "started-by.spinnaker.io";
 
   private final GoogleCloudBuildClient client;
@@ -40,7 +41,7 @@ public class GoogleCloudBuildAccount {
   private final GoogleCloudBuildParser googleCloudBuildParser;
   private final GoogleCloudBuildArtifactFetcher googleCloudBuildArtifactFetcher;
 
-  public Build createBuild(Build buildRequest) {
+  Build createBuild(Build buildRequest) {
     appendTags(buildRequest);
     Operation operation = client.createBuild(buildRequest);
     Build buildResponse =
@@ -60,11 +61,11 @@ public class GoogleCloudBuildAccount {
     build.setTags(tags);
   }
 
-  public void updateBuild(String buildId, String status, String serializedBuild) {
+  void updateBuild(String buildId, String status, String serializedBuild) {
     cache.updateBuild(buildId, status, serializedBuild);
   }
 
-  public Build getBuild(String buildId) {
+  Build getBuild(String buildId) {
     String buildString = cache.getBuild(buildId);
     if (buildString == null) {
       Build build = client.getBuild(buildId);
@@ -74,12 +75,12 @@ public class GoogleCloudBuildAccount {
     return googleCloudBuildParser.parse(buildString, Build.class);
   }
 
-  public List<BuildTrigger> listTriggers() {
+  List<BuildTrigger> listTriggers() {
     ListBuildTriggersResponse listBuildTriggersResponse = client.listTriggers();
     return listBuildTriggersResponse.getTriggers();
   }
 
-  public Build runTrigger(String triggerId, RepoSource repoSource) {
+  Build runTrigger(String triggerId, RepoSource repoSource) {
     Operation operation = client.runTrigger(triggerId, repoSource);
     Build triggerResponse =
         googleCloudBuildParser.convert(operation.getMetadata().get("build"), Build.class);
@@ -90,12 +91,12 @@ public class GoogleCloudBuildAccount {
     return triggerResponse;
   }
 
-  public List<Artifact> getArtifacts(String buildId) {
+  List<Artifact> getArtifacts(String buildId) {
     Build build = getBuild(buildId);
     return googleCloudBuildArtifactFetcher.getArtifacts(build);
   }
 
-  public List<Artifact> extractArtifacts(Build build) {
+  List<Artifact> extractArtifacts(Build build) {
     return googleCloudBuildArtifactFetcher.getArtifacts(build);
   }
 }

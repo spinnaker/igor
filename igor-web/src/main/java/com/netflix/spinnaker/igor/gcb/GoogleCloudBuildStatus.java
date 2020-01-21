@@ -20,7 +20,7 @@ package com.netflix.spinnaker.igor.gcb;
  * An enum of possible statuses of a GCB build. One of the primary purposes of this enum is to
  * handle ordering of statuses to allow us to order build notifications.
  */
-public enum GoogleCloudBuildStatus {
+enum GoogleCloudBuildStatus {
   STATUS_UNKNOWN(StatusType.UNKNOWN),
   QUEUED(StatusType.QUEUED),
   WORKING(StatusType.WORKING),
@@ -36,11 +36,11 @@ public enum GoogleCloudBuildStatus {
     this.statusType = statusType;
   }
 
-  public boolean greaterThanOrEqualTo(GoogleCloudBuildStatus other) {
+  boolean greaterThanOrEqualTo(GoogleCloudBuildStatus other) {
     return this.statusType.compareTo(other.statusType) >= 0;
   }
 
-  public boolean isComplete() {
+  boolean isComplete() {
     return statusType == StatusType.COMPLETE;
   }
 

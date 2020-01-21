@@ -26,6 +26,7 @@ import com.google.api.services.storage.Storage;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
 import java.io.IOException;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -34,8 +35,8 @@ import org.springframework.stereotype.Component;
 /** Factory for calling CloudBuild client library code to create CloudBuild objects */
 @Component
 @ConditionalOnProperty("gcb.enabled")
-@RequiredArgsConstructor
-public class CloudBuildFactory {
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+final class CloudBuildFactory {
   private final int connectTimeoutSec = 10;
   private final int readTimeoutSec = 10;
 
@@ -46,11 +47,11 @@ public class CloudBuildFactory {
   private final String overrideRootUrl;
 
   @Autowired
-  public CloudBuildFactory(HttpTransport httpTransport) {
+  CloudBuildFactory(HttpTransport httpTransport) {
     this(httpTransport, null);
   }
 
-  public CloudBuild getCloudBuild(GoogleCredentials credentials, String applicationName) {
+  CloudBuild getCloudBuild(GoogleCredentials credentials, String applicationName) {
     HttpRequestInitializer requestInitializer = getRequestInitializer(credentials);
     CloudBuild.Builder builder =
         new CloudBuild.Builder(httpTransport, jsonFactory, requestInitializer)
@@ -62,7 +63,7 @@ public class CloudBuildFactory {
     return builder.build();
   }
 
-  public Storage getCloudStorage(GoogleCredentials credentials, String applicationName) {
+  Storage getCloudStorage(GoogleCredentials credentials, String applicationName) {
     HttpRequestInitializer requestInitializer = getRequestInitializer(credentials);
     Storage.Builder builder =
         new Storage.Builder(httpTransport, jsonFactory, requestInitializer)

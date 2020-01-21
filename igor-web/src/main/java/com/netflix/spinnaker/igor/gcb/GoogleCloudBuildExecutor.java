@@ -32,9 +32,9 @@ import org.springframework.stereotype.Component;
 @Component
 @ConditionalOnProperty("gcb.enabled")
 @Slf4j
-public class GoogleCloudBuildExecutor {
+final class GoogleCloudBuildExecutor {
   // TODO(ezimanyi): Consider adding retry logic here
-  public <T> T execute(RequestFactory<T> requestFactory) {
+  <T> T execute(RequestFactory<T> requestFactory) {
     try {
       CloudBuildRequest<T> request = requestFactory.get();
       return request.execute();

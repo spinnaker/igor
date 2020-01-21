@@ -29,14 +29,15 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 
-@RequiredArgsConstructor
-public class GoogleCloudBuildArtifactFetcher {
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+final class GoogleCloudBuildArtifactFetcher {
   private final GoogleCloudBuildClient client;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
-  public List<Artifact> getArtifacts(Build build) {
+  List<Artifact> getArtifacts(Build build) {
     List<Artifact> results = new ArrayList<>();
 
     results.addAll(getDockerArtifacts(build));

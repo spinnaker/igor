@@ -38,7 +38,7 @@ import org.springframework.context.annotation.Configuration;
   GoogleCloudBuildProperties.class,
   IgorConfigurationProperties.class
 })
-public class GoogleCloudBuildConfig {
+class GoogleCloudBuildConfig {
   @Bean
   HttpTransport httpTransport() throws IOException, GeneralSecurityException {
     return GoogleNetHttpTransport.newTrustedTransport();

@@ -22,13 +22,13 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public class GoogleCloudStorageObject {
+final class GoogleCloudStorageObject {
   private static final String PREFIX = "gs://";
   private final String bucket;
   private final String object;
   private final Long version;
 
-  public static GoogleCloudStorageObject fromReference(String reference) {
+  static GoogleCloudStorageObject fromReference(String reference) {
     String working = reference;
     String bucket;
     String object;
@@ -67,14 +67,14 @@ public class GoogleCloudStorageObject {
     return new GoogleCloudStorageObject(bucket, object, version);
   }
 
-  public String getVersionString() {
+  String getVersionString() {
     if (version == null) {
       return null;
     }
     return version.toString();
   }
 
-  public String getReference() {
+  String getReference() {
     String path = getName();
     if (version == null) {
       return path;
@@ -83,7 +83,7 @@ public class GoogleCloudStorageObject {
     return String.format("%s#%s", path, version);
   }
 
-  public String getName() {
+  String getName() {
     return String.format("gs://%s/%s", bucket, object);
   }
 }

@@ -23,11 +23,11 @@ import lombok.Getter;
 
 @Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class GoogleCloudBuildArtifact {
+final class GoogleCloudBuildArtifact {
   private final String location;
 
   @JsonCreator
-  public GoogleCloudBuildArtifact(@JsonProperty("location") String location) {
+  GoogleCloudBuildArtifact(@JsonProperty("location") String location) {
     this.location = location;
   }
 }

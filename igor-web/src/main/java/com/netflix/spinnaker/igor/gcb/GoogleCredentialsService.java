@@ -30,7 +30,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @ConditionalOnProperty("gcb.enabled")
-public class GoogleCredentialsService {
+class GoogleCredentialsService {
   GoogleCredentials getFromKey(String jsonPath) {
     try {
       InputStream stream = getCredentialAsStream(jsonPath);
