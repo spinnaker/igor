@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.igor.gcb;
 
+import javax.annotation.Nullable;
+
 /**
  * An enum of possible statuses of a GCB build. One of the primary purposes of this enum is to
  * handle ordering of statuses to allow us to order build notifications.
@@ -42,6 +44,13 @@ enum GoogleCloudBuildStatus {
 
   boolean isComplete() {
     return statusType == StatusType.COMPLETE;
+  }
+
+  static GoogleCloudBuildStatus valueOfNullable(@Nullable String name) {
+    if (name == null) {
+      return STATUS_UNKNOWN;
+    }
+    return valueOf(name);
   }
 
   private enum StatusType {

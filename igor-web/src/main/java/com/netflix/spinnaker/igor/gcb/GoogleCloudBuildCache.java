@@ -78,9 +78,9 @@ class GoogleCloudBuildCache {
         });
   }
 
-  private int getTtlSeconds(String statusString) {
+  private int getTtlSeconds(@Nullable String statusString) {
     try {
-      GoogleCloudBuildStatus status = GoogleCloudBuildStatus.valueOf(statusString);
+      GoogleCloudBuildStatus status = GoogleCloudBuildStatus.valueOfNullable(statusString);
       if (status.isComplete()) {
         return completedTtlSeconds;
       } else {
@@ -95,20 +95,13 @@ class GoogleCloudBuildCache {
   // As we may be processing build notifications out of order, only allow an update of the cache if
   // the incoming build status is newer than the status that we currently have cached.
   private boolean allowUpdate(@Nullable String oldStatusString, @Nullable String newStatusString) {
-    if (oldStatusString == null) {
-      return true;
-    }
-    if (newStatusString == null) {
-      return false;
-    }
     try {
-      GoogleCloudBuildStatus oldStatus = GoogleCloudBuildStatus.valueOf(oldStatusString);
-      GoogleCloudBuildStatus newStatus = GoogleCloudBuildStatus.valueOf(newStatusString);
+      GoogleCloudBuildStatus oldStatus = GoogleCloudBuildStatus.valueOfNullable(oldStatusString);
+      GoogleCloudBuildStatus newStatus = GoogleCloudBuildStatus.valueOfNullable(newStatusString);
       return newStatus.greaterThanOrEqualTo(oldStatus);
     } catch (IllegalArgumentException e) {
       // If one of the statuses is not recognized, allow the update (assuming that the later message
-      // is newer). This is
-      // to be robust against GCB adding statuses in the future.
+      // is newer). This is to be robust against GCB adding statuses in the future.
       return true;
     }
   }
@@ -116,11 +109,7 @@ class GoogleCloudBuildCache {
   void updateBuild(String buildId, @Nullable String status, String build) {
     String lockName = String.format("%s.%s", lockPrefix, buildId);
     lockService.acquire(
-        lockName,
-        Duration.ofSeconds(10),
-        () -> {
-          internalUpdateBuild(buildId, status, build);
-        });
+        lockName, Duration.ofSeconds(10), () -> internalUpdateBuild(buildId, status, build));
   }
 
   @RequiredArgsConstructor(access = AccessLevel.PACKAGE)

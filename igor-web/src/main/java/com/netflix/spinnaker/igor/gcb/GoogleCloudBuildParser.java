@@ -49,14 +49,12 @@ final class GoogleCloudBuildParser {
   }
 
   String serialize(Object input) {
-    try {
-      Writer writer = new StringWriter();
-      JsonGenerator generator = jacksonFactory.createJsonGenerator(writer);
+    Writer writer = new StringWriter();
+    try (JsonGenerator generator = jacksonFactory.createJsonGenerator(writer)) {
       generator.serialize(input);
-      generator.flush();
-      return writer.toString();
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+    return writer.toString();
   }
 }

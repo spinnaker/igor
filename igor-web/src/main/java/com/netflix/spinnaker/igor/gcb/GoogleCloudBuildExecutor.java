@@ -34,10 +34,9 @@ import org.springframework.stereotype.Component;
 @Slf4j
 final class GoogleCloudBuildExecutor {
   // TODO(ezimanyi): Consider adding retry logic here
-  <T> T execute(RequestFactory<T> requestFactory) {
+  <T> T execute(RequestFactory<? extends T> requestFactory) {
     try {
-      CloudBuildRequest<T> request = requestFactory.get();
-      return request.execute();
+      return requestFactory.get().execute();
     } catch (GoogleJsonResponseException e) {
       if (e.getStatusCode() == 400) {
         log.error(e.getMessage());
@@ -51,6 +50,9 @@ final class GoogleCloudBuildExecutor {
     }
   }
 
+  // This is effectively a Supplier<CloudBuildRequest<T>> except that it allows an IOException to be
+  // thrown by the get() method.
+  @FunctionalInterface
   interface RequestFactory<T> {
     CloudBuildRequest<T> get() throws IOException;
   }
