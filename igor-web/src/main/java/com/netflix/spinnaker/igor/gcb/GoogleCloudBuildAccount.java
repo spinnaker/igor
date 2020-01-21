@@ -21,6 +21,7 @@ import com.google.api.services.cloudbuild.v1.model.BuildTrigger;
 import com.google.api.services.cloudbuild.v1.model.ListBuildTriggersResponse;
 import com.google.api.services.cloudbuild.v1.model.Operation;
 import com.google.api.services.cloudbuild.v1.model.RepoSource;
+import com.google.common.collect.ImmutableList;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,7 +56,7 @@ class GoogleCloudBuildAccount {
   }
 
   private void appendTags(Build build) {
-    List<String> tags = Optional.ofNullable(build.getTags()).orElse(new ArrayList<>());
+    List<String> tags = Optional.ofNullable(build.getTags()).orElseGet(ArrayList::new);
     if (!tags.contains(BUILD_TAG)) {
       tags.add(BUILD_TAG);
     }
@@ -76,9 +77,9 @@ class GoogleCloudBuildAccount {
     return googleCloudBuildParser.parse(buildString, Build.class);
   }
 
-  List<BuildTrigger> listTriggers() {
+  ImmutableList<BuildTrigger> listTriggers() {
     ListBuildTriggersResponse listBuildTriggersResponse = client.listTriggers();
-    return listBuildTriggersResponse.getTriggers();
+    return ImmutableList.copyOf(listBuildTriggersResponse.getTriggers());
   }
 
   Build runTrigger(String triggerId, RepoSource repoSource) {
@@ -92,12 +93,12 @@ class GoogleCloudBuildAccount {
     return triggerResponse;
   }
 
-  List<Artifact> getArtifacts(String buildId) {
+  ImmutableList<Artifact> getArtifacts(String buildId) {
     Build build = getBuild(buildId);
     return googleCloudBuildArtifactFetcher.getArtifacts(build);
   }
 
-  List<Artifact> extractArtifacts(Build build) {
+  ImmutableList<Artifact> extractArtifacts(Build build) {
     return googleCloudBuildArtifactFetcher.getArtifacts(build);
   }
 }

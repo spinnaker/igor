@@ -16,19 +16,19 @@
 
 package com.netflix.spinnaker.igor.gcb;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.services.cloudbuild.v1.model.Build;
 import com.google.api.services.cloudbuild.v1.model.BuiltImage;
 import com.google.api.services.cloudbuild.v1.model.Results;
+import com.google.common.collect.ImmutableList;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -38,27 +38,25 @@ final class GoogleCloudBuildArtifactFetcher {
   private final GoogleCloudBuildClient client;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
-  List<Artifact> getArtifacts(Build build) {
-    List<Artifact> results = new ArrayList<>();
-
-    results.addAll(getDockerArtifacts(build));
-    results.addAll(getGoogleCloudStorageArtifacts(build));
-
-    return results;
+  ImmutableList<Artifact> getArtifacts(Build build) {
+    return ImmutableList.<Artifact>builder()
+        .addAll(getDockerArtifacts(build))
+        .addAll(getGoogleCloudStorageArtifacts(build))
+        .build();
   }
 
-  private List<Artifact> getDockerArtifacts(Build build) {
+  private ImmutableList<Artifact> getDockerArtifacts(Build build) {
     Results results = build.getResults();
     if (results == null) {
-      return Collections.emptyList();
+      return ImmutableList.of();
     }
 
     List<BuiltImage> images = results.getImages();
     if (images == null) {
-      return Collections.emptyList();
+      return ImmutableList.of();
     }
 
-    return images.stream().map(this::parseBuiltImage).collect(Collectors.toList());
+    return images.stream().map(this::parseBuiltImage).collect(toImmutableList());
   }
 
   private Artifact parseBuiltImage(BuiltImage image) {
@@ -71,17 +69,17 @@ final class GoogleCloudBuildArtifactFetcher {
         .build();
   }
 
-  private List<Artifact> getGoogleCloudStorageArtifacts(Build build) {
+  private ImmutableList<Artifact> getGoogleCloudStorageArtifacts(Build build) {
     GoogleCloudStorageObject manifest = getGoogleCloudStorageManifest(build);
     if (manifest == null) {
-      return Collections.emptyList();
+      return ImmutableList.of();
     }
 
     try {
       return readGoogleCloudStorageManifest(manifest).stream()
           .map(this::parseGoogleCloudBuildArtifact)
           .distinct()
-          .collect(Collectors.toList());
+          .collect(toImmutableList());
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -113,9 +111,9 @@ final class GoogleCloudBuildArtifactFetcher {
     return GoogleCloudStorageObject.fromReference(artifactManifest);
   }
 
-  private List<GoogleCloudBuildArtifact> readGoogleCloudStorageManifest(
+  private ImmutableList<GoogleCloudBuildArtifact> readGoogleCloudStorageManifest(
       GoogleCloudStorageObject manifest) throws IOException {
-    List<GoogleCloudBuildArtifact> results = new ArrayList<>();
+    ImmutableList.Builder<GoogleCloudBuildArtifact> results = ImmutableList.builder();
     InputStream is =
         client.fetchStorageObject(
             manifest.getBucket(), manifest.getObject(), manifest.getVersion());
@@ -125,6 +123,6 @@ final class GoogleCloudBuildArtifactFetcher {
         results.add(objectMapper.readValue(line, GoogleCloudBuildArtifact.class));
       }
     }
-    return results;
+    return results.build();
   }
 }
