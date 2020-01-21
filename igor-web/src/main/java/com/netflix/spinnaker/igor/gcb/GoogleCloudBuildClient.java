@@ -25,6 +25,7 @@ import com.google.api.services.storage.Storage;
 import com.google.auth.oauth2.GoogleCredentials;
 import java.io.IOException;
 import java.io.InputStream;
+import javax.annotation.Nullable;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 
@@ -69,7 +70,8 @@ class GoogleCloudBuildClient {
         () -> cloudBuild.projects().triggers().run(projectId, triggerId, repoSource));
   }
 
-  InputStream fetchStorageObject(String bucket, String object, Long version) throws IOException {
+  InputStream fetchStorageObject(String bucket, String object, @Nullable Long version)
+      throws IOException {
     Storage.Objects.Get getRequest = cloudStorage.objects().get(bucket, object);
     if (version != null) {
       getRequest.setGeneration(version);

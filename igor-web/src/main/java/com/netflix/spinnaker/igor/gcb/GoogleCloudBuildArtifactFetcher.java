@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 
@@ -97,6 +98,7 @@ final class GoogleCloudBuildArtifactFetcher {
         .build();
   }
 
+  @Nullable
   private GoogleCloudStorageObject getGoogleCloudStorageManifest(Build build) {
     Results results = build.getResults();
     if (results == null) {

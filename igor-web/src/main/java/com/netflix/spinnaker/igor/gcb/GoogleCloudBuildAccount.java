@@ -25,6 +25,7 @@ import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import javax.annotation.Nullable;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 
@@ -61,7 +62,7 @@ class GoogleCloudBuildAccount {
     build.setTags(tags);
   }
 
-  void updateBuild(String buildId, String status, String serializedBuild) {
+  void updateBuild(String buildId, @Nullable String status, String serializedBuild) {
     cache.updateBuild(buildId, status, serializedBuild);
   }
 

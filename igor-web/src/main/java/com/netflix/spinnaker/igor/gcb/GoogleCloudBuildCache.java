@@ -20,6 +20,7 @@ import com.netflix.spinnaker.igor.polling.LockService;
 import com.netflix.spinnaker.kork.jedis.RedisClientDelegate;
 import java.time.Duration;
 import java.util.Map;
+import javax.annotation.Nullable;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +54,7 @@ class GoogleCloudBuildCache {
     }
   }
 
+  @Nullable
   String getBuild(String buildId) {
     String key = new GoogleCloudBuildKey(keyPrefix, buildId).toString();
     return redisClientDelegate.withCommandsClient(
@@ -62,7 +64,7 @@ class GoogleCloudBuildCache {
         });
   }
 
-  private void internalUpdateBuild(String buildId, String status, String build) {
+  private void internalUpdateBuild(String buildId, @Nullable String status, String build) {
     String key = new GoogleCloudBuildKey(keyPrefix, buildId).toString();
     redisClientDelegate.withCommandsClient(
         c -> {
@@ -92,7 +94,7 @@ class GoogleCloudBuildCache {
 
   // As we may be processing build notifications out of order, only allow an update of the cache if
   // the incoming build status is newer than the status that we currently have cached.
-  private boolean allowUpdate(String oldStatusString, String newStatusString) {
+  private boolean allowUpdate(@Nullable String oldStatusString, @Nullable String newStatusString) {
     if (oldStatusString == null) {
       return true;
     }
@@ -111,7 +113,7 @@ class GoogleCloudBuildCache {
     }
   }
 
-  void updateBuild(String buildId, String status, String build) {
+  void updateBuild(String buildId, @Nullable String status, String build) {
     String lockName = String.format("%s.%s", lockPrefix, buildId);
     lockService.acquire(
         lockName,

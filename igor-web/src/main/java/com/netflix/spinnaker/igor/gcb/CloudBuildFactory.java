@@ -26,8 +26,7 @@ import com.google.api.services.storage.Storage;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
 import java.io.IOException;
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
+import javax.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -35,7 +34,6 @@ import org.springframework.stereotype.Component;
 /** Factory for calling CloudBuild client library code to create CloudBuild objects */
 @Component
 @ConditionalOnProperty("gcb.enabled")
-@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 final class CloudBuildFactory {
   private final int connectTimeoutSec = 10;
   private final int readTimeoutSec = 10;
@@ -44,11 +42,16 @@ final class CloudBuildFactory {
   private final HttpTransport httpTransport;
 
   // Override the base URL for all requests to the cloud build API; primarily for testing.
-  private final String overrideRootUrl;
+  @Nullable private final String overrideRootUrl;
 
   @Autowired
   CloudBuildFactory(HttpTransport httpTransport) {
     this(httpTransport, null);
+  }
+
+  CloudBuildFactory(HttpTransport httpTransport, @Nullable String overrideRootUrl) {
+    this.httpTransport = httpTransport;
+    this.overrideRootUrl = overrideRootUrl;
   }
 
   CloudBuild getCloudBuild(GoogleCredentials credentials, String applicationName) {

@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.igor.gcb;
 
+import javax.annotation.Nullable;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +27,7 @@ final class GoogleCloudStorageObject {
   private static final String PREFIX = "gs://";
   private final String bucket;
   private final String object;
-  private final Long version;
+  @Nullable private final Long version;
 
   static GoogleCloudStorageObject fromReference(String reference) {
     String working = reference;
@@ -67,6 +68,7 @@ final class GoogleCloudStorageObject {
     return new GoogleCloudStorageObject(bucket, object, version);
   }
 
+  @Nullable
   String getVersionString() {
     if (version == null) {
       return null;
