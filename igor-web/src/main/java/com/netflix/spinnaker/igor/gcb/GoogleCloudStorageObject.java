@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.igor.gcb.model;
+package com.netflix.spinnaker.igor.gcb;
 
 import lombok.AccessLevel;
 import lombok.Getter;

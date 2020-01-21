@@ -20,8 +20,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.services.cloudbuild.v1.model.Build;
 import com.google.api.services.cloudbuild.v1.model.BuiltImage;
 import com.google.api.services.cloudbuild.v1.model.Results;
-import com.netflix.spinnaker.igor.gcb.model.GoogleCloudBuildArtifact;
-import com.netflix.spinnaker.igor.gcb.model.GoogleCloudStorageObject;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import java.io.BufferedReader;
 import java.io.IOException;
