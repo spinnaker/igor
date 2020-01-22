@@ -20,6 +20,7 @@ import com.google.api.client.json.JsonGenerator;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.io.UncheckedIOException;
 import java.io.Writer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -39,7 +40,7 @@ final class GoogleCloudBuildParser {
     try {
       return jacksonFactory.createJsonParser(input).parse(destinationClass);
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new UncheckedIOException(e);
     }
   }
 
@@ -53,7 +54,7 @@ final class GoogleCloudBuildParser {
     try (JsonGenerator generator = jacksonFactory.createJsonGenerator(writer)) {
       generator.serialize(input);
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new UncheckedIOException(e);
     }
     return writer.toString();
   }

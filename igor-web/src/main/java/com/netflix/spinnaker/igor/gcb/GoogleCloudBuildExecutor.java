@@ -21,6 +21,7 @@ import com.google.api.services.cloudbuild.v1.CloudBuildRequest;
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException;
 import com.netflix.spinnaker.kork.web.exceptions.NotFoundException;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -44,9 +45,9 @@ final class GoogleCloudBuildExecutor {
       } else if (e.getStatusCode() == 404) {
         throw new NotFoundException(e.getMessage());
       }
-      throw new RuntimeException(e);
+      throw new UncheckedIOException(e);
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new UncheckedIOException(e);
     }
   }
 
