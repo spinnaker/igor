@@ -158,7 +158,7 @@ class JenkinsConfig {
                 keyStore.load(it, keyStorePassword.toCharArray())
             }
             def keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm())
-            keyManagerFactory.init(keyStore)
+            keyManagerFactory.init(keyStore, keyStorePassword.toCharArray())
 
             keyManagers = keyManagerFactory.keyManagers
         }
