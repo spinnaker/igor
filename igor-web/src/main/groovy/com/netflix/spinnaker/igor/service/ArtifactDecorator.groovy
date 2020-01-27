@@ -62,7 +62,9 @@ class ArtifactDecorator {
         }
         filteredDecorators.collect {
             log.debug "Decorated artifact with decorator [${it.decoratorName()}]: ${genericArtifact.toString()}"
-            it.decorate(genericArtifact)
+            def decoratedArtifact = it.decorate(genericArtifact)
+            decoratedArtifact.decorated = true
+            decoratedArtifact
         }
     }
 
