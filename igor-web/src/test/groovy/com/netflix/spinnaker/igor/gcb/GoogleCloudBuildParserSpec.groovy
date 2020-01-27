@@ -37,7 +37,7 @@ class GoogleCloudBuildParserSpec extends Specification {
   def "converts a build from a map"() {
     given:
     def build = getBuild()
-    def serializedBuild = parser.serializeBuild(build)
+    def serializedBuild = GoogleCloudBuildTestSerializationHelper.serializeBuild(build)
     def deserializedBuild = parser.convert(serializedBuild, Build.class)
 
     expect:

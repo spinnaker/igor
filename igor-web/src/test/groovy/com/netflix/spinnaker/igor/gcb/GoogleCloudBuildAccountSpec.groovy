@@ -198,7 +198,7 @@ class GoogleCloudBuildAccountSpec extends Specification {
   private createBuildOperation(Build inputBuild) {
     Map<String, Object> metadata = new HashMap<>()
     metadata.put("@type", "type.googleapis.com/google.devtools.cloudbuild.v1.BuildOperationMetadata")
-    metadata.put("build", parser.serializeBuild(inputBuild))
+    metadata.put("build", GoogleCloudBuildTestSerializationHelper.serializeBuild(inputBuild))
 
     Operation operation = new Operation()
     operation.setName("operations/build/spinnaker-gcb-test/operationid")
