@@ -29,7 +29,7 @@ public class AwsCodeBuildProperties {
   public static class Account {
     private String name;
     private String region;
-    private String accessKeyId;
-    private String secretAccessKey;
+    private String accountId;
+    private String assumeRole;
   }
 }

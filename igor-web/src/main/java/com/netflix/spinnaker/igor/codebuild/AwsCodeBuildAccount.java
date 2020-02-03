@@ -16,26 +16,36 @@
 
 package com.netflix.spinnaker.igor.codebuild;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider;
 import com.amazonaws.services.codebuild.AWSCodeBuildClient;
 import com.amazonaws.services.codebuild.AWSCodeBuildClientBuilder;
 import com.amazonaws.services.codebuild.model.BatchGetBuildsRequest;
 import com.amazonaws.services.codebuild.model.Build;
 import com.amazonaws.services.codebuild.model.StartBuildRequest;
+import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /** Generates authenticated requests to AWS CodeBuild API for a single configured account */
 @RequiredArgsConstructor
 public class AwsCodeBuildAccount {
   private final AWSCodeBuildClient client;
 
-  public AwsCodeBuildAccount(String accessKeyId, String secretAccessKey, String region) {
-    BasicAWSCredentials awsCreds = new BasicAWSCredentials(accessKeyId, secretAccessKey);
+  @Autowired AWSSecurityTokenServiceClient stsClient;
+
+  public AwsCodeBuildAccount(String accountId, String assumeRole, String region) {
+    STSAssumeRoleSessionCredentialsProvider credentialsProvider =
+        new STSAssumeRoleSessionCredentialsProvider.Builder(
+                getRoleArn(accountId, assumeRole), "spinnaker-session")
+            .withStsClient(stsClient)
+            .build();
+
+    // TODO: Add client-side rate limiting to avoid getting throttled if necessary
     this.client =
         (AWSCodeBuildClient)
             AWSCodeBuildClientBuilder.standard()
-                .withCredentials(new AWSStaticCredentialsProvider(awsCreds))
+                .withCredentials(credentialsProvider)
                 .withRequestHandlers(new AwsCodeBuildRequestHandler())
                 .withRegion(region)
                 .build();
@@ -47,5 +57,20 @@ public class AwsCodeBuildAccount {
 
   public Build getBuild(String buildId) {
     return client.batchGetBuilds(new BatchGetBuildsRequest().withIds(buildId)).getBuilds().get(0);
+  }
+
+  private String getRoleArn(String accountId, String assumeRole) {
+    String assumeRoleValue = Objects.requireNonNull(assumeRole, "assumeRole");
+    if (!assumeRoleValue.startsWith("arn:")) {
+      /**
+       * GovCloud and China regions need to have the full arn passed because of differing formats
+       * Govcloud: arn:aws-us-gov:iam China: arn:aws-cn:iam
+       */
+      assumeRoleValue =
+          String.format(
+              "arn:aws:iam::%s:%s",
+              Objects.requireNonNull(accountId, "accountId"), assumeRoleValue);
+    }
+    return assumeRoleValue;
   }
 }

@@ -16,6 +16,9 @@
 
 package com.netflix.spinnaker.igor.config;
 
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient;
+import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
 import com.netflix.spinnaker.igor.codebuild.AwsCodeBuildAccount;
 import com.netflix.spinnaker.igor.codebuild.AwsCodeBuildAccountRepository;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -36,10 +39,17 @@ public class AwsCodeBuildConfig {
         .forEach(
             a -> {
               AwsCodeBuildAccount account =
-                  new AwsCodeBuildAccount(
-                      a.getAccessKeyId(), a.getSecretAccessKey(), a.getRegion());
+                  new AwsCodeBuildAccount(a.getAccountId(), a.getAssumeRole(), a.getRegion());
               accounts.addAccount(a.getName(), account);
             });
     return accounts;
+  }
+
+  @Bean
+  AWSSecurityTokenServiceClient awsSecurityTokenServiceClient() {
+    return (AWSSecurityTokenServiceClient)
+        AWSSecurityTokenServiceClientBuilder.standard()
+            .withCredentials(DefaultAWSCredentialsProviderChain.getInstance())
+            .build();
   }
 }

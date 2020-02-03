@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.igor.codebuild
 
+import com.amazonaws.AmazonServiceException
 import com.amazonaws.DefaultRequest
 import com.amazonaws.Response
 import com.amazonaws.services.codebuild.model.InvalidInputException
@@ -29,9 +30,10 @@ class AwsCodeBuildRequestHandlerSpec extends Specification {
   def request = new DefaultRequest(new StartBuildRequest(), "codebuild")
   def response = new Response(new StartBuildResult(), null)
 
-  def "should throw BuildJobError in case of AWSCodeBuildException"() {
+  def "should throw BuildJobError in case of a client exception"() {
     when:
     def exception = new InvalidInputException("err msg")
+    exception.setErrorType(AmazonServiceException.ErrorType.Client)
     handler.afterError(request, response, exception)
     then:
     BuildJobError err = thrown()

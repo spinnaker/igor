@@ -17,18 +17,37 @@
 
 package com.netflix.spinnaker.igor.codebuild;
 
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.AmazonWebServiceRequest;
 import com.amazonaws.Request;
 import com.amazonaws.Response;
 import com.amazonaws.handlers.RequestHandler2;
-import com.amazonaws.services.codebuild.model.AWSCodeBuildException;
 import com.netflix.spinnaker.igor.exceptions.BuildJobError;
+import com.netflix.spinnaker.security.AuthenticatedRequest;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class AwsCodeBuildRequestHandler extends RequestHandler2 {
   @Override
+  public AmazonWebServiceRequest beforeMarshalling(AmazonWebServiceRequest request) {
+    final String userAgent =
+        String.format(
+            "spinnaker-user/%s spinnaker-executionId/%s",
+            AuthenticatedRequest.getSpinnakerUser().orElse("unknown"),
+            AuthenticatedRequest.getSpinnakerExecutionId().orElse("unknown"));
+
+    final AmazonWebServiceRequest cloned = request.clone();
+
+    cloned.getRequestClientOptions().appendUserAgent(userAgent);
+    return super.beforeMarshalling(cloned);
+  }
+
+  @Override
   public void afterError(Request<?> request, Response<?> response, Exception e) {
-    if (e instanceof AWSCodeBuildException) {
+    if (e instanceof AmazonServiceException
+        && ((AmazonServiceException) e)
+            .getErrorType()
+            .equals(AmazonServiceException.ErrorType.Client)) {
       log.warn(e.getMessage());
       throw new BuildJobError(e.getMessage());
     } else {
