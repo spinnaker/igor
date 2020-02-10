@@ -18,8 +18,8 @@ test {
 dependencies {
     implementation project(":igor-core")
     implementation project(":igor-monitor-artifactory")
+    implementation project(":igor-monitor-jenkins")
 
-    implementation platform("com.netflix.spinnaker.kork:kork-bom:$korkVersion")
     compileOnly "org.projectlombok:lombok"
     annotationProcessor platform("com.netflix.spinnaker.kork:kork-bom:$korkVersion")
     annotationProcessor "org.projectlombok:lombok"
@@ -29,6 +29,10 @@ dependencies {
     implementation "org.springframework.boot:spring-boot-properties-migrator"
     implementation "org.springframework.boot:spring-boot-starter-actuator"
     implementation "org.springframework.boot:spring-boot-starter-web"
+
+    implementation "javax.xml.bind:jaxb-api"
+    implementation "com.sun.xml.bind:jaxb-core:2.3.0.1"
+    implementation "com.sun.xml.bind:jaxb-impl:2.3.2"
 
     testImplementation "org.springframework.boot:spring-boot-starter-test"
     testImplementation "org.spockframework:spock-core"
@@ -61,6 +65,7 @@ dependencies {
     implementation "org.springframework.security:spring-security-config"
     implementation "org.springframework.security:spring-security-web"
 
+    implementation "com.amazonaws:aws-java-sdk"
     implementation "com.google.apis:google-api-services-cloudbuild"
     implementation "com.google.apis:google-api-services-storage"
     implementation 'com.google.auth:google-auth-library-oauth2-http'
