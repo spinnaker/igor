@@ -90,6 +90,11 @@ allprojects {
       }
     }
   }
+  configurations.all {
+    resolutionStrategy {
+      force group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.9.+' // Remove CVE-2019-17267, CVE-2019-16335, CVE-2019-14540, CVE-2019-14540 and CVE-2019-17531 , upgrade jackson-databind dependency
+    }
+  }
 }
 
 defaultTasks 'run'
