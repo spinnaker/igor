@@ -88,6 +88,7 @@ class AwsCodeBuildAccountSpec extends Specification {
     result.size() == 1
     result.get(0).getType() == "s3/object"
     result.get(0).getReference() == "s3://bucket/path/file.zip"
+    result.get(0).getName() == "s3://bucket/path/file.zip"
   }
 
   def "getArtifacts returns secondary artifacts"() {
@@ -110,8 +111,10 @@ class AwsCodeBuildAccountSpec extends Specification {
     result.size() == 2
     result.get(0).getType() == "s3/object"
     result.get(0).getReference() == "s3://bucket/path/file.zip"
+    result.get(0).getName() == "s3://bucket/path/file.zip"
     result.get(1).getType() == "s3/object"
     result.get(1).getReference() == "s3://another-bucket/another/path/file.zip"
+    result.get(1).getName() == "s3://another-bucket/another/path/file.zip"
   }
 
   def "getArtifacts returns both primary and secondary artifacts"() {
@@ -136,8 +139,10 @@ class AwsCodeBuildAccountSpec extends Specification {
     result.size() == 2
     result.get(0).getType() == "s3/object"
     result.get(0).getReference() == "s3://bucket/path/file.zip"
+    result.get(0).getName() == "s3://bucket/path/file.zip"
     result.get(1).getType() == "s3/object"
     result.get(1).getReference() == "s3://another-bucket/another/path/file.zip"
+    result.get(1).getName() == "s3://another-bucket/another/path/file.zip"
   }
 
   private static StartBuildRequest getStartBuildInput(String projectName) {

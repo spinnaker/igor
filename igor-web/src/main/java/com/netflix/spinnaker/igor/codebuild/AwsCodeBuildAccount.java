@@ -103,7 +103,8 @@ public class AwsCodeBuildAccount {
   }
 
   private Artifact getS3Artifact(String s3Arn) {
-    return Artifact.builder().type("s3/object").reference(getS3ArtifactReference(s3Arn)).build();
+    String reference = getS3ArtifactReference(s3Arn);
+    return Artifact.builder().type("s3/object").reference(reference).name(reference).build();
   }
 
   private String getS3ArtifactReference(String s3Arn) {
