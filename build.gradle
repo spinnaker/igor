@@ -90,6 +90,11 @@ allprojects {
       }
     }
   }
+  configurations.all {
+    resolutionStrategy {
+      force group: 'com.thoughtworks.xstream', name: 'xstream', version: '1.4.+' // remove CVE-2019-10173, bump xstream dependency
+    }
+  }
 }
 
 defaultTasks 'run'
