@@ -17,9 +17,11 @@ package com.netflix.spinnaker.igor.gitlabci;
 
 import com.netflix.spinnaker.igor.history.model.BuildEvent;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
-public class GitlabCiBuildEvent implements BuildEvent<GitlabCiBuildContent> {
+@EqualsAndHashCode(callSuper = true)
+public class GitlabCiBuildEvent extends BuildEvent<GitlabCiBuildContent> {
   private GitlabCiBuildContent content;
 
   public GitlabCiBuildEvent(GitlabCiBuildContent content) {
