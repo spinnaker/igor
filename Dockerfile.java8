@@ -3,5 +3,6 @@ MAINTAINER delivery-engineering@netflix.com
 COPY --from=compile /compiled_sources/igor-web/build/install/igor /opt/igor
 RUN apk --no-cache add --update bash openjdk8-jre
 RUN adduser -D -S spinnaker
+RUN mkdir plugins && chown -R 100:100 plugins
 USER spinnaker
 CMD ["/opt/igor/bin/igor"]
