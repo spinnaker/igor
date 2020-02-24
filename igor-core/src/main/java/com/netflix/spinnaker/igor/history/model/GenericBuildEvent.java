@@ -13,14 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.spinnaker.igor.travis;
 
-import com.netflix.spinnaker.igor.history.model.BuildEvent;
+package com.netflix.spinnaker.igor.history.model;
+
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
+/** Move any invocation of this class to a monitor-specific BuildContent implementation. */
+@Deprecated
 @Data
 @AllArgsConstructor
-public class TravisBuildEvent implements BuildEvent<TravisBuildContent> {
-  private TravisBuildContent content;
+public class GenericBuildEvent implements BuildEvent<EmptyBuildContent> {
+  private EmptyBuildContent content;
+  private Map<?, ?> details;
+
+  public GenericBuildEvent(EmptyBuildContent content) {
+    this.content = content;
+  }
 }

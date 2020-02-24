@@ -19,7 +19,7 @@ import com.netflix.spinnaker.igor.history.model.BuildEvent;
 import lombok.Data;
 
 @Data
-public class GitlabCiBuildEvent extends BuildEvent<GitlabCiBuildContent> {
+public class GitlabCiBuildEvent implements BuildEvent<GitlabCiBuildContent> {
   private GitlabCiBuildContent content;
 
   public GitlabCiBuildEvent(GitlabCiBuildContent content) {

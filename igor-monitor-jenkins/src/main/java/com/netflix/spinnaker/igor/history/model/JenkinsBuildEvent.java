@@ -20,6 +20,6 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class JenkinsBuildEvent extends BuildEvent<JenkinsBuildContent> {
+public class JenkinsBuildEvent implements BuildEvent<JenkinsBuildContent> {
   private JenkinsBuildContent content;
 }

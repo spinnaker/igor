@@ -21,6 +21,6 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class WerckerBuildEvent extends BuildEvent<WerckerBuildContent> {
+public class WerckerBuildEvent implements BuildEvent<WerckerBuildContent> {
   private WerckerBuildContent content;
 }
