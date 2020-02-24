@@ -18,11 +18,9 @@ package com.netflix.spinnaker.igor.wercker;
 import com.netflix.spinnaker.igor.history.model.BuildEvent;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 
 @Data
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = true)
 public class WerckerBuildEvent extends BuildEvent<WerckerBuildContent> {
   private WerckerBuildContent content;
 }
