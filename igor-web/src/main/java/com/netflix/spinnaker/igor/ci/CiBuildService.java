@@ -22,8 +22,8 @@ import java.util.List;
 public interface CiBuildService {
 
   /**
-   * Get the builds given project key, repo slug, and status. By implementing this interface, deck
-   * will (eventually) be able to parse it and to show the details of the result in the UI.
+   * Get the builds given project key, repo slug, and status.
+   * The data returned from a CiBuildService powers the CI view in the UI.
    *
    * @param projectKey the project key
    * @param repoSlug the repository name
