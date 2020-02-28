@@ -77,9 +77,9 @@ public class AwsCodeBuildConfig {
   AWSCredentialsProvider awsCredentialsProvider(AwsCodeBuildProperties awsCodeBuildProperties) {
     AWSCredentialsProvider credentialsProvider = DefaultAWSCredentialsProviderChain.getInstance();
     if (awsCodeBuildProperties.getAccessKeyId() != null
-        && !awsCodeBuildProperties.getAccessKeyId().equals("")
+        && !awsCodeBuildProperties.getAccessKeyId().isEmpty()
         && awsCodeBuildProperties.getSecretAccessKey() != null
-        && !awsCodeBuildProperties.getSecretAccessKey().equals("")) {
+        && !awsCodeBuildProperties.getSecretAccessKey().isEmpty()) {
       credentialsProvider =
           new AWSStaticCredentialsProvider(
               new BasicAWSCredentials(
