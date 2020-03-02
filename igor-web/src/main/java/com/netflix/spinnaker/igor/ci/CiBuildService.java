@@ -19,11 +19,16 @@ package com.netflix.spinnaker.igor.ci;
 import com.netflix.spinnaker.igor.build.model.GenericBuild;
 import java.util.List;
 
+/**
+ * Interface to be implemented by ci build service providers that supports a way of getting builds
+ * by supplying a project key, repo name and an optional completionStatus. [Future] By implementing
+ * this service, deck will pick up the builds and will be able to show them in the ui.
+ */
 public interface CiBuildService {
 
   /**
-   * Get the builds given project key, repo slug, and status.
-   * The data returned from a CiBuildService powers the CI view in the UI.
+   * Get the builds given project key, repo slug, and status. The data returned from a
+   * CiBuildService powers the CI view in the UI.
    *
    * @param projectKey the project key
    * @param repoSlug the repository name
