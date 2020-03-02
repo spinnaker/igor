@@ -24,7 +24,8 @@ Relevant properties:
 | *Property* | *Default value* | *Description* |
 | --- | --- | --- |
 | `spinnaker.build.pollInterval` | `60` | Interval in seconds between polling cycles |
-| `spinnaker.pollingSafeguard.itemUpperThreshold` | `1000` | Defines the upper threshold for number of new items before a cache update cycle will be rejected | `locking.enabled` | `false` | Enables distributed locking so that igor can run on multiple nodes without interference |
+| `spinnaker.pollingSafeguard.itemUpperThreshold` | `1000` | Defines the upper threshold for number of new items before a cache update cycle will be rejected |
+| `locking.enabled` | `false` | Enables distributed locking so that igor can run on multiple nodes without interference |
 
 Relevant metrics:
 
@@ -151,15 +152,15 @@ travis:
   # Travis names are prefixed with travis- inside igor.
   masters:
   - name: ci # This will show as travis-ci inside spinnaker.
-    baseUrl: https://travis-ci.org
-    address: https://api.travis-ci.org
+    baseUrl: https://travis-ci.com
+    address: https://api.travis-ci.com
     githubToken: 6a7729bdba8c4f9abc58b175213d83f072d1d832
   regexes:
   - /Upload https?:\/\/.+\/(.+\.(deb|rpm))/
 ```
 
 When parsing artifact information from Travis builds, igor uses a default regex
-that will match on output from the `art` CLI tool.  Different regexes than the
+that will match on output from the `jfrog rt`/`art` CLI tool.  Different regexes than the
 default may be configured using the `regexes` list.
 
 
