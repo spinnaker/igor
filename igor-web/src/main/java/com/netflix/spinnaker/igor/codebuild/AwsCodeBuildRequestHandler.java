@@ -28,6 +28,8 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class AwsCodeBuildRequestHandler extends RequestHandler2 {
+  public static final String USER_AGENT_HEADER = "User-Agent";
+
   @Override
   public AmazonWebServiceRequest beforeMarshalling(AmazonWebServiceRequest request) {
     final String userAgent =
@@ -38,7 +40,7 @@ public class AwsCodeBuildRequestHandler extends RequestHandler2 {
 
     final AmazonWebServiceRequest cloned = request.clone();
 
-    cloned.getRequestClientOptions().appendUserAgent(userAgent);
+    cloned.putCustomRequestHeader(USER_AGENT_HEADER, userAgent);
     return super.beforeMarshalling(cloned);
   }
 
