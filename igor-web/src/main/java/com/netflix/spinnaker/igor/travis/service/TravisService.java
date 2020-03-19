@@ -71,7 +71,8 @@ import retrofit.RetrofitError;
 
 public class TravisService implements BuildOperations, BuildProperties {
 
-  static final int TRAVIS_BUILD_RESULT_LIMIT = 100;
+  static final int TRAVIS_JOB_RESULT_LIMIT = 100;
+  static final int TRAVIS_BUILD_RESULT_LIMIT = 10;
 
   private final Logger log = LoggerFactory.getLogger(getClass());
   private final String baseUrl;
@@ -321,7 +322,7 @@ public class TravisService implements BuildOperations, BuildProperties {
                                     .collect(Collectors.joining(",")),
                                 addLogCompleteIfApplicable("job.build"),
                                 getLimit(page, limit),
-                                (page - 1) * TRAVIS_BUILD_RESULT_LIMIT))
+                                (page - 1) * TRAVIS_JOB_RESULT_LIMIT))
                     .flatMap(v3jobs -> v3jobs.getJobs().stream())
                     .sorted(Comparator.comparing(V3Job::getId))
                     .collect(Collectors.toList()),
@@ -561,8 +562,8 @@ public class TravisService implements BuildOperations, BuildProperties {
   }
 
   protected int calculatePagination(int numberOfJobs) {
-    int intermediate = numberOfJobs / TRAVIS_BUILD_RESULT_LIMIT;
-    if (numberOfJobs % TRAVIS_BUILD_RESULT_LIMIT > 0) {
+    int intermediate = numberOfJobs / TRAVIS_JOB_RESULT_LIMIT;
+    if (numberOfJobs % TRAVIS_JOB_RESULT_LIMIT > 0) {
       intermediate += 1;
     }
     return intermediate;
@@ -570,9 +571,9 @@ public class TravisService implements BuildOperations, BuildProperties {
 
   int getLimit(int page, int numberOfBuilds) {
     return page == calculatePagination(numberOfBuilds)
-            && (numberOfBuilds % TRAVIS_BUILD_RESULT_LIMIT > 0)
-        ? (numberOfBuilds % TRAVIS_BUILD_RESULT_LIMIT)
-        : TRAVIS_BUILD_RESULT_LIMIT;
+            && (numberOfBuilds % TRAVIS_JOB_RESULT_LIMIT > 0)
+        ? (numberOfBuilds % TRAVIS_JOB_RESULT_LIMIT)
+        : TRAVIS_JOB_RESULT_LIMIT;
   }
 
   private static String extractBranchFromRepoSlug(String inputRepoSlug) {

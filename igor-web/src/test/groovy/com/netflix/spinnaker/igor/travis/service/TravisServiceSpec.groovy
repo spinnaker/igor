@@ -59,7 +59,7 @@ class TravisServiceSpec extends Specification {
         client = Mock()
         travisCache = Mock()
         artifactDecorator = Optional.of(new ArtifactDecorator([new DebDetailsDecorator(), new RpmDetailsDecorator()], null))
-        service = new TravisService('travis-ci', 'http://my.travis.ci', 'someToken', TravisService.TRAVIS_BUILD_RESULT_LIMIT, client, travisCache, artifactDecorator, [], "travis.buildMessage", Permissions.EMPTY, false)
+        service = new TravisService('travis-ci', 'http://my.travis.ci', 'someToken', TravisService.TRAVIS_JOB_RESULT_LIMIT, client, travisCache, artifactDecorator, [], "travis.buildMessage", Permissions.EMPTY, false)
 
         AccessToken accessToken = new AccessToken()
         accessToken.accessToken = "someToken"
@@ -106,7 +106,7 @@ class TravisServiceSpec extends Specification {
 
 
         def listOfJobs = (1..numberOfJobs).collect { createJob(it) }
-        def partitionedJobs = listOfJobs.collate(TravisService.TRAVIS_BUILD_RESULT_LIMIT).collect { partition ->
+        def partitionedJobs = listOfJobs.collate(TravisService.TRAVIS_JOB_RESULT_LIMIT).collect { partition ->
             V3Jobs jobs = new V3Jobs()
             jobs.jobs = partition
             return jobs
@@ -122,7 +122,7 @@ class TravisServiceSpec extends Specification {
                 [TravisBuildState.passed, TravisBuildState.started, TravisBuildState.errored, TravisBuildState.failed, TravisBuildState.canceled].join(","),
                 "job.build,build.log_complete",
                 service.getLimit(page, numberOfJobs),
-                (page - 1) * TravisService.TRAVIS_BUILD_RESULT_LIMIT) >> partitionedJobs[page - 1]
+                (page - 1) * TravisService.TRAVIS_JOB_RESULT_LIMIT) >> partitionedJobs[page - 1]
         }
         builds.size() == numberOfJobs
 
