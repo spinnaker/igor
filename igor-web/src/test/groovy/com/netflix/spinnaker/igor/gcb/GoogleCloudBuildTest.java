@@ -39,7 +39,6 @@ import com.google.api.services.cloudbuild.v1.model.Operation;
 import com.google.api.services.cloudbuild.v1.model.RepoSource;
 import com.netflix.spinnaker.igor.RedisConfig;
 import com.netflix.spinnaker.igor.config.LockManagerConfig;
-import com.netflix.spinnaker.kork.web.exceptions.GenericExceptionHandlers;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -54,6 +53,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -67,13 +67,12 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 @RunWith(SpringRunner.class)
 @AutoConfigureMockMvc
 @EnableWebMvc
+@ComponentScan({"com.netflix.spinnaker.config", "com.netflix.spinnaker.igor"})
 @SpringBootTest(
     classes = {
       GoogleCloudBuildConfig.class,
-      GoogleCloudBuildController.class,
       RedisConfig.class,
       LockManagerConfig.class,
-      GenericExceptionHandlers.class,
       GoogleCloudBuildTestConfig.class
     })
 @TestPropertySource(properties = {"spring.config.location=classpath:gcb/gcb-test.yml"})
