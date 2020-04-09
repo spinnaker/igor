@@ -38,7 +38,6 @@ import com.netflix.spinnaker.igor.travis.client.model.AccessToken;
 import com.netflix.spinnaker.igor.travis.client.model.Build;
 import com.netflix.spinnaker.igor.travis.client.model.Builds;
 import com.netflix.spinnaker.igor.travis.client.model.Commit;
-import com.netflix.spinnaker.igor.travis.client.model.EmptyObject;
 import com.netflix.spinnaker.igor.travis.client.model.GithubAuth;
 import com.netflix.spinnaker.igor.travis.client.model.v3.Config;
 import com.netflix.spinnaker.igor.travis.client.model.v3.RepoRequest;
@@ -65,6 +64,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import net.logstash.logback.argument.StructuredArguments;
 import org.apache.commons.lang3.StringUtils;
+import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import retrofit.RetrofitError;
@@ -517,7 +517,7 @@ public class TravisService implements BuildOperations, BuildProperties {
 
   public void syncRepos() {
     try {
-      travisClient.usersSync(getAccessToken(), new EmptyObject());
+      travisClient.usersSync(getAccessToken(), new JSONObject());
     } catch (RetrofitError e) {
       log.error(
           "synchronizing travis repositories for {} failed with error: {}",
