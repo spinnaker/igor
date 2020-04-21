@@ -72,13 +72,13 @@ import retrofit.RetrofitError;
 public class TravisService implements BuildOperations, BuildProperties {
 
   static final int TRAVIS_JOB_RESULT_LIMIT = 100;
-  static final int TRAVIS_BUILD_RESULT_LIMIT = 10;
 
   private final Logger log = LoggerFactory.getLogger(getClass());
   private final String baseUrl;
   private final String groupKey;
   private final GithubAuth gitHubAuth;
   private final int numberOfJobs;
+  private final int buildResultLimit;
   private final TravisClient travisClient;
   private final TravisCache travisCache;
   private final Collection<String> artifactRegexes;
@@ -93,6 +93,7 @@ public class TravisService implements BuildOperations, BuildProperties {
       String baseUrl,
       String githubToken,
       int numberOfJobs,
+      int buildResultLimit,
       TravisClient travisClient,
       TravisCache travisCache,
       Optional<ArtifactDecorator> artifactDecorator,
@@ -101,6 +102,7 @@ public class TravisService implements BuildOperations, BuildProperties {
       Permissions permissions,
       boolean legacyLogFetching) {
     this.numberOfJobs = numberOfJobs;
+    this.buildResultLimit = buildResultLimit;
     this.groupKey = travisHostId;
     this.gitHubAuth = new GithubAuth(githubToken);
     this.travisClient = travisClient;
@@ -249,11 +251,7 @@ public class TravisService implements BuildOperations, BuildProperties {
     // Increasing the limit to increase the odds for finding some tag builds.
     V3Builds builds =
         travisClient.v3buildsByEventType(
-            getAccessToken(),
-            repoSlug,
-            "push",
-            TRAVIS_BUILD_RESULT_LIMIT * 2,
-            addLogCompleteIfApplicable());
+            getAccessToken(), repoSlug, "push", buildResultLimit * 2, addLogCompleteIfApplicable());
     return builds.getBuilds().stream()
         .filter(build -> build.getCommit().isTag())
         .filter(this::isLogReady)
@@ -278,7 +276,7 @@ public class TravisService implements BuildOperations, BuildProperties {
                 repoSlug,
                 branch,
                 "push",
-                TRAVIS_BUILD_RESULT_LIMIT,
+                buildResultLimit,
                 addLogCompleteIfApplicable());
         break;
       case pull_request:
@@ -288,17 +286,14 @@ public class TravisService implements BuildOperations, BuildProperties {
                 repoSlug,
                 branch,
                 "pull_request",
-                TRAVIS_BUILD_RESULT_LIMIT,
+                buildResultLimit,
                 addLogCompleteIfApplicable());
         break;
       case unknown:
       default:
         builds =
             travisClient.v3builds(
-                getAccessToken(),
-                repoSlug,
-                TRAVIS_BUILD_RESULT_LIMIT,
-                addLogCompleteIfApplicable());
+                getAccessToken(), repoSlug, buildResultLimit, addLogCompleteIfApplicable());
     }
 
     return builds.getBuilds().stream()

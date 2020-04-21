@@ -55,11 +55,13 @@ class TravisServiceSpec extends Specification {
     @Shared
     Optional<ArtifactDecorator> artifactDecorator
 
+    private static int TRAVIS_BUILD_RESULT_LIMIT = 10;
+
     void setup() {
         client = Mock()
         travisCache = Mock()
         artifactDecorator = Optional.of(new ArtifactDecorator([new DebDetailsDecorator(), new RpmDetailsDecorator()], null))
-        service = new TravisService('travis-ci', 'http://my.travis.ci', 'someToken', TravisService.TRAVIS_JOB_RESULT_LIMIT, client, travisCache, artifactDecorator, [], "travis.buildMessage", Permissions.EMPTY, false)
+        service = new TravisService('travis-ci', 'http://my.travis.ci', 'someToken', TravisService.TRAVIS_JOB_RESULT_LIMIT, TRAVIS_BUILD_RESULT_LIMIT, client, travisCache, artifactDecorator, [], "travis.buildMessage", Permissions.EMPTY, false)
 
         AccessToken accessToken = new AccessToken()
         accessToken.accessToken = "someToken"
@@ -99,7 +101,7 @@ class TravisServiceSpec extends Specification {
     @Unroll
     def "getLatestBuilds() with #numberOfJobs jobs should query Travis #expectedNumberOfPages time(s)"() {
         given:
-        service = new TravisService('travis-ci', 'http://my.travis.ci', 'someToken', numberOfJobs, client, travisCache, artifactDecorator, [], "travis.buildMessage", Permissions.EMPTY, false)
+        service = new TravisService('travis-ci', 'http://my.travis.ci', 'someToken', numberOfJobs, TRAVIS_BUILD_RESULT_LIMIT, client, travisCache, artifactDecorator, [], "travis.buildMessage", Permissions.EMPTY, false)
         AccessToken accessToken = new AccessToken()
         accessToken.accessToken = "someToken"
         service.accessToken = accessToken
@@ -303,7 +305,7 @@ class TravisServiceSpec extends Specification {
                 ])],
             content: "log"
         ])
-        service = new TravisService('travis-ci', 'http://my.travis.ci', 'someToken', 25, client, travisCache, artifactDecorator, [], "travis.buildMessage", Permissions.EMPTY, legacyLogFetching)
+        service = new TravisService('travis-ci', 'http://my.travis.ci', 'someToken', 25, TRAVIS_BUILD_RESULT_LIMIT, client, travisCache, artifactDecorator, [], "travis.buildMessage", Permissions.EMPTY, legacyLogFetching)
         AccessToken accessToken = new AccessToken()
         accessToken.accessToken = "someToken"
         service.accessToken = accessToken
@@ -312,7 +314,7 @@ class TravisServiceSpec extends Specification {
         def genericBuilds = service.getBuilds("my/slug")
 
         then:
-        1 * client.v3builds("token someToken", "my/slug", TravisService.TRAVIS_BUILD_RESULT_LIMIT,
+        1 * client.v3builds("token someToken", "my/slug", TRAVIS_BUILD_RESULT_LIMIT,
             legacyLogFetching ? null : "build.log_complete") >> new V3Builds([builds: [build]])
         (isLogCompleteFlag ? 0 : 1) * travisCache.getJobLog("travis-ci", 2) >> (isLogCached ? "log" : null)
         (!isLogCompleteFlag && !isLogCached ? 1 : 0) * client.jobLog("token someToken", 2) >> v3log
