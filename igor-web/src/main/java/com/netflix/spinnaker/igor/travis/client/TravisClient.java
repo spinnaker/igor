@@ -19,6 +19,7 @@ package com.netflix.spinnaker.igor.travis.client;
 
 import com.netflix.spinnaker.igor.travis.client.model.AccessToken;
 import com.netflix.spinnaker.igor.travis.client.model.Builds;
+import com.netflix.spinnaker.igor.travis.client.model.EmptyObject;
 import com.netflix.spinnaker.igor.travis.client.model.GithubAuth;
 import com.netflix.spinnaker.igor.travis.client.model.v3.RepoRequest;
 import com.netflix.spinnaker.igor.travis.client.model.v3.Request;
@@ -28,7 +29,6 @@ import com.netflix.spinnaker.igor.travis.client.model.v3.V3Build;
 import com.netflix.spinnaker.igor.travis.client.model.v3.V3Builds;
 import com.netflix.spinnaker.igor.travis.client.model.v3.V3Jobs;
 import com.netflix.spinnaker.igor.travis.client.model.v3.V3Log;
-import org.json.simple.JSONObject;
 import retrofit.client.Response;
 import retrofit.http.Body;
 import retrofit.http.GET;
@@ -68,7 +68,7 @@ public interface TravisClient {
 
   @POST("/users/sync")
   public abstract Response usersSync(
-      @Header("Authorization") String accessToken, @Body JSONObject empty);
+      @Header("Authorization") String accessToken, @Body EmptyObject empty);
 
   @Headers({"Travis-API-Version: 3", "Accept: text/plain"})
   @GET("/job/{jobId}/log")
