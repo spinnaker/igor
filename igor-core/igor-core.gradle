@@ -1,6 +1,7 @@
 dependencies {
   implementation "com.netflix.spinnaker.kork:kork-artifacts"
   implementation "com.netflix.spinnaker.kork:kork-core"
+  api "com.netflix.spinnaker.kork:kork-plugins"
 
   // TODO(rz): Get rid of this dependency!
   implementation "io.reactivex:rxjava"
