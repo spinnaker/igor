@@ -66,11 +66,13 @@ public class PluginsBuildMonitor
 
   @Override
   protected void commitDelta(PluginPollingDelta delta, boolean sendEvents) {
+    log.info("Found {} new plugin releases", delta.items.size());
     delta.items.forEach(
         item -> {
           if (sendEvents) {
             postEvent(item.pluginRelease);
-            log.debug("{} event posted", item.pluginRelease);
+          } else {
+            log.debug("{} processed, but not sending event", item.pluginRelease);
           }
         });
 
@@ -90,6 +92,7 @@ public class PluginsBuildMonitor
     } else if (release != null) {
       AuthenticatedRequest.allowAnonymous(
           () -> echoService.get().postEvent(new PluginEvent(release)));
+      log.debug("{} event posted", release);
     }
   }
 
