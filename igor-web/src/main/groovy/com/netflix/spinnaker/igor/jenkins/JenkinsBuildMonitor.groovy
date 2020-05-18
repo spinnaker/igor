@@ -200,8 +200,11 @@ class JenkinsBuildMonitor extends CommonPollingMonitor<JobDelta, JobPollingDelta
                     if (sendEvents) {
                         postEvent(new Project(name: job.name, lastBuild: build), master)
                         log.debug("[${master}:${job.name}]:${build.number} event posted")
-                        cache.setEventPosted(master, job.name, job.cursor, build.number)
+                    } else {
+                      registry.counter(missedNotificationId.withTags("monitor", getClass().simpleName, "reason", "fastForward")).increment()
                     }
+
+                    cache.setEventPosted(master, job.name, job.cursor, build.number)
                 }
             }
 
