@@ -201,7 +201,7 @@ class JenkinsBuildMonitor extends CommonPollingMonitor<JobDelta, JobPollingDelta
                         postEvent(new Project(name: job.name, lastBuild: build), master)
                         log.debug("[${master}:${job.name}]:${build.number} event posted")
                     } else {
-                      registry.counter(missedNotificationId.withTags("monitor", getClass().simpleName, "reason", "fastForward")).increment()
+                      registry.counter(missedNotificationId.withTags("monitor", getName(), "reason", "fastForward")).increment()
                     }
 
                     cache.setEventPosted(master, job.name, job.cursor, build.number)
@@ -226,7 +226,7 @@ class JenkinsBuildMonitor extends CommonPollingMonitor<JobDelta, JobPollingDelta
     private void postEvent(Project project, String master) {
         if (!echoService.isPresent()) {
             log.warn("Cannot send build notification: Echo is not configured")
-            registry.counter(missedNotificationId.withTag("monitor", getClass().simpleName)).increment()
+            registry.counter(missedNotificationId.withTag("monitor", getName())).increment()
             return
         }
         AuthenticatedRequest.allowAnonymous {
