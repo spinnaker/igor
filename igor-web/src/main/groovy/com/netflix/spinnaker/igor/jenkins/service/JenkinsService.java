@@ -232,12 +232,14 @@ public class JenkinsService implements BuildOperations, BuildProperties {
         .execute();
   }
 
-  public QueuedJob queuedBuild(Integer item) {
+  @Override
+  public QueuedJob queuedBuild(String master, int item) {
     try {
       return jenkinsClient.getQueuedItem(item);
     } catch (RetrofitError e) {
       if (e.getResponse() != null && e.getResponse().getStatus() == NOT_FOUND.value()) {
-        throw new NotFoundException("Queued job '${item}' not found for master '${master}'.");
+        throw new NotFoundException(
+            String.format("Queued job '%s' not found for master '%s'.", item, master));
       }
       throw e;
     }
