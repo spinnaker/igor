@@ -28,7 +28,7 @@ class TravisBuildStateSpec extends Specification {
     travisBuildState.getResult() == expectedResult
 
     where:
-    travisBuildState          || expectedResult
+    travisBuildState         || expectedResult
     TravisBuildState.started || Result.BUILDING
     TravisBuildState.passed  || Result.SUCCESS
     TravisBuildState.errored || Result.FAILURE
@@ -40,7 +40,7 @@ class TravisBuildStateSpec extends Specification {
     travisBuildState.isRunning() == expectedResult
 
     where:
-    travisBuildState          || expectedResult
+    travisBuildState         || expectedResult
     TravisBuildState.started || true
     TravisBuildState.created || true
     TravisBuildState.passed  || false
