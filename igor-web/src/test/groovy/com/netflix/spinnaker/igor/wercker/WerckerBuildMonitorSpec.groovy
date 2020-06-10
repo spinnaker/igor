@@ -43,10 +43,8 @@ class WerckerBuildMonitorSpec extends Specification {
     }
 
     final MASTER = 'MASTER'
-//    final pipeline = 'myOrg/myApp/pollingTest'
 
     BuildServices mockBuildServices() {
-//        cache.getJobNames(MASTER) >> ['pipeline']
         BuildServices buildServices = new BuildServices()
         buildServices.addServices([MASTER: mockService])
         return buildServices
