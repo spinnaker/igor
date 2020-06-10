@@ -37,6 +37,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import org.springframework.core.Ordered
+import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.security.web.firewall.StrictHttpFirewall
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
@@ -51,6 +52,7 @@ import java.util.concurrent.Executors
 @CompileStatic
 @Slf4j
 @EnableFiatAutoConfig
+@EnableScheduling
 @Import(PluginsAutoConfiguration.class)
 class IgorConfig extends WebMvcConfigurerAdapter {
     @Autowired
