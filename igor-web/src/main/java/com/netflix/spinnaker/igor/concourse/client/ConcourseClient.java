@@ -97,7 +97,10 @@ public class ConcourseClient {
                 });
 
     this.clusterInfoService =
-        tokenRestBuilder
+        new RestAdapter.Builder()
+            .setEndpoint(host)
+            .setClient(new OkClient(okHttpClient))
+            .setConverter(jacksonConverter)
             .setLog(new Slf4jRetrofitLogger(ClusterInfoService.class))
             .build()
             .create(ClusterInfoService.class);
