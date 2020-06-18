@@ -82,6 +82,7 @@ public class TravisService implements BuildOperations, BuildProperties {
   private final GithubAuth gitHubAuth;
   private final int numberOfJobs;
   private final int buildResultLimit;
+  private Collection<String> filteredRepositories;
   private final TravisClient travisClient;
   private final TravisCache travisCache;
   private final Collection<String> artifactRegexes;
@@ -98,6 +99,7 @@ public class TravisService implements BuildOperations, BuildProperties {
       String githubToken,
       int numberOfJobs,
       int buildResultLimit,
+      Collection<String> filteredRepositories,
       TravisClient travisClient,
       TravisCache travisCache,
       Optional<ArtifactDecorator> artifactDecorator,
@@ -110,6 +112,7 @@ public class TravisService implements BuildOperations, BuildProperties {
     this.buildResultLimit = buildResultLimit;
     this.groupKey = travisHostId;
     this.gitHubAuth = new GithubAuth(githubToken);
+    this.filteredRepositories = filteredRepositories;
     this.travisClient = travisClient;
     this.baseUrl = baseUrl;
     this.travisCache = travisCache;
@@ -316,6 +319,11 @@ public class TravisService implements BuildOperations, BuildProperties {
   }
 
   public List<V3Build> getLatestBuilds() {
+
+    if (!filteredRepositories.isEmpty()) {
+      return getBuildsForSpecificRepos(filteredRepositories);
+    }
+
     Map<V3Build, List<V3Job>> jobs =
         getJobs(
                 numberOfJobs,
@@ -335,6 +343,19 @@ public class TravisService implements BuildOperations, BuildProperties {
               build.setJobs(entry.getValue());
               return build;
             })
+        .collect(Collectors.toList());
+  }
+
+  private List<V3Build> getBuildsForSpecificRepos(Collection<String> repositories) {
+    return repositories
+        .parallelStream()
+        .map(
+            repoSlug -> {
+              log.info("fetching builds for repo: {}", repoSlug);
+              return travisClient.v3builds(
+                  getAccessToken(), repoSlug, buildResultLimit, addLogCompleteIfApplicable());
+            })
+        .flatMap(builds -> builds.getBuilds().stream())
         .collect(Collectors.toList());
   }
 
