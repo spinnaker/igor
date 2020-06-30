@@ -1,5 +1,5 @@
 ext {
-  springConfigLocation = System.getProperty('spring.config.additional-location', "${System.getProperty('user.home')}/.spinnaker/")
+  springConfigLocation = System.getProperty('spring.config.additional-location', "${System.getProperty('user.home')}/.spinnaker/".toString())
 }
 
 apply plugin: 'io.spinnaker.package'
@@ -19,6 +19,7 @@ dependencies {
     implementation project(":igor-core")
     implementation project(":igor-monitor-artifactory")
     implementation project(":igor-monitor-plugins")
+    implementation project(":igor-monitor-travis")
 
     implementation platform("com.netflix.spinnaker.kork:kork-bom:$korkVersion")
     compileOnly "org.projectlombok:lombok"
@@ -47,7 +48,6 @@ dependencies {
     implementation "com.fasterxml.jackson.core:jackson-annotations"
     implementation "com.fasterxml.jackson.core:jackson-core"
     implementation "com.fasterxml.jackson.core:jackson-databind"
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310"
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-xml"
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml")
 
@@ -75,12 +75,10 @@ dependencies {
     implementation "com.netflix.spinnaker.kork:kork-web"
     implementation "com.netflix.spinnaker.kork:kork-jedis"
     implementation "com.netflix.spinnaker.kork:kork-telemetry"
-    implementation "com.netflix.spinnaker.kork:kork-hystrix"
     implementation "com.netflix.spinnaker.kork:kork-secrets-aws"
     implementation "com.netflix.spinnaker.kork:kork-secrets-gcp"
     implementation "com.netflix.spinnaker.kork:kork-plugins"
 
-    implementation "io.reactivex:rxjava"
     implementation "com.netflix.eureka:eureka-client"
     implementation "io.github.resilience4j:resilience4j-retry"
 
