@@ -33,9 +33,26 @@ public interface ArtifactService {
 
   /** Used to populate the manual trigger dropdown with options */
   @Nonnull
-  List<String> getArtifactVersions(@Nonnull String name, String releaseStatus);
+  List<String> getArtifactVersions(
+      @Nonnull String type, @Nonnull String name, String releaseStatus);
 
   /** Used to fetch a specific artifact for decorating a trigger */
   @Nonnull
-  Artifact getArtifact(@Nonnull String name, @Nonnull String version);
+  Artifact getArtifact(@Nonnull String type, @Nonnull String name, @Nonnull String version);
+
+  /**
+   * Used to populate the manual trigger dropdown with options (backwards-compatibility for Debian)
+   */
+  @Nonnull
+  default List<String> getArtifactVersions(@Nonnull String name, String releaseStatus) {
+    return getArtifactVersions("deb", name, releaseStatus);
+  }
+
+  /**
+   * Used to fetch a specific artifact for decorating a trigger (backwards-compatibility for Debian)
+   */
+  @Nonnull
+  default Artifact getArtifact(@Nonnull String name, @Nonnull String version) {
+    return getArtifact("deb", name, version);
+  }
 }

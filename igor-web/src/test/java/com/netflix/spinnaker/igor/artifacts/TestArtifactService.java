@@ -31,7 +31,7 @@ public class TestArtifactService implements ArtifactService {
   }
 
   @Override
-  public List<String> getArtifactVersions(String name, String releaseStatus) {
+  public List<String> getArtifactVersions(String type, String name, String releaseStatus) {
     if (!name.equals("test")) {
       return Collections.emptyList();
     }
@@ -49,7 +49,7 @@ public class TestArtifactService implements ArtifactService {
   }
 
   @Override
-  public Artifact getArtifact(String name, String version) {
+  public Artifact getArtifact(String type, String name, String version) {
     if (!name.equals("test") && !version.equals("v0.4.0")) {
       throw new NotFoundException("Artifact not found");
     }
