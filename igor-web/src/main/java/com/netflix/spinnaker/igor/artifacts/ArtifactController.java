@@ -46,10 +46,10 @@ public class ArtifactController {
   public List<String> getVersions(
       @PathVariable("provider") String provider,
       @PathVariable("name") String name,
-      @RequestParam(value = "releaseStatus", required = false) String releaseStatus,
+      @RequestParam(value = "releaseStatus", required = false) List<String> releaseStatuses,
       @RequestParam(value = "type", required = false, defaultValue = "deb") String type) {
     ArtifactService artifactService = getService(provider);
-    return artifactService.getArtifactVersions(type, name, releaseStatus);
+    return artifactService.getArtifactVersions(type, name, releaseStatuses);
   }
 
   @GetMapping("/{provider}/{name}/{version:.+}")

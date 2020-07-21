@@ -31,18 +31,20 @@ public class TestArtifactService implements ArtifactService {
   }
 
   @Override
-  public List<String> getArtifactVersions(String type, String name, String releaseStatus) {
+  public List<String> getArtifactVersions(String type, String name, List<String> releaseStatuses) {
     if (!name.equals("test")) {
       return Collections.emptyList();
     }
     List<String> versions = new ArrayList<>();
-    if (releaseStatus == null || releaseStatus.isEmpty() || releaseStatus.contains("final")) {
+    if (releaseStatuses == null || releaseStatuses.isEmpty() || releaseStatuses.contains("final")) {
       versions.add("v0.1.0");
       versions.add("v0.2.0");
       versions.add("v0.3.0");
       versions.add("v0.4.0");
     }
-    if (releaseStatus == null || releaseStatus.isEmpty() || releaseStatus.contains("snapshot")) {
+    if (releaseStatuses == null
+        || releaseStatuses.isEmpty()
+        || releaseStatuses.contains("snapshot")) {
       versions.add("v0.5.0~SNAPSHOT");
     }
     return versions;
