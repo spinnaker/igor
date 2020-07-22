@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.netflix.spinnaker.igor.concourse.client.model.ClusterInfo;
 import com.netflix.spinnaker.igor.concourse.client.model.Token;
+import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger;
 import com.squareup.okhttp.OkHttpClient;
 import com.vdurmont.semver4j.Semver;
 import java.time.ZonedDateTime;
