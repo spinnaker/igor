@@ -341,7 +341,8 @@ public class ConcourseService implements BuildOperations, BuildProperties {
       return emptyList();
     }
 
-    return client.getBuildService()
+    return client
+        .getBuildService()
         .builds(
             job.getTeamName(),
             job.getPipelineName(),
