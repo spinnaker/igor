@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.stream.StreamSupport;
 import lombok.Data;
 
 @Data
@@ -50,12 +51,10 @@ public class Plan {
       Entry<String, JsonNode> f = fields.next();
 
       if (f.getValue().isArray()) {
-        for (int i = 0; i < f.getValue().size(); i++) {
-          JsonNode jsonNode = f.getValue().get(i);
-          if (jsonNode.isObject()) {
-            res.addAll(getResources((ObjectNode) jsonNode));
-          }
-        }
+        StreamSupport.stream(f.getValue().spliterator(), false)
+            .filter(JsonNode::isObject)
+            .map(jsonNode -> getResources((ObjectNode) jsonNode))
+            .forEach(res::addAll);
 
       } else if (f.getValue().isObject()) {
         res.addAll(getResources((ObjectNode) f.getValue()));
