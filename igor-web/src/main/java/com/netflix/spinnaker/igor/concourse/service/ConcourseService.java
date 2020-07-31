@@ -259,6 +259,8 @@ public class ConcourseService implements BuildOperations, BuildProperties {
 
     if (!resources.isEmpty()) {
       setResourceMetadata(buildId, resources);
+    } else {
+      log.warn("No resources retrieved for buildId: {}", buildId);
     }
 
     return resources.values();
@@ -344,7 +346,8 @@ public class ConcourseService implements BuildOperations, BuildProperties {
       return emptyList();
     }
 
-    return client.getBuildService()
+    return client
+        .getBuildService()
         .builds(
             job.getTeamName(),
             job.getPipelineName(),
