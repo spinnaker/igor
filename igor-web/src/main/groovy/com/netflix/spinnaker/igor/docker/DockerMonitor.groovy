@@ -16,7 +16,6 @@
 
 package com.netflix.spinnaker.igor.docker
 
-import com.netflix.discovery.DiscoveryClient
 import com.netflix.spectator.api.BasicTag
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.igor.IgorConfigurationProperties
@@ -33,10 +32,12 @@ import com.netflix.spinnaker.igor.polling.LockService
 import com.netflix.spinnaker.igor.polling.PollContext
 import com.netflix.spinnaker.igor.polling.PollingDelta
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
+import com.netflix.spinnaker.kork.discovery.DiscoveryStatusListener
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.security.AuthenticatedRequest
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.scheduling.TaskScheduler
 import org.springframework.stereotype.Service
 
 import java.util.concurrent.TimeUnit
@@ -58,14 +59,15 @@ class DockerMonitor extends CommonPollingMonitor<ImageDelta, DockerPollingDelta>
     DockerMonitor(IgorConfigurationProperties properties,
                   Registry registry,
                   DynamicConfigService dynamicConfigService,
-                  Optional<DiscoveryClient> discoveryClient,
-                  Optional<LockService> lockService,
+                  DiscoveryStatusListener discoveryStatusListener,
+                  Optional < LockService > lockService,
                   DockerRegistryCache cache,
                   DockerRegistryAccounts dockerRegistryAccounts,
                   Optional<EchoService> echoService,
                   Optional<KeelService> keelService,
-                  DockerRegistryProperties dockerRegistryProperties) {
-        super(properties, registry, dynamicConfigService, discoveryClient, lockService)
+                  DockerRegistryProperties dockerRegistryProperties,
+                  TaskScheduler scheduler) {
+        super(properties, registry, dynamicConfigService, discoveryStatusListener, lockService, scheduler)
         this.cache = cache
         this.dockerRegistryAccounts = dockerRegistryAccounts
         this.echoService = echoService

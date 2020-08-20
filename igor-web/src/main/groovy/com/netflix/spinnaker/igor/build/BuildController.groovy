@@ -27,7 +27,6 @@ import com.netflix.spinnaker.igor.service.ArtifactDecorator
 import com.netflix.spinnaker.igor.service.BuildOperations
 import com.netflix.spinnaker.igor.service.BuildProperties
 import com.netflix.spinnaker.igor.service.BuildServices
-import com.netflix.spinnaker.igor.travis.service.TravisService
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.kork.web.exceptions.NotFoundException
@@ -118,14 +117,7 @@ class BuildController {
     @PreAuthorize("hasPermission(#master, 'BUILD_SERVICE', 'READ')")
     Object getQueueLocation(@PathVariable String master, @PathVariable int item) {
         def buildService = getBuildService(master)
-        if (buildService instanceof JenkinsService) {
-            JenkinsService jenkinsService = (JenkinsService) buildService
-            return jenkinsService.queuedBuild(item)
-        } else if (buildService instanceof TravisService) {
-            TravisService travisService = (TravisService) buildService
-            return travisService.queuedBuild(item)
-        }
-        throw new UnsupportedOperationException(String.format("Queued builds are not supported for build service %s", master))
+        return buildService.queuedBuild(master, item);
     }
 
     @RequestMapping(value = '/builds/all/{master:.+}/**')
@@ -152,19 +144,19 @@ class BuildController {
             if (buildNumber != 0 &&
                 buildService.metaClass.respondsTo(buildService, 'stopRunningBuild')) {
                 buildService.stopRunningBuild(jobName, buildNumber)
-            }
-
-            // The jenkins api for removing a job from the queue (http://<Jenkins_URL>/queue/cancelItem?id=<queuedBuild>)
-            // always returns a 404. This try catch block insures that the exception is eaten instead
-            // of being handled by the handleOtherException handler and returning a 500 to orca
-            try {
+            } else {
+              // The jenkins api for removing a job from the queue (http://<Jenkins_URL>/queue/cancelItem?id=<queuedBuild>)
+              // always returns a 404. This try catch block insures that the exception is eaten instead
+              // of being handled by the handleOtherException handler and returning a 500 to orca
+              try {
                 if (buildService.metaClass.respondsTo(buildService, 'stopQueuedBuild')) {
-                    buildService.stopQueuedBuild(queuedBuild)
+                  buildService.stopQueuedBuild(queuedBuild)
                 }
-            } catch (RetrofitError e) {
+              } catch (RetrofitError e) {
                 if (e.response?.status != NOT_FOUND.value()) {
-                    throw e
+                  throw e
                 }
+              }
             }
         }
 

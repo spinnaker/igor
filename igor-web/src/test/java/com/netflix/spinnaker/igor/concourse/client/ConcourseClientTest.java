@@ -24,8 +24,7 @@ import org.junit.jupiter.api.Test;
 class ConcourseClientTest {
   @Test
   void connectException() {
-    ConcourseClient client = new ConcourseClient("http://does.not.exist", "test", "test");
-    assertThatThrownBy(() -> client.getJobService().jobs())
+    assertThatThrownBy(() -> new ConcourseClient("http://does.not.exist", "test", "test"))
         .hasRootCauseInstanceOf(UnknownHostException.class);
   }
 }

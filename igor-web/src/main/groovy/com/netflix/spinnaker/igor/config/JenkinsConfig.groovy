@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import com.fasterxml.jackson.module.jaxb.JaxbAnnotationModule
+import com.jakewharton.retrofit.Ok3Client
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.fiat.model.resources.Permissions
 import com.netflix.spinnaker.igor.IgorConfigurationProperties
@@ -30,11 +31,11 @@ import com.netflix.spinnaker.igor.config.client.JenkinsRetrofitRequestIntercepto
 import com.netflix.spinnaker.igor.jenkins.client.JenkinsClient
 import com.netflix.spinnaker.igor.jenkins.service.JenkinsService
 import com.netflix.spinnaker.igor.service.BuildServices
-import com.netflix.spinnaker.okhttp.OkHttpMetricsInterceptor
 import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger
-import com.squareup.okhttp.OkHttpClient
+import okhttp3.OkHttpClient
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -70,8 +71,8 @@ class JenkinsConfig {
 
     @Bean
     @ConditionalOnMissingBean
-    JenkinsOkHttpClientProvider jenkinsOkHttpClientProvider() {
-        return new DefaultJenkinsOkHttpClientProvider()
+    JenkinsOkHttpClientProvider jenkinsOkHttpClientProvider(OkHttpClient okHttpClient) {
+        return new DefaultJenkinsOkHttpClientProvider(okHttpClient)
     }
 
     @Bean
@@ -86,7 +87,8 @@ class JenkinsConfig {
                                                @Valid JenkinsProperties jenkinsProperties,
                                                JenkinsOkHttpClientProvider jenkinsOkHttpClientProvider,
                                                JenkinsRetrofitRequestInterceptorProvider jenkinsRetrofitRequestInterceptorProvider,
-                                               Registry registry) {
+                                               Registry registry,
+                                               CircuitBreakerRegistry circuitBreakerRegistry) {
         log.info "creating jenkinsMasters"
         Map<String, JenkinsService> jenkinsMasters = jenkinsProperties?.masters?.collectEntries { JenkinsProperties.JenkinsHost host ->
             log.info "bootstrapping ${host.address} as ${host.name}"
@@ -100,7 +102,8 @@ class JenkinsConfig {
                     igorConfigurationProperties.client.timeout
                 ),
                 host.csrf,
-                host.permissions.build()
+                host.permissions.build(),
+                circuitBreakerRegistry
             )]
         }
 
@@ -108,8 +111,14 @@ class JenkinsConfig {
         jenkinsMasters
     }
 
-    static JenkinsService jenkinsService(String jenkinsHostId, JenkinsClient jenkinsClient, Boolean csrf, Permissions permissions) {
-        return new JenkinsService(jenkinsHostId, jenkinsClient, csrf, permissions)
+    static JenkinsService jenkinsService(
+      String jenkinsHostId,
+      JenkinsClient jenkinsClient,
+      Boolean csrf,
+      Permissions permissions,
+      CircuitBreakerRegistry circuitBreakerRegistry
+    ) {
+        return new JenkinsService(jenkinsHostId, jenkinsClient, csrf, permissions, circuitBreakerRegistry)
     }
 
     static ObjectMapper getObjectMapper() {
@@ -123,12 +132,13 @@ class JenkinsConfig {
                                        RequestInterceptor requestInterceptor,
                                        Registry registry,
                                        int timeout = 30000) {
-        client.setReadTimeout(timeout, TimeUnit.MILLISECONDS)
+
+        OkHttpClient.Builder clientBuilder = client.newBuilder().readTimeout(timeout, TimeUnit.MILLISECONDS)
 
         if (host.skipHostnameVerification) {
-            client.setHostnameVerifier({ hostname, _ ->
-                true
-            })
+          clientBuilder.hostnameVerifier({ hostname, _ ->
+            true
+          })
         }
 
         TrustManager[] trustManagers = null
@@ -166,13 +176,7 @@ class JenkinsConfig {
             def sslContext = SSLContext.getInstance("TLS")
             sslContext.init(keyManagers, trustManagers, null)
 
-            client.setSslSocketFactory(sslContext.socketFactory)
-        }
-
-        if (registry == null) {
-            log.warn("no registry provided, OkHttpMetricsInterceptor will not be created for JenkinsClient")
-        } else {
-            client.interceptors().add(new OkHttpMetricsInterceptor({ -> registry }, true))
+            clientBuilder.sslSocketFactory(sslContext.socketFactory,(X509TrustManager)  trustManagers[0])
         }
 
         new RestAdapter.Builder()
@@ -185,7 +189,7 @@ class JenkinsConfig {
                 }
             })
             .setLogLevel(RestAdapter.LogLevel.BASIC)
-            .setClient(new OkClient(client))
+            .setClient(new Ok3Client(clientBuilder.build()))
             .setConverter(new JacksonConverter(getObjectMapper()))
             .setLog(new Slf4jRetrofitLogger(JenkinsClient))
             .build()

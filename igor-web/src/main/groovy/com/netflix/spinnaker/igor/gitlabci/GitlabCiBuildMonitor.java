@@ -17,7 +17,6 @@ package com.netflix.spinnaker.igor.gitlabci;
 
 import static net.logstash.logback.argument.StructuredArguments.kv;
 
-import com.netflix.discovery.DiscoveryClient;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.igor.IgorConfigurationProperties;
 import com.netflix.spinnaker.igor.build.BuildCache;
@@ -38,6 +37,7 @@ import com.netflix.spinnaker.igor.polling.LockService;
 import com.netflix.spinnaker.igor.polling.PollContext;
 import com.netflix.spinnaker.igor.polling.PollingDelta;
 import com.netflix.spinnaker.igor.service.BuildServices;
+import com.netflix.spinnaker.kork.discovery.DiscoveryStatusListener;
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
 import java.util.ArrayList;
@@ -49,6 +49,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -68,13 +69,20 @@ public class GitlabCiBuildMonitor
       IgorConfigurationProperties properties,
       Registry registry,
       DynamicConfigService dynamicConfigService,
-      Optional<DiscoveryClient> discoveryClient,
+      DiscoveryStatusListener discoveryStatusListener,
       Optional<LockService> lockService,
       BuildCache buildCache,
       BuildServices buildServices,
       GitlabCiProperties gitlabCiProperties,
-      Optional<EchoService> echoService) {
-    super(properties, registry, dynamicConfigService, discoveryClient, lockService);
+      Optional<EchoService> echoService,
+      TaskScheduler scheduler) {
+    super(
+        properties,
+        registry,
+        dynamicConfigService,
+        discoveryStatusListener,
+        lockService,
+        scheduler);
     this.buildCache = buildCache;
     this.buildServices = buildServices;
     this.gitlabCiProperties = gitlabCiProperties;
@@ -105,8 +113,7 @@ public class GitlabCiBuildMonitor
         kv("master", master));
 
     List<BuildDelta> delta = new ArrayList<>();
-    projects
-        .parallelStream()
+    projects.parallelStream()
         .forEach(
             project -> {
               List<Pipeline> pipelines =
@@ -141,9 +148,7 @@ public class GitlabCiBuildMonitor
     final GitlabCiService gitlabCiService =
         (GitlabCiService) buildServices.getService(delta.master);
 
-    delta
-        .items
-        .parallelStream()
+    delta.items.parallelStream()
         .forEach(
             item -> {
               log.info(

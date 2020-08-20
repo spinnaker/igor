@@ -17,15 +17,15 @@ package com.netflix.spinnaker.igor.polling;
 
 import static java.lang.String.format;
 
-import com.netflix.appinfo.InstanceInfo.InstanceStatus;
-import com.netflix.discovery.DiscoveryClient;
 import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.igor.IgorConfigurationProperties;
+import com.netflix.spinnaker.kork.discovery.DiscoveryStatusListener;
+import com.netflix.spinnaker.kork.discovery.RemoteStatusChangedEvent;
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
-import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.annotation.Nullable;
@@ -33,8 +33,8 @@ import javax.annotation.PreDestroy;
 import net.logstash.logback.argument.StructuredArguments;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rx.Scheduler;
-import rx.schedulers.Schedulers;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.support.PeriodicTrigger;
 
 public abstract class CommonPollingMonitor<I extends DeltaItem, T extends PollingDelta<I>>
     implements PollingMonitor, PollAccess {
@@ -42,45 +42,31 @@ public abstract class CommonPollingMonitor<I extends DeltaItem, T extends Pollin
   protected final IgorConfigurationProperties igorProperties;
   protected final Registry registry;
   protected final Id missedNotificationId;
-  private final Optional<DiscoveryClient> discoveryClient;
+  private final DiscoveryStatusListener discoveryStatusListener;
   private final AtomicLong lastPoll = new AtomicLong();
   private final Id itemsCachedId;
   private final Id itemsOverThresholdId;
   private final Id pollCycleFailedId;
   private final Id pollCycleTimingId;
   private final Optional<LockService> lockService;
+  private ScheduledFuture<?> monitor;
   protected Logger log = LoggerFactory.getLogger(getClass());
-  protected Scheduler.Worker worker;
+  protected TaskScheduler scheduler;
   protected final DynamicConfigService dynamicConfigService;
 
   public CommonPollingMonitor(
       IgorConfigurationProperties igorProperties,
       Registry registry,
       DynamicConfigService dynamicConfigService,
-      Optional<DiscoveryClient> discoveryClient,
-      Optional<LockService> lockService) {
-    this(
-        igorProperties,
-        registry,
-        dynamicConfigService,
-        discoveryClient,
-        lockService,
-        Schedulers.io());
-  }
-
-  public CommonPollingMonitor(
-      IgorConfigurationProperties igorProperties,
-      Registry registry,
-      DynamicConfigService dynamicConfigService,
-      Optional<DiscoveryClient> discoveryClient,
+      DiscoveryStatusListener discoveryStatusListener,
       Optional<LockService> lockService,
-      Scheduler scheduler) {
+      TaskScheduler scheduler) {
     this.igorProperties = igorProperties;
     this.registry = registry;
     this.dynamicConfigService = dynamicConfigService;
-    this.discoveryClient = discoveryClient;
+    this.discoveryStatusListener = discoveryStatusListener;
     this.lockService = lockService;
-    this.worker = scheduler.createWorker();
+    this.scheduler = scheduler;
 
     itemsCachedId = registry.createId("pollingMonitor.newItems");
     itemsOverThresholdId = registry.createId("pollingMonitor.itemsOverThreshold");
@@ -97,32 +83,31 @@ public abstract class CommonPollingMonitor<I extends DeltaItem, T extends Pollin
     }
 
     initialize();
-    worker.schedulePeriodically(
-        () ->
-            registry
-                .timer(pollCycleTimingId.withTag("monitor", getClass().getSimpleName()))
-                .record(
-                    () -> {
-                      if (isInService()) {
-                        poll(true);
-                        lastPoll.set(System.currentTimeMillis());
-                      } else {
-                        log.info(
-                            "not in service (lastPoll: {})",
-                            (lastPoll == null) ? "n/a" : lastPoll.toString());
-                        lastPoll.set(0);
-                      }
-                    }),
-        0,
-        getPollInterval(),
-        TimeUnit.SECONDS);
+    this.monitor =
+        scheduler.schedule(
+            () ->
+                registry
+                    .timer(pollCycleTimingId.withTag("monitor", getClass().getSimpleName()))
+                    .record(
+                        () -> {
+                          if (isInService()) {
+                            poll(true);
+                            lastPoll.set(System.currentTimeMillis());
+                          } else {
+                            log.info(
+                                "not in service (lastPoll: {})",
+                                (lastPoll.get() == 0) ? "n/a" : lastPoll.toString());
+                            lastPoll.set(0);
+                          }
+                        }),
+            new PeriodicTrigger(getPollInterval(), TimeUnit.SECONDS));
   }
 
   @PreDestroy
   void stop() {
     log.info("Stopped");
-    if (!worker.isUnsubscribed()) {
-      worker.unsubscribe();
+    if (monitor != null && !monitor.isDone()) {
+      monitor.cancel(false);
     }
   }
 
@@ -252,14 +237,7 @@ public abstract class CommonPollingMonitor<I extends DeltaItem, T extends Pollin
       return false;
     }
 
-    if (discoveryClient.isPresent()) {
-      InstanceStatus remoteStatus = discoveryClient.get().getInstanceRemoteStatus();
-      log.info("current remote status {}", remoteStatus);
-      return remoteStatus == InstanceStatus.UP;
-    }
-
-    log.info("no DiscoveryClient, assuming InService");
-    return true;
+    return discoveryStatusListener.isEnabled();
   }
 
   @Override
@@ -283,9 +261,5 @@ public abstract class CommonPollingMonitor<I extends DeltaItem, T extends Pollin
 
   protected @Nullable Integer getPartitionUpperThreshold(String partition) {
     return null;
-  }
-
-  public void setWorker(Scheduler.Worker worker) {
-    this.worker = worker;
   }
 }

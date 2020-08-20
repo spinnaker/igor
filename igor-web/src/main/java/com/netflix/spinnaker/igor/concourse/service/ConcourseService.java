@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.igor.concourse.service;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.groupingBy;
@@ -45,6 +46,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -70,8 +72,18 @@ public class ConcourseService implements BuildOperations, BuildProperties {
 
   public ConcourseService(
       ConcourseProperties.Host host, Optional<ArtifactDecorator> artifactDecorator) {
+    this(
+        new ConcourseClient(host.getUrl(), host.getUsername(), host.getPassword()),
+        host,
+        artifactDecorator);
+  }
+
+  protected ConcourseService(
+      ConcourseClient client,
+      ConcourseProperties.Host host,
+      Optional<ArtifactDecorator> artifactDecorator) {
     this.host = host;
-    this.client = new ConcourseClient(host.getUrl(), host.getUsername(), host.getPassword());
+    this.client = client;
     this.resourceFilter =
         host.getResourceFilterRegex() == null
             ? null
@@ -136,7 +148,8 @@ public class ConcourseService implements BuildOperations, BuildProperties {
   public GenericBuild getGenericBuild(String jobPath, int buildNumber) {
     return getBuilds(jobPath, null).stream()
         .filter(build -> build.getNumber() == buildNumber)
-        .findAny()
+        .sorted()
+        .findFirst()
         .map(build -> getGenericBuild(jobPath, build, true))
         .orElse(null);
   }
@@ -160,7 +173,7 @@ public class ConcourseService implements BuildOperations, BuildProperties {
             + "/jobs/"
             + job.getName()
             + "/builds/"
-            + b.getNumber());
+            + b.getDecimalNumber());
     build.setTimestamp(Long.toString(b.getStartTime() * 1000));
 
     if (!fetchResources) {
@@ -199,16 +212,20 @@ public class ConcourseService implements BuildOperations, BuildProperties {
             gitResourceName -> {
               Map<String, String> git = mergedMetadataByResourceName.remove(gitResourceName);
               if (git != null && !git.isEmpty()) {
+                String sha1 = git.get("commit");
                 String message = git.get("message");
                 String timestamp = git.get("committer_date");
+                String branch =
+                    isNullOrEmpty(git.get("branch")) ? sha1.substring(0, 7) : git.get("branch");
+
                 build.setGenericGitRevisions(
                     Collections.singletonList(
                         GenericGitRevision.builder()
                             .committer(git.get("committer"))
-                            .branch(git.get("branch"))
-                            .name(git.get("branch"))
+                            .branch(branch)
+                            .name(branch)
                             .message(message == null ? null : message.trim())
-                            .sha1(git.get("commit"))
+                            .sha1(sha1)
                             .timestamp(
                                 timestamp == null
                                     ? null
@@ -242,6 +259,8 @@ public class ConcourseService implements BuildOperations, BuildProperties {
 
     if (!resources.isEmpty()) {
       setResourceMetadata(buildId, resources);
+    } else {
+      log.warn("No resources retrieved for buildId: {}", buildId);
     }
 
     return resources.values();
@@ -334,7 +353,15 @@ public class ConcourseService implements BuildOperations, BuildProperties {
             job.getPipelineName(),
             job.getName(),
             host.getBuildLookbackLimit(),
-            since);
+            since)
+        .stream()
+        .sorted()
+        .collect(
+            Collectors.toMap(
+                (b) -> b.getNumber(), Function.identity(), (b1, b2) -> b1, LinkedHashMap::new))
+        .values()
+        .stream()
+        .collect(Collectors.toList());
   }
 
   public List<String> getResourceNames(String team, String pipeline) {
@@ -363,6 +390,6 @@ public class ConcourseService implements BuildOperations, BuildProperties {
   private void refreshTokenIfNecessary() {
     // returns a 401 on expired/invalid token, which because of retry logic causes the token to be
     // refreshed.
-    client.getSkyService().userInfo();
+    client.userInfo();
   }
 }

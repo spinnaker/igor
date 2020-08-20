@@ -16,7 +16,6 @@
 
 package com.netflix.spinnaker.igor.concourse;
 
-import com.netflix.discovery.DiscoveryClient;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.igor.IgorConfigurationProperties;
 import com.netflix.spinnaker.igor.build.model.GenericBuild;
@@ -28,8 +27,13 @@ import com.netflix.spinnaker.igor.config.ConcourseProperties;
 import com.netflix.spinnaker.igor.history.EchoService;
 import com.netflix.spinnaker.igor.history.model.GenericBuildContent;
 import com.netflix.spinnaker.igor.history.model.GenericBuildEvent;
-import com.netflix.spinnaker.igor.polling.*;
+import com.netflix.spinnaker.igor.polling.CommonPollingMonitor;
+import com.netflix.spinnaker.igor.polling.DeltaItem;
+import com.netflix.spinnaker.igor.polling.LockService;
+import com.netflix.spinnaker.igor.polling.PollContext;
+import com.netflix.spinnaker.igor.polling.PollingDelta;
 import com.netflix.spinnaker.igor.service.BuildServices;
+import com.netflix.spinnaker.kork.discovery.DiscoveryStatusListener;
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
 import java.util.Date;
@@ -42,6 +46,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -59,13 +64,20 @@ public class ConcourseBuildMonitor
       IgorConfigurationProperties properties,
       Registry registry,
       DynamicConfigService dynamicConfigService,
-      Optional<DiscoveryClient> discoveryClient,
+      DiscoveryStatusListener discoveryStatusListener,
       Optional<LockService> lockService,
       Optional<EchoService> echoService,
       BuildServices buildServices,
       ConcourseCache cache,
-      ConcourseProperties concourseProperties) {
-    super(properties, registry, dynamicConfigService, discoveryClient, lockService);
+      ConcourseProperties concourseProperties,
+      TaskScheduler scheduler) {
+    super(
+        properties,
+        registry,
+        dynamicConfigService,
+        discoveryStatusListener,
+        lockService,
+        scheduler);
     this.buildServices = buildServices;
     this.cache = cache;
     this.concourseProperties = concourseProperties;

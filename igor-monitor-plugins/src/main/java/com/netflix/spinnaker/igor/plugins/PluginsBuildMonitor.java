@@ -16,14 +16,18 @@
  */
 package com.netflix.spinnaker.igor.plugins;
 
-import com.netflix.discovery.DiscoveryClient;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.igor.IgorConfigurationProperties;
 import com.netflix.spinnaker.igor.history.EchoService;
 import com.netflix.spinnaker.igor.plugins.front50.PluginReleaseService;
 import com.netflix.spinnaker.igor.plugins.model.PluginEvent;
 import com.netflix.spinnaker.igor.plugins.model.PluginRelease;
-import com.netflix.spinnaker.igor.polling.*;
+import com.netflix.spinnaker.igor.polling.CommonPollingMonitor;
+import com.netflix.spinnaker.igor.polling.DeltaItem;
+import com.netflix.spinnaker.igor.polling.LockService;
+import com.netflix.spinnaker.igor.polling.PollContext;
+import com.netflix.spinnaker.igor.polling.PollingDelta;
+import com.netflix.spinnaker.kork.discovery.DiscoveryStatusListener;
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
 import java.time.Instant;
@@ -32,6 +36,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.Data;
+import org.springframework.scheduling.TaskScheduler;
 
 public class PluginsBuildMonitor
     extends CommonPollingMonitor<
@@ -45,12 +50,19 @@ public class PluginsBuildMonitor
       IgorConfigurationProperties igorProperties,
       Registry registry,
       DynamicConfigService dynamicConfigService,
-      Optional<DiscoveryClient> discoveryClient,
+      DiscoveryStatusListener discoveryStatusListener,
       Optional<LockService> lockService,
       PluginReleaseService pluginInfoService,
       PluginCache cache,
-      Optional<EchoService> echoService) {
-    super(igorProperties, registry, dynamicConfigService, discoveryClient, lockService);
+      Optional<EchoService> echoService,
+      TaskScheduler scheduler) {
+    super(
+        igorProperties,
+        registry,
+        dynamicConfigService,
+        discoveryStatusListener,
+        lockService,
+        scheduler);
     this.pluginInfoService = pluginInfoService;
     this.cache = cache;
     this.echoService = echoService;
@@ -59,7 +71,7 @@ public class PluginsBuildMonitor
   @Override
   protected PluginPollingDelta generateDelta(PollContext ctx) {
     return new PluginPollingDelta(
-        pluginInfoService.getPluginReleasesSince(cache.getLastPollCycleTimestamp()).stream()
+        pluginInfoService.getPluginReleasesSinceTimestamps(cache.listLastPollCycles()).stream()
             .map(PluginDelta::new)
             .collect(Collectors.toList()));
   }
@@ -67,19 +79,31 @@ public class PluginsBuildMonitor
   @Override
   protected void commitDelta(PluginPollingDelta delta, boolean sendEvents) {
     log.info("Found {} new plugin releases", delta.items.size());
-    delta.items.forEach(
-        item -> {
-          if (sendEvents) {
-            postEvent(item.pluginRelease);
-          } else {
-            log.debug("{} processed, but not sending event", item.pluginRelease);
-          }
-        });
 
+    // Group the items by their plugin ID, submitting each release (even if there are more than one
+    // per plugin ID).
+    // After submitting the events, the most recent plugin release date for each plugin ID is then
+    // used to update the
+    // cache's last poll cycle value.
     delta.items.stream()
-        .map(it -> Instant.parse(it.pluginRelease.getReleaseDate()))
-        .max(Comparator.naturalOrder())
-        .ifPresent(cache::setLastPollCycleTimestamp);
+        .collect(Collectors.groupingBy(d -> d.pluginRelease.getPluginId()))
+        .forEach(
+            (pluginId, pluginDeltas) -> {
+              pluginDeltas.forEach(
+                  item -> {
+                    if (sendEvents) {
+                      postEvent(item.pluginRelease);
+                    } else {
+                      log.debug("{} processed, but not sending event", item.pluginRelease);
+                    }
+                  });
+
+              pluginDeltas.stream()
+                  // Already validated this release is going to be valid, so not error checking.
+                  .map(it -> Instant.parse(it.pluginRelease.getReleaseDate()))
+                  .max(Comparator.naturalOrder())
+                  .ifPresent(ts -> cache.setLastPollCycle(pluginId, ts));
+            });
   }
 
   private void postEvent(PluginRelease release) {

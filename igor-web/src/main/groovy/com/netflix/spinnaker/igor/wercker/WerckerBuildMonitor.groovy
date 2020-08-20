@@ -8,14 +8,15 @@
  */
 package com.netflix.spinnaker.igor.wercker
 
+import com.netflix.spinnaker.kork.discovery.DiscoveryStatusListener
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.security.AuthenticatedRequest
+import org.springframework.scheduling.TaskScheduler
 
 import static com.netflix.spinnaker.igor.wercker.model.Run.finishedAtComparator
 import static com.netflix.spinnaker.igor.wercker.model.Run.startedAtComparator
 import static net.logstash.logback.argument.StructuredArguments.kv
 
-import com.netflix.discovery.DiscoveryClient
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.igor.IgorConfigurationProperties
 import com.netflix.spinnaker.igor.build.model.GenericBuild
@@ -65,14 +66,15 @@ class WerckerBuildMonitor extends CommonPollingMonitor<PipelineDelta, PipelinePo
       IgorConfigurationProperties properties,
       Registry registry,
       DynamicConfigService dynamicConfigService,
-      Optional<DiscoveryClient> discoveryClient,
-      Optional<LockService> lockService,
+      DiscoveryStatusListener discoveryStatusListener,
+      Optional < LockService > lockService,
       WerckerCache cache,
       BuildServices buildServices,
       @Value('${wercker.polling.enabled:true}') boolean pollingEnabled,
       Optional<EchoService> echoService,
-      WerckerProperties werckerProperties) {
-        super(properties, registry, dynamicConfigService, discoveryClient, lockService)
+      WerckerProperties werckerProperties,
+      TaskScheduler scheduler) {
+        super(properties, registry, dynamicConfigService, discoveryStatusListener, lockService, scheduler)
         this.cache = cache
         this.buildServices = buildServices
         this.pollingEnabled = pollingEnabled
@@ -99,14 +101,6 @@ class WerckerBuildMonitor extends CommonPollingMonitor<PipelineDelta, PipelinePo
         }
         )
         log.info "WerckerBuildMonitor Polling cycle done in ${System.currentTimeMillis() - startTime}ms"
-    }
-
-    @PreDestroy
-    void stop() {
-        log.info('Stopped')
-        if (!worker.isUnsubscribed()) {
-            worker.unsubscribe()
-        }
     }
 
     /**

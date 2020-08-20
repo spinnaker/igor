@@ -26,6 +26,7 @@ import com.netflix.spinnaker.igor.config.ConcourseProperties;
 import com.netflix.spinnaker.igor.history.EchoService;
 import com.netflix.spinnaker.igor.service.ArtifactDecorator;
 import com.netflix.spinnaker.igor.service.BuildServices;
+import com.netflix.spinnaker.kork.discovery.DiscoveryStatusListener;
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
 import com.squareup.okhttp.mockwebserver.MockResponse;
 import com.squareup.okhttp.mockwebserver.MockWebServer;
@@ -33,7 +34,7 @@ import java.util.Collections;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import rx.schedulers.Schedulers;
+import org.springframework.scheduling.TaskScheduler;
 
 class ConcourseBuildMonitorTest {
   private ArtifactDecorator artifactDecorator = mock(ArtifactDecorator.class);
@@ -45,7 +46,12 @@ class ConcourseBuildMonitorTest {
   private MockWebServer mockConcourse = new MockWebServer();
 
   @BeforeEach
-  void before() {
+  void before() throws Exception {
+    mockConcourse.enqueue(
+        new MockResponse()
+            .setBody("{\"version\": \"6.0.0\"}")
+            .setHeader("Content-Type", "application/json;charset=utf-8"));
+
     ConcourseProperties.Host host = new ConcourseProperties.Host();
     host.setName("test");
     host.setUrl(mockConcourse.url("").toString());
@@ -64,14 +70,13 @@ class ConcourseBuildMonitorTest {
             igorConfigurationProperties,
             new NoopRegistry(),
             new DynamicConfigService.NoopDynamicConfig(),
-            Optional.empty(),
+            new DiscoveryStatusListener(true),
             Optional.empty(),
             Optional.of(echoService),
             buildServices,
             cache,
-            props);
-
-    this.monitor.setWorker(Schedulers.immediate().createWorker());
+            props,
+            mock(TaskScheduler.class));
   }
 
   @Test

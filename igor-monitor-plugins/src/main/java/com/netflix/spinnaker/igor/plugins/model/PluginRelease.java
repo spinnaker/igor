@@ -20,32 +20,52 @@ import java.util.List;
 
 public class PluginRelease {
   private final String pluginId;
+  private final String description;
+  private final String provider;
   private final String version;
   private final String releaseDate;
-  private final List<ServiceRequirement> requires;
+  private final String requires;
+  private final List<ServiceRequirement> parsedRequires;
   private final String binaryUrl;
+  private final String sha512sum;
   private final boolean preferred;
   private final String lastModified;
 
   public PluginRelease(
       String pluginId,
+      String description,
+      String provider,
       String version,
       String releaseDate,
-      List<ServiceRequirement> requires,
+      String requires,
+      List<ServiceRequirement> parsedRequires,
       String binaryUrl,
+      String sha512sum,
       boolean preferred,
       String lastModified) {
     this.pluginId = pluginId;
+    this.description = description;
+    this.provider = provider;
     this.version = version;
     this.releaseDate = releaseDate;
     this.requires = requires;
+    this.parsedRequires = parsedRequires;
     this.binaryUrl = binaryUrl;
+    this.sha512sum = sha512sum;
     this.preferred = preferred;
     this.lastModified = lastModified;
   }
 
   public String getPluginId() {
     return pluginId;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public String getProvider() {
+    return provider;
   }
 
   public String getVersion() {
@@ -56,12 +76,20 @@ public class PluginRelease {
     return releaseDate;
   }
 
-  public List<ServiceRequirement> getRequires() {
+  public String getRequires() {
     return requires;
+  }
+
+  public List<ServiceRequirement> getParsedRequires() {
+    return parsedRequires;
   }
 
   public String getBinaryUrl() {
     return binaryUrl;
+  }
+
+  public String getSha512sum() {
+    return sha512sum;
   }
 
   public boolean isPreferred() {
