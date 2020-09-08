@@ -150,8 +150,8 @@ class DockerMonitorSpec extends Specification {
       assert artifacts[0].name == "repository"
       assert artifacts[0].type == "DOCKER"
       assert artifacts[0].metadata.tag == "new-tag"
-      assert artifacts[0].metadata.buildNumber == null
-      assert artifacts[0].metadata.commitId == null
+      assert artifacts[0].metadata.containsKey("buildNumber") == false
+      assert artifacts[0].metadata.containsKey("commitId") == false
       return true
     })
   }
