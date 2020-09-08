@@ -105,7 +105,8 @@ class DockerMonitorSpec extends Specification {
             account: "account",
             registry: "registry",
             repository: "repository",
-            digest: "digest"
+            digest: "digest",
+            newtLabels: ["buildNumber": "111", "commitId": "ab12c3"]
         )
 
         when:
@@ -125,6 +126,8 @@ class DockerMonitorSpec extends Specification {
           assert artifacts.size() == 1
           assert artifacts[0].name == "repository"
           assert artifacts[0].type == "DOCKER"
+          assert artifacts[0].metadata.buildNumber == "111"
+          assert artifacts[0].metadata.commitId == "ab12c3"
           return true
         })
     }
