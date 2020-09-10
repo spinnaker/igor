@@ -147,7 +147,7 @@ class JenkinsConfig {
             if (host.trustStore.equals("*")) {
                 trustManagers = [new TrustAllTrustManager()]
             } else {
-                trustManagers = createTrustStore(host.trustStorePassword, host.trustStoreType, host.trustStore)
+                trustManagers = createTrustStore(host.trustStore, host.trustStorePassword, host.trustStoreType)
             }
         }
 
