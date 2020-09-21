@@ -22,7 +22,6 @@ import com.netflix.spinnaker.igor.PendingOperationsCache
 import com.netflix.spinnaker.igor.artifacts.ArtifactExtractor
 import com.netflix.spinnaker.igor.build.model.GenericBuild
 import com.netflix.spinnaker.igor.exceptions.BuildJobError
-import com.netflix.spinnaker.igor.exceptions.BuildOperationPendingException
 import com.netflix.spinnaker.igor.exceptions.QueuedJobDeterminationError
 import com.netflix.spinnaker.igor.jenkins.client.model.JobConfig
 import com.netflix.spinnaker.igor.jenkins.service.JenkinsService
@@ -36,6 +35,7 @@ import com.netflix.spinnaker.kork.web.exceptions.NotFoundException
 import com.netflix.spinnaker.security.AuthenticatedRequest
 import groovy.transform.InheritConstructors
 import groovy.util.logging.Slf4j
+import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
@@ -172,7 +172,7 @@ class BuildController {
 
   @RequestMapping(value = '/masters/{name}/jobs/**', method = RequestMethod.PUT)
   @PreAuthorize("hasPermission(#master, 'BUILD_SERVICE', 'WRITE')")
-  String build(
+  ResponseEntity<String> build(
     @PathVariable("name") String master,
     @RequestParam Map<String, String> requestParams, HttpServletRequest request) {
     def job = ((String) request.getAttribute(
@@ -183,11 +183,11 @@ class BuildController {
 
     PendingOperationsCache.OperationState pendingStatus = pendingOperationsCache.getAndSetOperationStatus(pendingKey, PendingOperationsCache.OperationStatus.PENDING, "")
     if (pendingStatus.status == PendingOperationsCache.OperationStatus.PENDING) {
-      throw new BuildOperationPendingException(master, job)
+      return ResponseEntity.accepted().build()
     }
     if (pendingStatus.status == PendingOperationsCache.OperationStatus.COMPLETED && !Strings.isNullOrEmpty(pendingStatus.value)) {
       pendingOperationsCache.clear(pendingKey)
-      return pendingStatus.value
+      return ResponseEntity.of(Optional.of(pendingStatus.value))
     }
 
     try {
@@ -235,7 +235,7 @@ class BuildController {
       pendingOperationsCache.setOperationStatus(pendingKey, PendingOperationsCache.OperationStatus.COMPLETED, buildNumber)
     }
 
-    return buildNumber
+    return ResponseEntity.of(Optional.of(buildNumber))
   }
 
   static void validateJobParameters(JobConfig jobConfig, Map<String, String> requestParams) {

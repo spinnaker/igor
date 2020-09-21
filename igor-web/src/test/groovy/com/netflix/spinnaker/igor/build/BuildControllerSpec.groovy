@@ -370,7 +370,6 @@ class BuildControllerSpec extends Specification {
 
     then:
     response.status == HttpStatus.ACCEPTED.value()
-    response.errorMessage.contains("already pending")
   }
 
   void "resets the cache once the build status has been retrieved"() {
