@@ -1,11 +1,11 @@
 /*
- * Copyright 2016 Google, Inc.
+ * Copyright 2020 Apple, Inc.
  *
- * Licensed under the Apache License, Version 2.0 (the "License")
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,18 +14,13 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.igor.docker.service
+package com.netflix.spinnaker.igor.helm.model;
 
-import lombok.Data
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-@Data
-class TaggedImage {
-    String account
-    String digest
-    String registry
-    String repository
-    String tag
-    String buildNumber
-    String commitId
-    String date
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class HelmEntry {
+  public String digest;
+  public String name;
+  public String version;
 }
