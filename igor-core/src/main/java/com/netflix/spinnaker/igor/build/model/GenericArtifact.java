@@ -41,6 +41,14 @@ public class GenericArtifact {
     this.name = name;
     this.version = version;
     this.reference = reference;
+    this.fileName = String.format("%s:%s", name, version);
+  }
+
+  public GenericArtifact withUrl(String registry) {
+    String url = String.format("https://%s/v2/%s/blobs/%s", registry, name, reference);
+    this.displayPath = url;
+    this.url = url;
+    return this;
   }
 
   private String fileName;
@@ -50,6 +58,7 @@ public class GenericArtifact {
   private String name;
   private String type;
   private String version;
+  private String url;
   private Map<String, String> metadata;
   private boolean decorated;
 }

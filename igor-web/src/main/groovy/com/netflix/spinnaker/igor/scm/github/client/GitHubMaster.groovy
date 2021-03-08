@@ -18,6 +18,7 @@ package com.netflix.spinnaker.igor.scm.github.client
 
 
 import com.netflix.spinnaker.igor.scm.AbstractScmMaster
+import com.netflix.spinnaker.igor.scm.github.client.model.Commit
 import com.netflix.spinnaker.igor.scm.github.client.model.GetRepositoryContentResponse
 import com.netflix.spinnaker.kork.web.exceptions.NotFoundException
 import groovy.util.logging.Slf4j
@@ -75,4 +76,12 @@ class GitHubMaster extends AbstractScmMaster {
     }
   }
 
+  @Override
+  Commit getCommitDetails(String projectKey, String repositorySlug, String sha) {
+    try {
+      return gitHubClient.commitInfo(projectKey, repositorySlug, sha)
+    }catch (Exception e) {
+      throw e
+    }
+  }
 }

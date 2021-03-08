@@ -49,6 +49,21 @@ public class GenericBuild {
 
   private Map<String, ?> properties;
 
+  public GenericBuild withGitInfo(List<GenericGitRevision> revs) {
+    genericGitRevisions = revs;
+    return this;
+  }
+
+  public GenericBuild withProperties(Map<String, ?> properties) {
+    this.properties = properties;
+    return this;
+  }
+
+  public GenericBuild withArtifacts(List<GenericArtifact> artifacts) {
+    this.artifacts = artifacts;
+    return this;
+  }
+
   @Data
   @AllArgsConstructor
   @NoArgsConstructor
