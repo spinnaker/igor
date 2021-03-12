@@ -44,8 +44,7 @@ public class GenericArtifact {
     this.fileName = String.format("%s:%s", name, version);
   }
 
-  public GenericArtifact withUrl(String registry) {
-    String url = String.format("https://%s/v2/%s/blobs/%s", registry, name, reference);
+  public GenericArtifact withUrl(String url) {
     this.displayPath = url;
     this.url = url;
     return this;

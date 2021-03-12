@@ -78,10 +78,6 @@ class GitHubMaster extends AbstractScmMaster {
 
   @Override
   Commit getCommitDetails(String projectKey, String repositorySlug, String sha) {
-    try {
-      return gitHubClient.commitInfo(projectKey, repositorySlug, sha)
-    }catch (Exception e) {
-      throw e
-    }
+    return gitHubClient.commitInfo(projectKey, repositorySlug, sha)
   }
 }
