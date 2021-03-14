@@ -48,7 +48,7 @@ public class GenericGitRevision {
     return this;
   }
 
-  public GenericGitRevision withLink(String link) {
+  public GenericGitRevision withCompareUrl(String link) {
     this.compareUrl = link;
     return this;
   }
