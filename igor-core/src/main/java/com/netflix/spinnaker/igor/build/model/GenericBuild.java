@@ -24,11 +24,13 @@ import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.Wither;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Wither
 public class GenericBuild {
   private boolean building;
   private String fullDisplayName;
@@ -48,21 +50,6 @@ public class GenericBuild {
   private List<GenericGitRevision> genericGitRevisions;
 
   private Map<String, ?> properties;
-
-  public GenericBuild withGitInfo(List<GenericGitRevision> revs) {
-    genericGitRevisions = revs;
-    return this;
-  }
-
-  public GenericBuild withProperties(Map<String, ?> properties) {
-    this.properties = properties;
-    return this;
-  }
-
-  public GenericBuild withArtifacts(List<GenericArtifact> artifacts) {
-    this.artifacts = artifacts;
-    return this;
-  }
 
   @Data
   @AllArgsConstructor

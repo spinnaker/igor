@@ -22,6 +22,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import lombok.experimental.Wither;
 
 @ToString
 @Data
@@ -29,6 +30,7 @@ import lombok.ToString;
 @AllArgsConstructor
 @Builder(toBuilder = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Wither
 public class GenericArtifact {
   public GenericArtifact(String fileName, String displayPath, String relativePath) {
     this.fileName = fileName;
@@ -42,12 +44,6 @@ public class GenericArtifact {
     this.version = version;
     this.reference = reference;
     this.fileName = String.format("%s:%s", name, version);
-  }
-
-  public GenericArtifact withUrl(String url) {
-    this.displayPath = url;
-    this.url = url;
-    return this;
   }
 
   private String fileName;

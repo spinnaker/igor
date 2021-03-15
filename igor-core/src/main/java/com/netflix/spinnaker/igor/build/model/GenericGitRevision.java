@@ -36,20 +36,4 @@ public class GenericGitRevision {
   private String message;
   private Instant timestamp;
   private String remoteUrl;
-
-  public GenericGitRevision withAuthorInfo(String committer, String message) {
-    this.committer = committer;
-    this.message = message;
-    return this;
-  }
-
-  public GenericGitRevision withTimestamp(Instant timestamp) {
-    this.timestamp = timestamp;
-    return this;
-  }
-
-  public GenericGitRevision withCompareUrl(String link) {
-    this.compareUrl = link;
-    return this;
-  }
 }
