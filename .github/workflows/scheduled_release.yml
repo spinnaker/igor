@@ -1,0 +1,57 @@
+name: Weekly Release
+
+on:
+  schedule:
+    # Every Tuesday at 10 PM UTC (2 PM PST)
+    - cron: "0 22 * * 2"
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch: {}
+
+env:
+  GRADLE_OPTS: -Dorg.gradle.daemon=false -Xmx2g -Xms2g
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: git fetch --prune --unshallow
+      - uses: actions/setup-java@v1
+        with:
+          java-version: 11
+      - uses: actions/cache@v1
+        with:
+          path: ~/.gradle
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle.kts') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Prepare changelog
+        id: changelog
+        uses: TriPSs/conventional-changelog-action@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          output-file: "false"
+          skip-version-file: "true"
+          skip-commit: "true"
+
+      - name: Release build
+        env:
+          BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
+          BINTRAY_API_KEY: ${{ secrets.BINTRAY_API_KEY }}
+          RELEASE_VERSION: ${{ steps.changelog.outputs.version }}
+        run: |
+          echo "Building release ${RELEASE_VERSION}"
+          ./gradlew --info -Pversion="${RELEASE_VERSION}" -PbintrayUser="${BINTRAY_USER}" -PbintrayKey="${BINTRAY_API_KEY}" -PbintrayPublishDebEnabled=false publish
+
+      - name: Create release
+        uses: actions/create-release@v1
+        if: ${{ steps.changelog.outputs.skipped == 'false' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.changelog.outputs.tag }}
+          release_name: ${{ github.event.repository.name }} ${{ steps.changelog.outputs.tag }}
+          body: ${{ steps.changelog.outputs.clean_changelog }}
+          draft: false
+          prerelease: true
