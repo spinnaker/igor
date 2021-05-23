@@ -19,7 +19,7 @@ package com.netflix.spinnaker.igor.scm.bitbucket
 import com.netflix.spinnaker.igor.config.BitBucketProperties
 import com.netflix.spinnaker.igor.scm.AbstractCommitController
 import com.netflix.spinnaker.igor.scm.bitbucket.client.BitBucketClient
-import com.netflix.spinnaker.igor.scm.bitbucket.client.BitBucketMaster
+import com.netflix.spinnaker.igor.scm.bitbucket.client.BitBucketController
 import com.netflix.spinnaker.igor.scm.bitbucket.client.model.Author
 import com.netflix.spinnaker.igor.scm.bitbucket.client.model.Commit
 import com.netflix.spinnaker.igor.scm.bitbucket.client.model.CompareCommitsResponse
@@ -44,7 +44,7 @@ class CommitControllerSpec extends Specification {
   def BITBUCKET_ADDRESS = "https://api.bitbucket.org"
 
   void setup() {
-    controller = new CommitController(executor: Executors.newSingleThreadExecutor(), bitBucketMaster: new BitBucketMaster(bitBucketClient: client, baseUrl : BITBUCKET_ADDRESS), bitBucketProperties: new BitBucketProperties(commitDisplayLength: 7))
+    controller = new CommitController(executor: Executors.newSingleThreadExecutor(), bitBucketController: new BitBucketController(bitBucketClient: client, baseUrl : BITBUCKET_ADDRESS), bitBucketProperties: new BitBucketProperties(commitDisplayLength: 7))
   }
 
   void 'missing query params'() {

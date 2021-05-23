@@ -508,7 +508,7 @@ public class TravisService implements BuildOperations, BuildProperties {
   }
 
   @Override
-  public Map<String, Integer> queuedBuild(String master, int queueId) {
+  public Map<String, Integer> queuedBuild(String controller, int queueId) {
     Map<String, Integer> queuedJob = travisCache.getQueuedJob(groupKey, queueId);
     Request requestResponse =
         travisClient.request(

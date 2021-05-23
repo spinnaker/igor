@@ -44,7 +44,7 @@ redis:
 #  newBuildGracePeriodSeconds: 10
 #
 #  Travis names are prefixed with travis- inside igor.
-#  masters:
+#  controllers:
 #    - name: ci # This will show as travis-ci inside spinnaker.
 #      baseUrl: https://travis-ci.com
 #      address: https://api.travis-ci.com

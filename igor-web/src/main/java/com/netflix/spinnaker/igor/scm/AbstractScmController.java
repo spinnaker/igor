@@ -18,7 +18,7 @@ package com.netflix.spinnaker.igor.scm;
 
 import java.util.List;
 
-public class AbstractScmMaster implements ScmMaster {
+public class AbstractScmController implements ScmController {
   public List<String> listDirectory(
       String projectKey, String repositorySlug, String path, String ref) {
     throw new UnsupportedOperationException("Not implemented");
@@ -30,7 +30,7 @@ public class AbstractScmMaster implements ScmMaster {
   }
 
   public String getTextFileContents(String projectKey, String repositorySlug, String path) {
-    return getTextFileContents(projectKey, repositorySlug, path, ScmMaster.DEFAULT_GIT_REF);
+    return getTextFileContents(projectKey, repositorySlug, path, ScmController.DEFAULT_GIT_REF);
   }
 
   public Object getCommitDetails(String projectKey, String repositorySlug, String commitSha) {

@@ -16,14 +16,14 @@
 
 package com.netflix.spinnaker.igor.scm.gitlab.client;
 
-import com.netflix.spinnaker.igor.scm.AbstractScmMaster;
+import com.netflix.spinnaker.igor.scm.AbstractScmController;
 
 /** Wrapper class for a collection of GitLab clients */
-public class GitLabMaster extends AbstractScmMaster {
+public class GitLabController extends AbstractScmController {
   private final GitLabClient gitLabClient;
   private final String baseUrl;
 
-  public GitLabMaster(GitLabClient gitLabClient, String baseUrl) {
+  public GitLabController(GitLabClient gitLabClient, String baseUrl) {
     this.gitLabClient = gitLabClient;
     this.baseUrl = baseUrl;
   }

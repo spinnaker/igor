@@ -99,36 +99,36 @@ public class TravisBuildMonitor
   public void poll(boolean sendEvents) {
     buildServices
         .getServiceNames(BuildServiceProvider.TRAVIS)
-        .forEach(master -> pollSingle(new PollContext(master, !sendEvents)));
+        .forEach(controller -> pollSingle(new PollContext(controller, !sendEvents)));
   }
 
   @Override
   protected BuildPollingDelta generateDelta(PollContext ctx) {
     final Instant startTime = Instant.now();
-    final String master = ctx.partitionName;
-    final TravisService travisService = (TravisService) buildServices.getService(master);
+    final String controller = ctx.partitionName;
+    final TravisService travisService = (TravisService) buildServices.getService(controller);
 
     List<BuildDelta> builds =
         travisService.getLatestBuilds().stream()
-            .flatMap(build -> createBuildDelta(master, travisService, build))
+            .flatMap(build -> createBuildDelta(controller, travisService, build))
             .collect(Collectors.toList());
 
     log.info(
         "({}) generateDelta: Took {}ms to generate polling delta. Polled {} builds.",
-        kv("master", master),
+        kv("controller", controller),
         Duration.between(startTime, Instant.now()).toMillis(),
         builds.size());
 
-    return BuildPollingDelta.builder().master(master).items(builds).build();
+    return BuildPollingDelta.builder().controller(controller).items(builds).build();
   }
 
   @Override
   protected void commitDelta(BuildPollingDelta delta, boolean sendEvents) {
     Instant startTime = Instant.now();
-    final String master = delta.getMaster();
-    final TravisService travisService = (TravisService) buildServices.getService(master);
+    final String controller = delta.getController();
+    final TravisService travisService = (TravisService) buildServices.getService(controller);
 
-    delta.getItems().forEach(item -> processBuild(sendEvents, master, travisService, item));
+    delta.getItems().forEach(item -> processBuild(sendEvents, controller, travisService, item));
 
     // Find id of processed builds
     Set<Integer> processedBuilds =
@@ -139,7 +139,7 @@ public class TravisBuildMonitor
 
     // Check for tracked builds that have fallen out of the tracking window (can happen for long
     // running Travis jobs)
-    buildCache.getTrackedBuilds(master).stream()
+    buildCache.getTrackedBuilds(controller).stream()
         .mapToInt(build -> Integer.parseInt(build.get("buildId")))
         .filter(id -> !processedBuilds.contains(id))
         .mapToObj(travisService::getV3Build)
@@ -151,19 +151,19 @@ public class TravisBuildMonitor
         .peek(
             build ->
                 log.info(
-                    "(master={}) Found tracked build missing from the API: {}:{}:{}. If you see this message a lot, "
+                    "(controller={}) Found tracked build missing from the API: {}:{}:{}. If you see this message a lot, "
                         + "consider increasing the 'travis.{}.numberOfJobs' property.",
-                    master,
+                    controller,
                     build.branchedRepoSlug(),
                     build.getNumber(),
                     build.getState(),
-                    master))
-        .flatMap(build -> createBuildDelta(master, travisService, build))
-        .forEach(buildDelta -> processBuild(sendEvents, master, travisService, buildDelta));
+                    controller))
+        .flatMap(build -> createBuildDelta(controller, travisService, build))
+        .forEach(buildDelta -> processBuild(sendEvents, controller, travisService, buildDelta));
 
     log.info(
         "({}) commitDelta: Took {}ms to commit polling delta",
-        kv("master", master),
+        kv("controller", controller),
         Duration.between(startTime, Instant.now()).toMillis());
 
     if (travisProperties.isRepositorySyncEnabled()) {
@@ -171,15 +171,16 @@ public class TravisBuildMonitor
       travisService.syncRepos();
       log.info(
           "({}) repositorySync: Took {}ms to sync repositories",
-          kv("master", master),
+          kv("controller", controller),
           Duration.between(startTime, Instant.now()).toMillis());
     }
   }
 
   private Stream<? extends BuildDelta> createBuildDelta(
-      String master, TravisService travisService, V3Build v3Build) {
+      String controller, TravisService travisService, V3Build v3Build) {
     int lastBuild =
-        buildCache.getLastBuild(master, v3Build.branchedRepoSlug(), v3Build.getState().isRunning());
+        buildCache.getLastBuild(
+            controller, v3Build.branchedRepoSlug(), v3Build.getState().isRunning());
     return Stream.of(v3Build)
         .filter(build -> !build.spinnakerTriggered())
         .filter(build -> build.getNumber() > lastBuild)
@@ -200,13 +201,13 @@ public class TravisBuildMonitor
   }
 
   private void processBuild(
-      boolean sendEvents, String master, TravisService travisService, BuildDelta item) {
+      boolean sendEvents, String controller, TravisService travisService, BuildDelta item) {
     V3Build build = item.getBuild();
     switch (build.getState()) {
       case created:
       case started:
         buildCache.setTracking(
-            master, build.getRepository().getSlug(), build.getId(), TRACKING_TTL);
+            controller, build.getRepository().getSlug(), build.getId(), TRACKING_TTL);
         break;
       case passed:
         if (!travisService.isLogReady(build)) {
@@ -214,21 +215,21 @@ public class TravisBuildMonitor
         }
         if (build.getNumber()
             > buildCache.getLastBuild(
-                master, build.getRepository().getSlug(), build.getState().isRunning())) {
+                controller, build.getRepository().getSlug(), build.getState().isRunning())) {
           buildCache.setLastBuild(
-              master,
+              controller,
               build.getRepository().getSlug(),
               build.getNumber(),
               build.getState().isRunning(),
               buildCacheJobTTLSeconds());
           if (sendEvents) {
-            sendEventForBuild(item, build.getRepository().getSlug(), master);
+            sendEventForBuild(item, build.getRepository().getSlug(), controller);
           }
         }
 
         if (build.getNumber() > item.previousBuildNum) {
           buildCache.setLastBuild(
-              master,
+              controller,
               build.branchedRepoSlug(),
               build.getNumber(),
               build.getState().isRunning(),
@@ -236,13 +237,13 @@ public class TravisBuildMonitor
         }
 
         if (sendEvents) {
-          sendEventForBuild(item, build.branchedRepoSlug(), master);
+          sendEventForBuild(item, build.branchedRepoSlug(), controller);
         }
         // Fall through
       case failed:
       case errored:
       case canceled:
-        buildCache.deleteTracking(master, build.getRepository().getSlug(), build.getId());
+        buildCache.deleteTracking(controller, build.getRepository().getSlug(), build.getId());
     }
   }
 
@@ -252,12 +253,12 @@ public class TravisBuildMonitor
   }
 
   private void sendEventForBuild(
-      final BuildDelta buildDelta, final String branchedSlug, String master) {
+      final BuildDelta buildDelta, final String branchedSlug, String controller) {
     if (!buildDelta.getBuild().spinnakerTriggered()) {
       if (echoService.isPresent()) {
         log.info(
             "({}) pushing event for: {}:{}",
-            kv("master", master),
+            kv("controller", controller),
             branchedSlug,
             buildDelta.getBuild().getNumber());
 
@@ -265,7 +266,7 @@ public class TravisBuildMonitor
 
         GenericBuildContent content = new GenericBuildContent();
         content.setProject(project);
-        content.setMaster(master);
+        content.setController(controller);
         content.setType("travis");
 
         GenericBuildEvent event = new GenericBuildEvent();
@@ -276,7 +277,7 @@ public class TravisBuildMonitor
         log.warn("Cannot send build event notification: Echo is not configured");
         log.info(
             "({}) unable to push event for: {}:{}",
-            kv("master", master),
+            kv("controller", controller),
             branchedSlug,
             buildDelta.getBuild().getNumber());
         registry.counter(missedNotificationId.withTag("monitor", getName())).increment();
@@ -290,7 +291,7 @@ public class TravisBuildMonitor
 
   @Override
   protected Integer getPartitionUpperThreshold(final String partition) {
-    return travisProperties.getMasters().stream()
+    return travisProperties.getControllers().stream()
         .filter(host -> host.getName().equals(partition))
         .findAny()
         .map(TravisProperties.TravisHost::getItemUpperThreshold)
@@ -300,7 +301,7 @@ public class TravisBuildMonitor
   @Getter
   @Builder
   public static class BuildPollingDelta implements PollingDelta<BuildDelta> {
-    private final String master;
+    private final String controller;
     private final List<BuildDelta> items;
   }
 

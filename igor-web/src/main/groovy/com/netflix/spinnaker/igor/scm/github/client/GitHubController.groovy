@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.igor.scm.github.client
 
 
-import com.netflix.spinnaker.igor.scm.AbstractScmMaster
+import com.netflix.spinnaker.igor.scm.AbstractScmController
 import com.netflix.spinnaker.igor.scm.github.client.model.Commit
 import com.netflix.spinnaker.igor.scm.github.client.model.GetRepositoryContentResponse
 import com.netflix.spinnaker.kork.web.exceptions.NotFoundException
@@ -30,7 +30,7 @@ import java.util.stream.Collectors
  * Wrapper class for a collection of GitHub clients
  */
 @Slf4j
-class GitHubMaster extends AbstractScmMaster {
+class GitHubController extends AbstractScmController {
 
   private static final String FILE_CONTENT_TYPE = "file";
 

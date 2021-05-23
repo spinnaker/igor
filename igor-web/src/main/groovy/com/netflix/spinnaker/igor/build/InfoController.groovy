@@ -53,9 +53,9 @@ class InfoController {
     @Autowired(required = false)
     GoogleCloudBuildProperties gcbProperties
 
-    @RequestMapping(value = '/masters', method = RequestMethod.GET)
+    @RequestMapping(value = '/controllers', method = RequestMethod.GET)
     @PostFilter("hasPermission(filterObject, 'BUILD_SERVICE', 'READ')")
-    List<String> listMasters(@RequestParam(value = "type", defaultValue = "") String type) {
+    List<String> listControllers(@RequestParam(value = "type", defaultValue = "") String type) {
 
         BuildServiceProvider providerType = (type == "") ? null : BuildServiceProvider.valueOf(type.toUpperCase())
         //Filter by provider type if it is specified
@@ -66,7 +66,15 @@ class InfoController {
         }
     }
 
-    @RequestMapping(value = '/buildServices', method = RequestMethod.GET)
+    @Deprecated(forRemoval = true)
+    @RequestMapping(value = '/masters', method = RequestMethod.GET)
+    @PostFilter("hasPermission(filterObject, 'BUILD_SERVICE', 'READ')")
+    List<String> listMasters(@RequestParam(value = "type", defaultValue = "") String type) {
+      return listControllers(type)
+    }
+
+
+  @RequestMapping(value = '/buildServices', method = RequestMethod.GET)
     List<BuildService> getAllBuildServices() {
       List<BuildService> allBuildServices = new ArrayList<>(buildServices.allBuildServices)
       // GCB accounts are not part of com.netflix.spinnaker.igor.service.BuildServices class.
@@ -77,12 +85,12 @@ class InfoController {
       return allBuildServices
     }
 
-    @RequestMapping(value = '/jobs/{master:.+}', method = RequestMethod.GET)
-    @PreAuthorize("hasPermission(#master, 'BUILD_SERVICE', 'READ')")
-    List<String> getJobs(@PathVariable String master) {
-        def buildService = buildServices.getService(master)
+    @RequestMapping(value = '/jobs/{controller:.+}', method = RequestMethod.GET)
+    @PreAuthorize("hasPermission(#controller, 'BUILD_SERVICE', 'READ')")
+    List<String> getJobs(@PathVariable String controller) {
+        def buildService = buildServices.getService(controller)
         if (buildService == null) {
-            throw new NotFoundException("Master '${master}' does not exist")
+            throw new NotFoundException("Controller '${controller}' does not exist")
         }
 
         if (buildService instanceof JenkinsService) {
@@ -109,18 +117,18 @@ class InfoController {
             WerckerService werckerService = (WerckerService) buildService
             return werckerService.getJobs()
         } else {
-            return buildCache.getJobNames(master)
+            return buildCache.getJobNames(controller)
         }
     }
 
-    @RequestMapping(value = '/jobs/{master:.+}/**')
-    @PreAuthorize("hasPermission(#master, 'BUILD_SERVICE', 'READ')")
-    Object getJobConfig(@PathVariable String master, HttpServletRequest request) {
+    @RequestMapping(value = '/jobs/{controller:.+}/**')
+    @PreAuthorize("hasPermission(#controller, 'BUILD_SERVICE', 'READ')")
+    Object getJobConfig(@PathVariable String controller, HttpServletRequest request) {
         def job = (String) request.getAttribute(
             HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).split('/').drop(3).join('/')
-        def service = buildServices.getService(master)
+        def service = buildServices.getService(controller)
         if (service == null) {
-            throw new NotFoundException("Master '${master}' does not exist")
+            throw new NotFoundException("Controller '${controller}' does not exist")
         }
         return service.getJobConfig(job)
     }

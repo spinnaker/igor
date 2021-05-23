@@ -21,7 +21,7 @@ import org.hibernate.validator.constraints.NotEmpty
 import org.springframework.boot.context.properties.ConfigurationProperties
 
 /**
- * Helper class to map masters in properties file into a validated property map
+ * Helper class to map controllers in properties file into a validated property map
  */
 @CompileStatic
 @ConfigurationProperties(prefix = 'stash')

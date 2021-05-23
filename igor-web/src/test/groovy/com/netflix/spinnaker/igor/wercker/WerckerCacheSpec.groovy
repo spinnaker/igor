@@ -26,8 +26,7 @@ class WerckerCacheSpec extends Specification {
     @Subject
     WerckerCache cache = new WerckerCache(redisClientDelegate, new IgorConfigurationProperties())
 
-    def master = 'testWerckerMaster'
-    def test = 'test'
+    def controller = 'testWerckerController'
     def pipeline = 'myOrg/myApp/myTestPipeline'
 
     void cleanup() {
@@ -38,15 +37,15 @@ class WerckerCacheSpec extends Specification {
     void 'lastPollCycleTimestamp get overridden'() {
         long now1 = System.currentTimeMillis();
         when:
-        cache.setLastPollCycleTimestamp(master, 'myOrg/myApp/myPipeline', now1)
+        cache.setLastPollCycleTimestamp(controller, 'myOrg/myApp/myPipeline', now1)
         then:
-        cache.getLastPollCycleTimestamp(master, 'myOrg/myApp/myPipeline') == now1
+        cache.getLastPollCycleTimestamp(controller, 'myOrg/myApp/myPipeline') == now1
 
         long now2 = System.currentTimeMillis();
         when:
-        cache.setLastPollCycleTimestamp(master, 'myOrg/myApp/myPipeline', now2)
+        cache.setLastPollCycleTimestamp(controller, 'myOrg/myApp/myPipeline', now2)
         then:
-        cache.getLastPollCycleTimestamp(master, 'myOrg/myApp/myPipeline') == now2
+        cache.getLastPollCycleTimestamp(controller, 'myOrg/myApp/myPipeline') == now2
     }
 
     void 'generates buildNumbers ordered by startedAt'() {
@@ -56,17 +55,17 @@ class WerckerCacheSpec extends Specification {
             new Run(id:"a",    createdAt: new Date(now-11)),
             new Run(id:"init"),
         ]
-        cache.updateBuildNumbers(master, pipeline, runs1)
+        cache.updateBuildNumbers(controller, pipeline, runs1)
 
         List<Run> runs2 = [
             new Run(id:"now", startedAt: new Date(now)),
             new Run(id:"d",   createdAt: new Date(now-1)),
             new Run(id:"c",   startedAt: new Date(now-2)),
         ]
-        cache.updateBuildNumbers(master, pipeline, runs2)
+        cache.updateBuildNumbers(controller, pipeline, runs2)
 
         expect:
-        cache.getBuildNumber(master, pipeline, runId) == buildNumber
+        cache.getBuildNumber(controller, pipeline, runId) == buildNumber
 
         where:
         runId  | buildNumber
@@ -85,17 +84,17 @@ class WerckerCacheSpec extends Specification {
             new Run(id:"x",    startedAt: new Date(now-11)),
             new Run(id:"zero", createdAt: new Date(now-12)),
         ]
-        cache.updateBuildNumbers(master, pipeline, runs1)
+        cache.updateBuildNumbers(controller, pipeline, runs1)
 
         List<Run> runs2 = [
             new Run(id:"latest", createdAt: new Date(now)),
             new Run(id:"4",      startedAt: new Date(now-1)),
             new Run(id:"3",      createdAt: new Date(now-2)),
         ]
-        cache.updateBuildNumbers(master, pipeline, runs2)
+        cache.updateBuildNumbers(controller, pipeline, runs2)
 
         expect:
-        cache.getBuildNumber(master, pipeline, runId) == buildNumber
+        cache.getBuildNumber(controller, pipeline, runId) == buildNumber
 
         where:
         runId    | buildNumber

@@ -42,19 +42,19 @@ public class ConcourseController {
     this.buildServices = buildServices;
   }
 
-  @GetMapping("/{buildMaster}/teams")
-  public List<String> getTeams(@PathVariable("buildMaster") String buildMaster) {
-    return getService(buildMaster)
+  @GetMapping("/{buildController}/teams")
+  public List<String> getTeams(@PathVariable("buildController") String buildController) {
+    return getService(buildController)
         .map(
             service ->
                 service.teams().stream().map(Team::getName).sorted().collect(Collectors.toList()))
         .orElse(emptyList());
   }
 
-  @GetMapping("/{buildMaster}/teams/{team}/pipelines")
+  @GetMapping("/{buildController}/teams/{team}/pipelines")
   public List<String> getPipelines(
-      @PathVariable("buildMaster") String buildMaster, @PathVariable("team") String team) {
-    return getService(buildMaster)
+      @PathVariable("buildController") String buildController, @PathVariable("team") String team) {
+    return getService(buildController)
         .map(
             service ->
                 service.pipelines().stream()
@@ -65,13 +65,13 @@ public class ConcourseController {
         .orElse(emptyList());
   }
 
-  @GetMapping("/{buildMaster}/teams/{team}/pipelines/{pipeline}/jobs")
+  @GetMapping("/{buildController}/teams/{team}/pipelines/{pipeline}/jobs")
   public List<String> getJobs(
-      @PathVariable("buildMaster") String buildMaster,
+      @PathVariable("buildController") String buildController,
       @PathVariable("team") String team,
       @PathVariable("pipeline") String pipeline) {
     // don't sort so that we leave the jobs in the order in which they appear in the pipeline
-    return getService(buildMaster)
+    return getService(buildController)
         .map(
             service ->
                 service.getJobs().stream()
@@ -82,12 +82,12 @@ public class ConcourseController {
         .orElse(emptyList());
   }
 
-  @GetMapping("/{buildMaster}/teams/{team}/pipelines/{pipeline}/resources")
+  @GetMapping("/{buildController}/teams/{team}/pipelines/{pipeline}/resources")
   public List<String> getResourceNames(
-      @PathVariable("buildMaster") String buildMaster,
+      @PathVariable("buildController") String buildController,
       @PathVariable("team") String team,
       @PathVariable("pipeline") String pipeline) {
-    return getService(buildMaster)
+    return getService(buildController)
         .map(
             service ->
                 service.getResourceNames(team, pipeline).stream()
@@ -96,7 +96,7 @@ public class ConcourseController {
         .orElse(emptyList());
   }
 
-  private Optional<ConcourseService> getService(String buildMaster) {
-    return Optional.ofNullable((ConcourseService) buildServices.getService(buildMaster));
+  private Optional<ConcourseService> getService(String buildController) {
+    return Optional.ofNullable((ConcourseService) buildServices.getService(buildController));
   }
 }

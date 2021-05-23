@@ -35,19 +35,19 @@ class WerckerBuildMonitorSpec extends Specification {
     WerckerService mockService = Mock(WerckerService)
     WerckerService werckerService
     String werckerDev = 'https://dev.wercker.com/'
-    String master = 'WerckerTestMaster'
+    String controller = 'WerckerTestController'
 
     void setup() {
         client = Mock(WerckerClient)
         werckerService = new WerckerService(
-                new WerckerHost(name: master, address: werckerDev), cache, client, Permissions.EMPTY)
+                new WerckerHost(name: controller, address: werckerDev), cache, client, Permissions.EMPTY)
     }
 
-    def MASTER = 'MASTER'
+    def CONTROLLER = 'CONTROLLER'
 
     BuildServices mockBuildServices() {
         BuildServices buildServices = new BuildServices()
-        buildServices.addServices([MASTER: mockService])
+        buildServices.addServices([CONTROLLER: mockService])
         return buildServices
     }
 
@@ -67,7 +67,7 @@ class WerckerBuildMonitorSpec extends Specification {
         mockService.getBuildServiceProvider() >> BuildServiceProvider.WERCKER
 
         when:
-        monitor.pollSingle(new PollContext(MASTER))
+        monitor.pollSingle(new PollContext(CONTROLLER))
 
         then: 'initial poll'
         0 * echoService.postEvent(_)
@@ -89,7 +89,7 @@ class WerckerBuildMonitorSpec extends Specification {
         mockService.getBuildServiceProvider() >> BuildServiceProvider.WERCKER
 
         when:
-        monitor.pollSingle(new PollContext(MASTER))
+        monitor.pollSingle(new PollContext(CONTROLLER))
 
         then: 'initial poll'
         1 * echoService.postEvent(_)
@@ -103,7 +103,7 @@ class WerckerBuildMonitorSpec extends Specification {
         mockService.getBuildServiceProvider() >> BuildServiceProvider.WERCKER
 
         when:
-        monitor.pollSingle(new PollContext(MASTER))
+        monitor.pollSingle(new PollContext(CONTROLLER))
 
         then: 'initial poll'
         0 * echoService.postEvent(_)
@@ -119,30 +119,30 @@ class WerckerBuildMonitorSpec extends Specification {
         cache.getLastPollCycleTimestamp(_, _) >> (now - 1000)
         1 * mockService.getRunsSince(_) >> [pipeline: runs1]
         cache.getBuildNumber(*_) >> 1
-        monitor.pollSingle(new PollContext(MASTER))
+        monitor.pollSingle(new PollContext(CONTROLLER))
 
         then:
-        1 * cache.setEventPosted('MASTER', 'pipeline', 'init')
+        1 * cache.setEventPosted('CONTROLLER', 'pipeline', 'init')
         1 * echoService.postEvent(_)
     }
 
     void 'get runs of multiple pipelines'() {
         setup:
         BuildServices buildServices = new BuildServices()
-        buildServices.addServices([MASTER: werckerService])
+        buildServices.addServices([CONTROLLER: werckerService])
         monitor = monitor(buildServices)
         cache.getBuildNumber(*_) >> 1
         client.getRunsSince(_, _, _, _, _) >> []
         mockService.getBuildServiceProvider() >> BuildServiceProvider.WERCKER
 
         when:
-        monitor.pollSingle(new PollContext(MASTER))
+        monitor.pollSingle(new PollContext(CONTROLLER))
 
         then: 'initial poll'
         0 * echoService.postEvent(_)
 
         when:
-        monitor.pollSingle(new PollContext(MASTER))
+        monitor.pollSingle(new PollContext(CONTROLLER))
 
         then:
         0 * echoService.postEvent(_)
@@ -172,14 +172,14 @@ class WerckerBuildMonitorSpec extends Specification {
         client.getRunsSince(_,_,_,_,_) >> runs1
         cache.getLastPollCycleTimestamp(_, _) >> (now - 1000)
         cache.getBuildNumber(*_) >> 1
-        monitor.pollSingle(new PollContext(MASTER))
+        monitor.pollSingle(new PollContext(CONTROLLER))
 
         then:
-        1 * cache.setEventPosted('MASTER', 'myOrg/app0/p00', 'run0')
-        1 * cache.setEventPosted('MASTER', 'myOrg/app1/p10', 'run1')
-        1 * cache.setEventPosted('MASTER', 'myOrg/app1/p11', 'run3')
-        1 * cache.setEventPosted('MASTER', 'myOrg/app2/p20', 'run4')
-        0 * cache.setEventPosted('MASTER', 'myOrg/app3/p30', 'run5')
+        1 * cache.setEventPosted('CONTROLLER', 'myOrg/app0/p00', 'run0')
+        1 * cache.setEventPosted('CONTROLLER', 'myOrg/app1/p10', 'run1')
+        1 * cache.setEventPosted('CONTROLLER', 'myOrg/app1/p11', 'run3')
+        1 * cache.setEventPosted('CONTROLLER', 'myOrg/app2/p20', 'run4')
+        0 * cache.setEventPosted('CONTROLLER', 'myOrg/app3/p30', 'run5')
         4 * echoService.postEvent(_)
     }
 

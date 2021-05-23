@@ -41,7 +41,7 @@ class WerckerService implements BuildOperations {
     String token
     String authHeaderValue
     String address
-    String master
+    String controller
     WerckerCache cache
     final Permissions permissions
 
@@ -54,7 +54,7 @@ class WerckerService implements BuildOperations {
         this.user = wercker.user
         this.cache = cache
         this.address = address
-        this.master = wercker.name
+        this.controller = wercker.name
         this.setToken(token)
         this.address = wercker.address
         this.setToken(wercker.token)
@@ -163,7 +163,7 @@ class WerckerService implements BuildOperations {
                 //Create an entry in the WerckerCache for this new run. This will also generate
                 //an integer build number for the run
                 Map<String, Integer> runIdBuildNumbers = cache.updateBuildNumbers(
-                        master, appAndPipelineName, Collections.singletonList(run))
+                        controller, appAndPipelineName, Collections.singletonList(run))
 
                 log.info("Triggered run {} at URL {} with build number {}",
                         kv("runId", run.id), kv("url", run.url),
@@ -244,7 +244,7 @@ class WerckerService implements BuildOperations {
     }
 
     /**
-     * A CommandKey should be unique per group (to ensure broken circuits do not span Wercker masters)
+     * A CommandKey should be unique per group (to ensure broken circuits do not span Wercker controllers)
      */
     private String buildCommandKey(String id) {
         return "${groupKey}-${id}"

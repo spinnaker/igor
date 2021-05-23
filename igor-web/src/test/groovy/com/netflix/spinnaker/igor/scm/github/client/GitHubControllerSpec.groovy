@@ -21,14 +21,14 @@ import com.netflix.spinnaker.igor.scm.github.client.model.GetRepositoryContentRe
 import spock.lang.Specification
 import spock.lang.Subject
 
-class GitHubMasterSpec extends Specification {
+class GitHubControllerSpec extends Specification {
   @Subject
-  GitHubMaster gitHubMaster
+  GitHubController gitHubController
 
   GitHubClient gitHubClient = Mock(GitHubClient)
 
   void setup() {
-    gitHubMaster = new GitHubMaster(gitHubClient: gitHubClient, baseUrl: "")
+    gitHubController = new GitHubController(gitHubClient: gitHubClient, baseUrl: "")
   }
 
   void 'list directory'() {
@@ -36,7 +36,7 @@ class GitHubMasterSpec extends Specification {
     1 * gitHubClient.listDirectory(project, repo, dir, ref) >> gitHubClientResponse
 
     when:
-    List<String> response = gitHubMaster.listDirectory(project, repo, dir, ref)
+    List<String> response = gitHubController.listDirectory(project, repo, dir, ref)
 
     then:
     response == expectedResponse
@@ -60,7 +60,7 @@ class GitHubMasterSpec extends Specification {
     1 * gitHubClient.getFileContent(project, repo, dir, ref) >> gitHubClientResponse
 
     when:
-    String response = gitHubMaster.getTextFileContents(project, repo, dir, ref)
+    String response = gitHubController.getTextFileContents(project, repo, dir, ref)
 
     then:
     response == expectedResponse

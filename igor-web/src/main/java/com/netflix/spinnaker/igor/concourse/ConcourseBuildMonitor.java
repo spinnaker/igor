@@ -87,7 +87,7 @@ public class ConcourseBuildMonitor
   @Override
   protected JobPollingDelta generateDelta(PollContext ctx) {
     ConcourseProperties.Host host =
-        concourseProperties.getMasters().stream()
+        concourseProperties.getControllers().stream()
             .filter(h -> h.getName().equals(ctx.partitionName))
             .findFirst()
             .orElseThrow(
@@ -199,7 +199,7 @@ public class ConcourseBuildMonitor
 
       GenericBuildContent content = new GenericBuildContent();
       content.setProject(project);
-      content.setMaster("concourse-" + host.getName());
+      content.setController("concourse-" + host.getName());
       content.setType("concourse");
 
       GenericBuildEvent event = new GenericBuildEvent();
@@ -215,7 +215,7 @@ public class ConcourseBuildMonitor
 
   @Override
   public void poll(boolean sendEvents) {
-    for (ConcourseProperties.Host host : concourseProperties.getMasters()) {
+    for (ConcourseProperties.Host host : concourseProperties.getControllers()) {
       pollSingle(new PollContext(host.getName(), !sendEvents));
     }
   }

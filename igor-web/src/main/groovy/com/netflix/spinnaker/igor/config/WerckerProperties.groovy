@@ -21,8 +21,18 @@ import javax.validation.Valid
 @CompileStatic
 @ConfigurationProperties(prefix = 'wercker')
 class WerckerProperties implements BuildServerProperties<WerckerProperties.WerckerHost> {
+    @Deprecated(forRemoval = true)
     @Valid
     List<WerckerHost> masters
+
+    @Deprecated(forRemoval = true)
+    public List<WerckerProperties.WerckerHost> getMasters() { return controllers; }
+
+    @Deprecated(forRemoval = true)
+    public void setMasters(List<WerckerProperties.WerckerHost> controllers) { this.controllers = controllers; }
+
+    @Valid
+    List<WerckerHost> controllers
 
     static class WerckerHost implements BuildServerProperties.Host {
         @NotEmpty

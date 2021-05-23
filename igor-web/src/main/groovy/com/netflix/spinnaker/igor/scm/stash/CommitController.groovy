@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.igor.scm.stash
 
 import com.netflix.spinnaker.igor.scm.AbstractCommitController
-import com.netflix.spinnaker.igor.scm.stash.client.StashMaster
+import com.netflix.spinnaker.igor.scm.stash.client.StashController
 import com.netflix.spinnaker.igor.scm.stash.client.model.CompareCommitsResponse
 import com.netflix.spinnaker.kork.web.exceptions.NotFoundException
 import groovy.util.logging.Slf4j
@@ -36,19 +36,19 @@ import retrofit.RetrofitError
 @RequestMapping("/stash")
 class CommitController extends AbstractCommitController {
     @Autowired
-    StashMaster stashMaster
+    StashController stashController
 
     @RequestMapping(method = RequestMethod.GET, value = '/{projectKey}/{repositorySlug}/compareCommits')
     List compareCommits(@PathVariable(value = 'projectKey') String projectKey, @PathVariable(value='repositorySlug') String repositorySlug, @RequestParam Map<String, String> requestParams) {
         super.compareCommits(projectKey, repositorySlug, requestParams)
         CompareCommitsResponse commitsResponse
         try {
-            commitsResponse = stashMaster.stashClient.getCompareCommits(projectKey, repositorySlug, requestParams)
+            commitsResponse = stashController.stashClient.getCompareCommits(projectKey, repositorySlug, requestParams)
         } catch (RetrofitError e) {
             if (e.getKind() == RetrofitError.Kind.NETWORK) {
-                throw new NotFoundException("Could not find the server ${stashMaster.baseUrl}")
+                throw new NotFoundException("Could not find the server ${stashController.baseUrl}")
             } else if (e.response.status == 404) {
-                return getNotFoundCommitsResponse(projectKey, repositorySlug, requestParams.to, requestParams.from, stashMaster.baseUrl)
+                return getNotFoundCommitsResponse(projectKey, repositorySlug, requestParams.to, requestParams.from, stashController.baseUrl)
             }
             log.error(
                 "Failed to fetch commits for {}/{}, reason: {}",
@@ -60,7 +60,7 @@ class CommitController extends AbstractCommitController {
         commitsResponse?.values?.each {
             result << [displayId: it?.displayId, id: it?.id, authorDisplayName: it?.author?.displayName,
                        timestamp: it?.authorTimestamp, message : it?.message, commitUrl:
-                           "${stashMaster.baseUrl}/projects/${projectKey}/repos/${repositorySlug}/commits/${it.id}".toString()]
+                           "${stashController.baseUrl}/projects/${projectKey}/repos/${repositorySlug}/commits/${it.id}".toString()]
         }
         return result
     }

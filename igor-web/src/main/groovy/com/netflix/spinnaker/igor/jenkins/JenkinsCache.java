@@ -39,10 +39,10 @@ public class JenkinsCache {
     this.igorConfigurationProperties = igorConfigurationProperties;
   }
 
-  public List<String> getJobNames(String master) {
+  public List<String> getJobNames(String controller) {
     List<String> jobs = new ArrayList<>();
     redisClientDelegate.withKeyScan(
-        prefix() + ":" + master + ":*",
+        prefix() + ":" + controller + ":*",
         1000,
         page ->
             jobs.addAll(
@@ -67,8 +67,8 @@ public class JenkinsCache {
     return results;
   }
 
-  public Map<String, Object> getLastBuild(String master, String job) {
-    String key = makeKey(master, job);
+  public Map<String, Object> getLastBuild(String controller, String job) {
+    String key = makeKey(controller, job);
     Map<String, String> result =
         redisClientDelegate.withCommandsClient(
             c -> {
@@ -89,8 +89,8 @@ public class JenkinsCache {
     return converted;
   }
 
-  public void setLastBuild(String master, String job, int lastBuild, boolean building) {
-    String key = makeKey(master, job);
+  public void setLastBuild(String controller, String job, int lastBuild, boolean building) {
+    String key = makeKey(controller, job);
     redisClientDelegate.withCommandsClient(
         c -> {
           c.hset(key, "lastBuildLabel", Integer.toString(lastBuild));
@@ -98,53 +98,53 @@ public class JenkinsCache {
         });
   }
 
-  public void setLastPollCycleTimestamp(String master, String job, Long timestamp) {
-    String key = makeKey(master, job);
+  public void setLastPollCycleTimestamp(String controller, String job, Long timestamp) {
+    String key = makeKey(controller, job);
     redisClientDelegate.withCommandsClient(
         c -> {
           c.hset(key, POLL_STAMP, Long.toString(timestamp));
         });
   }
 
-  public Long getLastPollCycleTimestamp(String master, String job) {
+  public Long getLastPollCycleTimestamp(String controller, String job) {
     return redisClientDelegate.withCommandsClient(
         c -> {
-          String ts = c.hget(makeKey(master, job), POLL_STAMP);
+          String ts = c.hget(makeKey(controller, job), POLL_STAMP);
           return ts == null ? null : Long.parseLong(ts);
         });
   }
 
-  public Boolean getEventPosted(String master, String job, Long cursor, Integer buildNumber) {
-    String key = makeKey(master, job) + ":" + POLL_STAMP + ":" + cursor;
+  public Boolean getEventPosted(String controller, String job, Long cursor, Integer buildNumber) {
+    String key = makeKey(controller, job) + ":" + POLL_STAMP + ":" + cursor;
     return redisClientDelegate.withCommandsClient(
         c -> c.hget(key, Integer.toString(buildNumber)) != null);
   }
 
-  public void setEventPosted(String master, String job, Long cursor, Integer buildNumber) {
-    String key = makeKey(master, job) + ":" + POLL_STAMP + ":" + cursor;
+  public void setEventPosted(String controller, String job, Long cursor, Integer buildNumber) {
+    String key = makeKey(controller, job) + ":" + POLL_STAMP + ":" + cursor;
     redisClientDelegate.withCommandsClient(
         c -> {
           c.hset(key, Integer.toString(buildNumber), "POSTED");
         });
   }
 
-  public void pruneOldMarkers(String master, String job, Long cursor) {
-    remove(master, job);
+  public void pruneOldMarkers(String controller, String job, Long cursor) {
+    remove(controller, job);
     redisClientDelegate.withCommandsClient(
         c -> {
-          c.del(makeKey(master, job) + ":" + POLL_STAMP + ":" + cursor);
+          c.del(makeKey(controller, job) + ":" + POLL_STAMP + ":" + cursor);
         });
   }
 
-  public void remove(String master, String job) {
+  public void remove(String controller, String job) {
     redisClientDelegate.withCommandsClient(
         c -> {
-          c.del(makeKey(master, job));
+          c.del(makeKey(controller, job));
         });
   }
 
-  private String makeKey(String master, String job) {
-    return prefix() + ":" + master + ":" + job.toUpperCase() + ":" + job;
+  private String makeKey(String controller, String job) {
+    return prefix() + ":" + controller + ":" + job.toUpperCase() + ":" + job;
   }
 
   private static String extractJobName(String key) {

@@ -43,10 +43,10 @@ public class BuildCache {
     this.igorConfigurationProperties = igorConfigurationProperties;
   }
 
-  public List<String> getJobNames(String master) {
+  public List<String> getJobNames(String controller) {
     List<String> jobs = new ArrayList<>();
     redisClientDelegate.withKeyScan(
-        baseKey() + ":completed:" + master + ":*",
+        baseKey() + ":completed:" + controller + ":*",
         1000,
         page ->
             jobs.addAll(
@@ -71,8 +71,8 @@ public class BuildCache {
     return results;
   }
 
-  public int getLastBuild(String master, String job, boolean running) {
-    String key = makeKey(master, job, running);
+  public int getLastBuild(String controller, String job, boolean running) {
+    String key = makeKey(controller, job, running);
     return redisClientDelegate.withCommandsClient(
         c -> {
           if (!c.exists(key)) {
@@ -82,8 +82,8 @@ public class BuildCache {
         });
   }
 
-  public Long getTTL(String master, String job) {
-    final String key = makeKey(master, job);
+  public Long getTTL(String controller, String job) {
+    final String key = makeKey(controller, job);
     return getTTL(key);
   }
 
@@ -101,17 +101,18 @@ public class BuildCache {
         });
   }
 
-  public void setLastBuild(String master, String job, int lastBuild, boolean building, int ttl) {
+  public void setLastBuild(
+      String controller, String job, int lastBuild, boolean building, int ttl) {
     if (!building) {
-      setBuild(makeKey(master, job), lastBuild, false, master, job, ttl);
+      setBuild(makeKey(controller, job), lastBuild, false, controller, job, ttl);
     }
-    storeLastBuild(makeKey(master, job, building), lastBuild, ttl);
+    storeLastBuild(makeKey(controller, job, building), lastBuild, ttl);
   }
 
-  public List<String> getDeprecatedJobNames(String master) {
+  public List<String> getDeprecatedJobNames(String controller) {
     List<String> jobs = new ArrayList<>();
     redisClientDelegate.withKeyScan(
-        baseKey() + ":" + master + ":*",
+        baseKey() + ":" + controller + ":*",
         1000,
         page ->
             jobs.addAll(
@@ -122,8 +123,8 @@ public class BuildCache {
     return jobs;
   }
 
-  public Map<String, Object> getDeprecatedLastBuild(String master, String job) {
-    String key = makeKey(master, job);
+  public Map<String, Object> getDeprecatedLastBuild(String controller, String job) {
+    String key = makeKey(controller, job);
     Map<String, String> result =
         redisClientDelegate.withCommandsClient(
             c -> {
@@ -144,10 +145,10 @@ public class BuildCache {
     return converted;
   }
 
-  public List<Map<String, String>> getTrackedBuilds(String master) {
+  public List<Map<String, String>> getTrackedBuilds(String controller) {
     List<Map<String, String>> builds = new ArrayList<>();
     redisClientDelegate.withKeyScan(
-        baseKey() + ":track:" + master + ":*",
+        baseKey() + ":track:" + controller + ":*",
         1000,
         page ->
             builds.addAll(
@@ -157,8 +158,8 @@ public class BuildCache {
     return builds;
   }
 
-  public void setTracking(String master, String job, int buildId, int ttl) {
-    String key = makeTrackKey(master, job, buildId);
+  public void setTracking(String controller, String job, int buildId, int ttl) {
+    String key = makeTrackKey(controller, job, buildId);
     redisClientDelegate.withCommandsClient(
         c -> {
           c.set(key, "marked as running");
@@ -166,8 +167,8 @@ public class BuildCache {
     setTTL(key, ttl);
   }
 
-  public void deleteTracking(String master, String job, int buildId) {
-    String key = makeTrackKey(master, job, buildId);
+  public void deleteTracking(String controller, String job, int buildId) {
+    String key = makeTrackKey(controller, job, buildId);
     redisClientDelegate.withCommandsClient(
         c -> {
           c.del(key);
@@ -182,7 +183,7 @@ public class BuildCache {
   }
 
   private void setBuild(
-      String key, int lastBuild, boolean building, String master, String job, int ttl) {
+      String key, int lastBuild, boolean building, String controller, String job, int ttl) {
     redisClientDelegate.withCommandsClient(
         c -> {
           c.hset(key, "lastBuildLabel", Integer.toString(lastBuild));
@@ -199,17 +200,17 @@ public class BuildCache {
     setTTL(key, ttl);
   }
 
-  protected String makeKey(String master, String job) {
-    return baseKey() + ":" + master + ":" + job.toUpperCase() + ":" + job;
+  protected String makeKey(String controller, String job) {
+    return baseKey() + ":" + controller + ":" + job.toUpperCase() + ":" + job;
   }
 
-  protected String makeKey(String master, String job, boolean running) {
+  protected String makeKey(String controller, String job, boolean running) {
     String buildState = running ? "running" : "completed";
-    return baseKey() + ":" + buildState + ":" + master + ":" + job.toUpperCase() + ":" + job;
+    return baseKey() + ":" + buildState + ":" + controller + ":" + job.toUpperCase() + ":" + job;
   }
 
-  protected String makeTrackKey(String master, String job, int buildId) {
-    return baseKey() + ":track:" + master + ":" + job.toUpperCase() + ":" + job + ":" + buildId;
+  protected String makeTrackKey(String controller, String job, int buildId) {
+    return baseKey() + ":track:" + controller + ":" + job.toUpperCase() + ":" + job + ":" + buildId;
   }
 
   private static String extractJobName(String key) {

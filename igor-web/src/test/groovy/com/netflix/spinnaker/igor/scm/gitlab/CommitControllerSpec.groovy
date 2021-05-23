@@ -19,16 +19,13 @@ package com.netflix.spinnaker.igor.scm.gitlab
 import com.netflix.spinnaker.igor.config.GitLabProperties
 import com.netflix.spinnaker.igor.scm.AbstractCommitController
 import com.netflix.spinnaker.igor.scm.gitlab.client.GitLabClient
-import com.netflix.spinnaker.igor.scm.gitlab.client.GitLabMaster
+import com.netflix.spinnaker.igor.scm.gitlab.client.GitLabController
 import com.netflix.spinnaker.igor.scm.gitlab.client.model.Commit
 import com.netflix.spinnaker.igor.scm.gitlab.client.model.CompareCommitsResponse
 import retrofit.RetrofitError
 import retrofit.client.Response
 import spock.lang.Specification
 import spock.lang.Subject
-
-import java.time.Instant
-import java.util.concurrent.Executors
 
 /**
  * Tests for GitLab CommitController
@@ -46,7 +43,7 @@ class CommitControllerSpec extends Specification {
         def props = new GitLabProperties()
         props.baseUrl = GITLAB_ADDRESS
         props.commitDisplayLength = 8
-        controller = new CommitController(new GitLabMaster(client, GITLAB_ADDRESS), props)
+        controller = new CommitController(new GitLabController(client, GITLAB_ADDRESS), props)
     }
 
     void 'missing query params'() {

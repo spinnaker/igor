@@ -18,7 +18,7 @@ package com.netflix.spinnaker.igor.scm.stash
 
 import com.netflix.spinnaker.igor.scm.AbstractCommitController
 import com.netflix.spinnaker.igor.scm.stash.client.StashClient
-import com.netflix.spinnaker.igor.scm.stash.client.StashMaster
+import com.netflix.spinnaker.igor.scm.stash.client.StashController
 import com.netflix.spinnaker.igor.scm.stash.client.model.Author
 import com.netflix.spinnaker.igor.scm.stash.client.model.Commit
 import com.netflix.spinnaker.igor.scm.stash.client.model.CompareCommitsResponse
@@ -42,7 +42,7 @@ class CommitControllerSpec extends Specification {
     def STASH_ADDRESS = "https://stash.com"
 
     void setup() {
-        controller = new CommitController(executor: Executors.newSingleThreadExecutor(), stashMaster: new StashMaster(stashClient: client, baseUrl : STASH_ADDRESS))
+        controller = new CommitController(executor: Executors.newSingleThreadExecutor(), stashController: new StashController(stashClient: client, baseUrl : STASH_ADDRESS))
 
     }
 

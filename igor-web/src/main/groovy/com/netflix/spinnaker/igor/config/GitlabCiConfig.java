@@ -46,14 +46,14 @@ public class GitlabCiConfig {
   private static final Logger log = LoggerFactory.getLogger(GitlabCiConfig.class);
 
   @Bean
-  public Map<String, GitlabCiService> gitlabCiMasters(
+  public Map<String, GitlabCiService> gitlabCiControllers(
       BuildServices buildServices,
       final IgorConfigurationProperties igorConfigurationProperties,
       GitlabCiProperties gitlabCiProperties,
       ObjectMapper objectMapper) {
-    log.info("creating gitlabCiMasters");
-    Map<String, GitlabCiService> gitlabCiMasters =
-        gitlabCiProperties.getMasters().stream()
+    log.info("creating gitlabCiControllers");
+    Map<String, GitlabCiService> gitlabCiControllers =
+        gitlabCiProperties.getControllers().stream()
             .map(
                 gitlabCiHost ->
                     gitlabCiService(
@@ -62,8 +62,8 @@ public class GitlabCiConfig {
                         gitlabCiHost,
                         objectMapper))
             .collect(Collectors.toMap(GitlabCiService::getName, Function.identity()));
-    buildServices.addServices(gitlabCiMasters);
-    return gitlabCiMasters;
+    buildServices.addServices(gitlabCiControllers);
+    return gitlabCiControllers;
   }
 
   private static GitlabCiService gitlabCiService(

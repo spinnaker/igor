@@ -40,14 +40,14 @@ class TravisBuildMonitorSpec extends Specification {
     EchoService echoService = Mock()
     TravisBuildMonitor travisBuildMonitor
 
-    String MASTER = "MASTER"
+    String CONTROLLER = "CONTROLLER"
     int CACHED_JOB_TTL_SECONDS = 172800
     int CACHED_JOB_TTL_DAYS = 2
 
     void setup() {
         def travisProperties = new TravisProperties(cachedJobTTLDays: CACHED_JOB_TTL_DAYS)
         def buildServices = new BuildServices()
-        buildServices.addServices([MASTER: travisService])
+        buildServices.addServices([CONTROLLER: travisService])
         travisBuildMonitor = new TravisBuildMonitor(
             new IgorConfigurationProperties(),
             new NoopRegistry(),
@@ -61,7 +61,7 @@ class TravisBuildMonitorSpec extends Specification {
             Mock(TaskScheduler)
         )
         travisService.isLogReady(_) >> true
-        buildCache.getTrackedBuilds(MASTER) >> []
+        buildCache.getTrackedBuilds(CONTROLLER) >> []
     }
 
     void 'flag a new build on master, but do not send event on repo if a newer build is present at repo level'() {
@@ -69,7 +69,7 @@ class TravisBuildMonitorSpec extends Specification {
         V3Repository repository = Mock(V3Repository)
 
         when:
-        TravisBuildMonitor.BuildPollingDelta buildPollingDelta = travisBuildMonitor.generateDelta(new PollContext(MASTER))
+        TravisBuildMonitor.BuildPollingDelta buildPollingDelta = travisBuildMonitor.generateDelta(new PollContext(CONTROLLER))
         travisBuildMonitor.commitDelta(buildPollingDelta, true)
 
         then:
@@ -81,11 +81,11 @@ class TravisBuildMonitorSpec extends Specification {
         build.repository >> repository
         repository.slug >> 'test-org/test-repo'
 
-        1 * travisService.getGenericBuild(build, true) >> TravisBuildConverter.genericBuild(build, MASTER)
-        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/master', false) >> 3
-        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo', false) >> 5
-        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo/master', 4, false, CACHED_JOB_TTL_SECONDS)
-        0 * buildCache.setLastBuild(MASTER, 'test-org/test-repo', 4, false, CACHED_JOB_TTL_SECONDS)
+        1 * travisService.getGenericBuild(build, true) >> TravisBuildConverter.genericBuild(build, CONTROLLER)
+        1 * buildCache.getLastBuild(CONTROLLER, 'test-org/test-repo/master', false) >> 3
+        1 * buildCache.getLastBuild(CONTROLLER, 'test-org/test-repo', false) >> 5
+        1 * buildCache.setLastBuild(CONTROLLER, 'test-org/test-repo/master', 4, false, CACHED_JOB_TTL_SECONDS)
+        0 * buildCache.setLastBuild(CONTROLLER, 'test-org/test-repo', 4, false, CACHED_JOB_TTL_SECONDS)
 
         buildPollingDelta.items.size() == 1
         buildPollingDelta.items[0].branchedRepoSlug == 'test-org/test-repo/master'
@@ -98,7 +98,7 @@ class TravisBuildMonitorSpec extends Specification {
         V3Repository repository = Mock(V3Repository)
 
         when:
-        TravisBuildMonitor.BuildPollingDelta buildPollingDelta = travisBuildMonitor.generateDelta(new PollContext(MASTER))
+        TravisBuildMonitor.BuildPollingDelta buildPollingDelta = travisBuildMonitor.generateDelta(new PollContext(CONTROLLER))
         travisBuildMonitor.commitDelta(buildPollingDelta, true)
 
         then:
@@ -110,10 +110,10 @@ class TravisBuildMonitorSpec extends Specification {
         build.repository >> repository
         repository.slug >> 'test-org/test-repo'
 
-        1 * travisService.getGenericBuild(build, true) >> TravisBuildConverter.genericBuild(build, MASTER)
-        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/my_branch', false) >> 3
-        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo/my_branch', 4, false, CACHED_JOB_TTL_SECONDS)
-        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo', 4, false, CACHED_JOB_TTL_SECONDS)
+        1 * travisService.getGenericBuild(build, true) >> TravisBuildConverter.genericBuild(build, CONTROLLER)
+        1 * buildCache.getLastBuild(CONTROLLER, 'test-org/test-repo/my_branch', false) >> 3
+        1 * buildCache.setLastBuild(CONTROLLER, 'test-org/test-repo/my_branch', 4, false, CACHED_JOB_TTL_SECONDS)
+        1 * buildCache.setLastBuild(CONTROLLER, 'test-org/test-repo', 4, false, CACHED_JOB_TTL_SECONDS)
 
         1 * echoService.postEvent({
             it.content.project.name == "test-org/test-repo"
@@ -130,7 +130,7 @@ class TravisBuildMonitorSpec extends Specification {
         V3Repository repository = Mock(V3Repository)
 
         when:
-        TravisBuildMonitor.BuildPollingDelta buildPollingDelta = travisBuildMonitor.generateDelta(new PollContext(MASTER))
+        TravisBuildMonitor.BuildPollingDelta buildPollingDelta = travisBuildMonitor.generateDelta(new PollContext(CONTROLLER))
         travisBuildMonitor.commitDelta(buildPollingDelta, false)
 
         then:
@@ -138,9 +138,9 @@ class TravisBuildMonitorSpec extends Specification {
         build.branchedRepoSlug() >> "test-org/test-repo/my_branch"
         build.getNumber() >> 4
 
-        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/my_branch', false) >> 3
-        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo/my_branch', 4, false, CACHED_JOB_TTL_SECONDS)
-        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo', 4, false, CACHED_JOB_TTL_SECONDS)
+        1 * buildCache.getLastBuild(CONTROLLER, 'test-org/test-repo/my_branch', false) >> 3
+        1 * buildCache.setLastBuild(CONTROLLER, 'test-org/test-repo/my_branch', 4, false, CACHED_JOB_TTL_SECONDS)
+        1 * buildCache.setLastBuild(CONTROLLER, 'test-org/test-repo', 4, false, CACHED_JOB_TTL_SECONDS)
 
         build.jobs >> []
         build.repository >> repository
@@ -156,7 +156,7 @@ class TravisBuildMonitorSpec extends Specification {
         V3Repository repository = Mock(V3Repository)
 
         when:
-        TravisBuildMonitor.BuildPollingDelta buildPollingDelta = travisBuildMonitor.generateDelta(new PollContext(MASTER))
+        TravisBuildMonitor.BuildPollingDelta buildPollingDelta = travisBuildMonitor.generateDelta(new PollContext(CONTROLLER))
         travisBuildMonitor.commitDelta(buildPollingDelta, true)
 
         then:
@@ -172,15 +172,15 @@ class TravisBuildMonitorSpec extends Specification {
         buildDifferentBranch.jobs >> []
         buildDifferentBranch.repository >> repository
         repository.slug >> 'test-org/test-repo'
-        1 * travisService.getGenericBuild(build, true) >> TravisBuildConverter.genericBuild(build, MASTER)
-        1 * travisService.getGenericBuild(buildDifferentBranch, true) >> TravisBuildConverter.genericBuild(buildDifferentBranch, MASTER)
-        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/my_branch', false) >> 2
-        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo/my_branch', 4, false, CACHED_JOB_TTL_SECONDS)
-        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo', 4, false, CACHED_JOB_TTL_SECONDS)
-        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo', 3, false, CACHED_JOB_TTL_SECONDS)
+        1 * travisService.getGenericBuild(build, true) >> TravisBuildConverter.genericBuild(build, CONTROLLER)
+        1 * travisService.getGenericBuild(buildDifferentBranch, true) >> TravisBuildConverter.genericBuild(buildDifferentBranch, CONTROLLER)
+        1 * buildCache.getLastBuild(CONTROLLER, 'test-org/test-repo/my_branch', false) >> 2
+        1 * buildCache.setLastBuild(CONTROLLER, 'test-org/test-repo/my_branch', 4, false, CACHED_JOB_TTL_SECONDS)
+        1 * buildCache.setLastBuild(CONTROLLER, 'test-org/test-repo', 4, false, CACHED_JOB_TTL_SECONDS)
+        1 * buildCache.setLastBuild(CONTROLLER, 'test-org/test-repo', 3, false, CACHED_JOB_TTL_SECONDS)
 
-        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/different_branch', false) >> 1
-        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo/different_branch', 3, false, CACHED_JOB_TTL_SECONDS)
+        1 * buildCache.getLastBuild(CONTROLLER, 'test-org/test-repo/different_branch', false) >> 1
+        1 * buildCache.setLastBuild(CONTROLLER, 'test-org/test-repo/different_branch', 3, false, CACHED_JOB_TTL_SECONDS)
 
         1 * echoService.postEvent({
             it.content.project.name == "test-org/test-repo/my_branch" &&
@@ -218,25 +218,25 @@ class TravisBuildMonitorSpec extends Specification {
         repository.slug >> 'test-org/test-repo'
 
         when:
-        TravisBuildMonitor.BuildPollingDelta buildPollingDelta = travisBuildMonitor.generateDelta(new PollContext(MASTER))
+        TravisBuildMonitor.BuildPollingDelta buildPollingDelta = travisBuildMonitor.generateDelta(new PollContext(CONTROLLER))
         travisBuildMonitor.commitDelta(buildPollingDelta, true)
 
         build.state = TravisBuildState.passed
-        buildPollingDelta = travisBuildMonitor.generateDelta(new PollContext(MASTER))
+        buildPollingDelta = travisBuildMonitor.generateDelta(new PollContext(CONTROLLER))
         travisBuildMonitor.commitDelta(buildPollingDelta, true)
 
         then:
         2 * travisService.getLatestBuilds() >>> [ [ build ], [] ]
-        1 * buildCache.setTracking(MASTER, build.getRepository().getSlug(), 1337, TravisBuildMonitor.TRACKING_TTL)
-        2 * buildCache.getTrackedBuilds(MASTER) >> [ [ buildId: "1337" ] ]
+        1 * buildCache.setTracking(CONTROLLER, build.getRepository().getSlug(), 1337, TravisBuildMonitor.TRACKING_TTL)
+        2 * buildCache.getTrackedBuilds(CONTROLLER) >> [ [ buildId: "1337" ] ]
         1 * travisService.getV3Build(1337) >> build
         2 * travisService.getGenericBuild(_, _) >> { V3Build b, boolean fetchLogs ->
-            TravisBuildConverter.genericBuild(b, MASTER)
+            TravisBuildConverter.genericBuild(b, CONTROLLER)
         }
-        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/my_branch', true) >> 3
-        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/my_branch', false) >> 3
-        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo/my_branch', 4, false, CACHED_JOB_TTL_SECONDS)
-        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo', 4, false, CACHED_JOB_TTL_SECONDS)
+        1 * buildCache.getLastBuild(CONTROLLER, 'test-org/test-repo/my_branch', true) >> 3
+        1 * buildCache.getLastBuild(CONTROLLER, 'test-org/test-repo/my_branch', false) >> 3
+        1 * buildCache.setLastBuild(CONTROLLER, 'test-org/test-repo/my_branch', 4, false, CACHED_JOB_TTL_SECONDS)
+        1 * buildCache.setLastBuild(CONTROLLER, 'test-org/test-repo', 4, false, CACHED_JOB_TTL_SECONDS)
 
         1 * echoService.postEvent({
             it.content.project.name == "test-org/test-repo"

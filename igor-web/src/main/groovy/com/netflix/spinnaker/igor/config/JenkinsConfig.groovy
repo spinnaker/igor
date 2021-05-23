@@ -81,7 +81,7 @@ class JenkinsConfig {
     }
 
     @Bean
-    Map<String, JenkinsService> jenkinsMasters(BuildServices buildServices,
+    Map<String, JenkinsService> jenkinsControllers(BuildServices buildServices,
                                                IgorConfigurationProperties igorConfigurationProperties,
                                                @Valid JenkinsProperties jenkinsProperties,
                                                JenkinsOkHttpClientProvider jenkinsOkHttpClientProvider,
@@ -89,8 +89,8 @@ class JenkinsConfig {
                                                Registry registry,
                                                CircuitBreakerRegistry circuitBreakerRegistry,
                                                RestAdapter.LogLevel retrofitLogLevel) {
-        log.info "creating jenkinsMasters"
-        Map<String, JenkinsService> jenkinsMasters = jenkinsProperties?.masters?.collectEntries { JenkinsProperties.JenkinsHost host ->
+        log.info "creating jenkinsControllers"
+        Map<String, JenkinsService> jenkinsControllers = jenkinsProperties?.controllers?.collectEntries { JenkinsProperties.JenkinsHost host ->
             log.info "bootstrapping ${host.address} as ${host.name}"
             [(host.name): jenkinsService(
                 host.name,
@@ -108,8 +108,8 @@ class JenkinsConfig {
             )]
         }
 
-        buildServices.addServices(jenkinsMasters)
-        jenkinsMasters
+        buildServices.addServices(jenkinsControllers)
+        jenkinsControllers
     }
 
     static JenkinsService jenkinsService(

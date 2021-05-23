@@ -98,19 +98,19 @@ public class GitlabCiBuildMonitor
 
   @Override
   protected BuildPollingDelta generateDelta(PollContext ctx) {
-    final String master = ctx.partitionName;
+    final String controller = ctx.partitionName;
 
-    log.info("Checking for new builds for {}", kv("master", master));
+    log.info("Checking for new builds for {}", kv("controller", controller));
     final AtomicInteger updatedBuilds = new AtomicInteger();
-    final GitlabCiService gitlabCiService = (GitlabCiService) buildServices.getService(master);
+    final GitlabCiService gitlabCiService = (GitlabCiService) buildServices.getService(controller);
     long startTime = System.currentTimeMillis();
 
     final List<Project> projects = gitlabCiService.getProjects();
     log.info(
-        "Took {} ms to retrieve {} repositories (master: {})",
+        "Took {} ms to retrieve {} repositories (controller: {})",
         System.currentTimeMillis() - startTime,
         projects.size(),
-        kv("master", master));
+        kv("controller", controller));
 
     List<BuildDelta> delta = new ArrayList<>();
     projects.parallelStream()
@@ -125,7 +125,7 @@ public class GitlabCiBuildMonitor
 
                 boolean isPipelineRunning = GitlabCiResultConverter.running(pipeline.getStatus());
                 int cachedBuildId =
-                    buildCache.getLastBuild(master, branchedRepoSlug, isPipelineRunning);
+                    buildCache.getLastBuild(controller, branchedRepoSlug, isPipelineRunning);
                 // In case of Gitlab CI the pipeline ids are increasing so we can use it for
                 // ordering
                 if (pipeline.getId() > cachedBuildId) {
@@ -136,36 +136,39 @@ public class GitlabCiBuildMonitor
             });
 
     if (!delta.isEmpty()) {
-      log.info("Found {} new builds (master: {})", updatedBuilds.get(), kv("master", master));
+      log.info(
+          "Found {} new builds (controller: {})",
+          updatedBuilds.get(),
+          kv("controller", controller));
     }
 
-    return new BuildPollingDelta(delta, master, startTime);
+    return new BuildPollingDelta(delta, controller, startTime);
   }
 
   @Override
   protected void commitDelta(BuildPollingDelta delta, boolean sendEvents) {
     int ttl = buildCacheJobTTLSeconds();
     final GitlabCiService gitlabCiService =
-        (GitlabCiService) buildServices.getService(delta.master);
+        (GitlabCiService) buildServices.getService(delta.controller);
 
     delta.items.parallelStream()
         .forEach(
             item -> {
               log.info(
                   "Build update [{}:{}:{}] [status:{}] [running:{}]",
-                  kv("master", delta.master),
+                  kv("controller", delta.controller),
                   item.branchedRepoSlug,
                   item.pipeline.getId(),
                   item.pipeline.getStatus(),
                   item.pipelineRunning);
               buildCache.setLastBuild(
-                  delta.master,
+                  delta.controller,
                   item.branchedRepoSlug,
                   item.pipeline.getId(),
                   item.pipelineRunning,
                   ttl);
               buildCache.setLastBuild(
-                  delta.master,
+                  delta.controller,
                   item.project.getPathWithNamespace(),
                   item.pipeline.getId(),
                   item.pipelineRunning,
@@ -176,14 +179,14 @@ public class GitlabCiBuildMonitor
                     item.pipeline,
                     gitlabCiService.getAddress(),
                     item.branchedRepoSlug,
-                    delta.master);
+                    delta.controller);
               }
             });
 
     log.info(
-        "Last poll took {} ms (master: {})",
+        "Last poll took {} ms (controller: {})",
         System.currentTimeMillis() - delta.startTime,
-        kv("master", delta.master));
+        kv("controller", delta.controller));
   }
 
   private List<Pipeline> filterOldPipelines(List<Pipeline> pipelines) {
@@ -211,29 +214,29 @@ public class GitlabCiBuildMonitor
       final Pipeline pipeline,
       String address,
       final String branchedSlug,
-      String master) {
+      String controller) {
     if (echoService.isPresent()) {
-      sendEvent(pipeline.getRef(), project, pipeline, address, master);
-      sendEvent(branchedSlug, project, pipeline, address, master);
+      sendEvent(pipeline.getRef(), project, pipeline, address, controller);
+      sendEvent(branchedSlug, project, pipeline, address, controller);
     }
   }
 
   private void sendEvent(
-      String slug, Project project, Pipeline pipeline, String address, String master) {
+      String slug, Project project, Pipeline pipeline, String address, String controller) {
     if (!echoService.isPresent()) {
       log.warn("Cannot send build notification: Echo is not enabled");
       registry.counter(missedNotificationId.withTag("monitor", getName())).increment();
       return;
     }
 
-    log.info("pushing event for {}:{}:{}", kv("master", master), slug, pipeline.getId());
+    log.info("pushing event for {}:{}:{}", kv("controller", controller), slug, pipeline.getId());
     GenericProject genericProject =
         new GenericProject(
             slug,
             GitlabCiPipelineUtis.genericBuild(pipeline, project.getPathWithNamespace(), address));
 
     GenericBuildContent content = new GenericBuildContent();
-    content.setMaster(master);
+    content.setController(controller);
     content.setType("gitlab-ci");
     content.setProject(genericProject);
 
@@ -244,7 +247,7 @@ public class GitlabCiBuildMonitor
 
   @Override
   protected Integer getPartitionUpperThreshold(String partition) {
-    for (GitlabCiProperties.GitlabCiHost host : gitlabCiProperties.getMasters()) {
+    for (GitlabCiProperties.GitlabCiHost host : gitlabCiProperties.getControllers()) {
       if (host.getName() != null && host.getName().equals(partition)) {
         return host.getItemUpperThreshold();
       }
@@ -254,12 +257,12 @@ public class GitlabCiBuildMonitor
 
   static class BuildPollingDelta implements PollingDelta<BuildDelta> {
     private final List<BuildDelta> items;
-    private final String master;
+    private final String controller;
     private final long startTime;
 
-    public BuildPollingDelta(List<BuildDelta> items, String master, long startTime) {
+    public BuildPollingDelta(List<BuildDelta> items, String controller, long startTime) {
       this.items = items;
-      this.master = master;
+      this.controller = controller;
       this.startTime = startTime;
     }
 

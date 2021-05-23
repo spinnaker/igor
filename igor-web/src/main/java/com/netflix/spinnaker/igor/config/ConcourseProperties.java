@@ -25,7 +25,20 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Data
 @ConfigurationProperties(prefix = "concourse")
 public class ConcourseProperties {
+  @Deprecated(forRemoval = true)
   private List<Host> masters;
+
+  @Deprecated(forRemoval = true)
+  public List<Host> getMasters() {
+    return controllers;
+  }
+
+  @Deprecated(forRemoval = true)
+  public void setMasters(List<Host> controllers) {
+    this.controllers = controllers;
+  }
+
+  private List<Host> controllers;
 
   @Data
   public static class Host {

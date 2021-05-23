@@ -1,12 +1,11 @@
 /*
- * Copyright 2018 Schibsted ASA.
+ * Copyright 2019 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
- *
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,19 +14,15 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.igor.travis.client;
+package com.netflix.spinnaker.igor.scm;
 
-import com.netflix.spinnaker.igor.travis.service.TravisService;
-import java.util.Map;
+import java.util.List;
 
-public class TravisMasters {
-  private Map<String, TravisService> map;
+/** Abstracts underlying implementation details of each SCM system under a common interface. */
+public interface ScmController {
+  String DEFAULT_GIT_REF = "refs/heads/master";
 
-  public Map<String, TravisService> getMap() {
-    return map;
-  }
+  List<String> listDirectory(String projectKey, String repositorySlug, String path, String ref);
 
-  public void setMap(Map<String, TravisService> map) {
-    this.map = map;
-  }
+  String getTextFileContents(String projectKey, String repositorySlug, String path, String ref);
 }

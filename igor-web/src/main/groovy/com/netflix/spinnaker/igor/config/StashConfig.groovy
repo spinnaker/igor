@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.igor.config
 
 import com.netflix.spinnaker.igor.scm.stash.client.StashClient
-import com.netflix.spinnaker.igor.scm.stash.client.StashMaster
+import com.netflix.spinnaker.igor.scm.stash.client.StashController
 import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger
 import com.squareup.okhttp.Credentials
 import groovy.transform.CompileStatic
@@ -45,10 +45,10 @@ import javax.validation.Valid
 class StashConfig {
 
     @Bean
-    StashMaster stashMaster(@Valid StashProperties stashProperties,
-                            RestAdapter.LogLevel retrofitLogLevel) {
+    StashController stashController(@Valid StashProperties stashProperties,
+                                RestAdapter.LogLevel retrofitLogLevel) {
         log.info "bootstrapping ${stashProperties.baseUrl} as stash"
-        new StashMaster(
+        new StashController(
             stashClient: stashClient(stashProperties.baseUrl, stashProperties.username, stashProperties.password, retrofitLogLevel),
             baseUrl: stashProperties.baseUrl)
     }

@@ -26,7 +26,7 @@ import java.util.List;
  *
  * <pre>{@code
  * someProvider:
- *   masters:
+ *   controllers:
  *   - name: someProvider-host1
  *     address: https://foo.com/api
  *     permissions:
@@ -46,9 +46,18 @@ public interface BuildServerProperties<T extends BuildServerProperties.Host> {
   /**
    * Returns a list of the build service hosts configured with this provider
    *
+   * @deprecated
    * @return The build service hosts
    */
+  @Deprecated(forRemoval = true)
   List<T> getMasters();
+
+  /**
+   * Returns a list of the build service hosts configured with this provider
+   *
+   * @return The build service hosts
+   */
+  List<T> getControllers();
 
   /** Interface for representing the properties of a specific build service host */
   interface Host {
@@ -75,7 +84,7 @@ public interface BuildServerProperties<T extends BuildServerProperties.Host> {
      *
      * <pre>{@code
      * someProvider:
-     *   masters:
+     *   controllers:
      *   - name: someProvider-host1
      *     address: https://foo.com/api
      *     permissions:

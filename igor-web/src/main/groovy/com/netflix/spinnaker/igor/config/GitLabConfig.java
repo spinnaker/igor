@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.igor.config;
 
 import com.netflix.spinnaker.igor.scm.gitlab.client.GitLabClient;
-import com.netflix.spinnaker.igor.scm.gitlab.client.GitLabMaster;
+import com.netflix.spinnaker.igor.scm.gitlab.client.GitLabController;
 import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger;
 import javax.validation.Valid;
 import org.slf4j.Logger;
@@ -39,9 +39,9 @@ public class GitLabConfig {
   private static final Logger log = LoggerFactory.getLogger(GitLabConfig.class);
 
   @Bean
-  public GitLabMaster gitLabMasters(@Valid GitLabProperties gitLabProperties) {
+  public GitLabController gitLabControllers(@Valid GitLabProperties gitLabProperties) {
     log.info("bootstrapping {} as gitlab", gitLabProperties.getBaseUrl());
-    return new GitLabMaster(
+    return new GitLabController(
         gitLabClient(gitLabProperties.getBaseUrl(), gitLabProperties.getPrivateToken()),
         gitLabProperties.getBaseUrl());
   }

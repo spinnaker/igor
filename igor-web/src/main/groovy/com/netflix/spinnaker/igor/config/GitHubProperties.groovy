@@ -24,7 +24,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 import javax.validation.constraints.NotNull
 
 /**
- * Helper class to map masters in properties file into a validated property map
+ * Helper class to map controllers in properties file into a validated property map
  */
 @ConditionalOnProperty('github.base-url')
 @CompileStatic

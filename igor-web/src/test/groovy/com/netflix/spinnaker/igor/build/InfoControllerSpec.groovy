@@ -90,17 +90,30 @@ class InfoControllerSpec extends Specification {
         .build()
     }
 
+    @Deprecated
     void 'is able to get a list of jenkins buildMasters'() {
         given:
-        createMocks(['master2': null, 'build.buildServices.blah': null, 'master1': null])
+        createMocks(['controller2': null, 'build.buildServices.blah': null, 'controller1': null])
 
         when:
         MockHttpServletResponse response = mockMvc.perform(get('/masters/')
             .accept(MediaType.APPLICATION_JSON)).andReturn().response
 
         then:
-        response.contentAsString == '["build.buildServices.blah","master1","master2"]'
+        response.contentAsString == '["build.buildServices.blah","controller1","controller2"]'
     }
+
+  void 'is able to get a list of jenkins buildControllers'() {
+    given:
+    createMocks(['controller2': null, 'build.buildServices.blah': null, 'controller1': null])
+
+    when:
+    MockHttpServletResponse response = mockMvc.perform(get('/controllers/')
+      .accept(MediaType.APPLICATION_JSON)).andReturn().response
+
+    then:
+    response.contentAsString == '["build.buildServices.blah","controller1","controller2"]'
+  }
 
     void 'is able to get a list of google cloud build accounts'() {
       given:
@@ -133,8 +146,8 @@ class InfoControllerSpec extends Specification {
 
     void 'buildServices returns correctly if gcb is not defined'() {
       given:
-      JenkinsService jenkinsService1 = new JenkinsService('master2', null, false, Permissions.EMPTY, circuitBreakerRegistry)
-      createMocks(['master2': jenkinsService1])
+      JenkinsService jenkinsService1 = new JenkinsService('controller2', null, false, Permissions.EMPTY, circuitBreakerRegistry)
+      createMocks(['controller2': jenkinsService1])
 
       when:
       MockHttpServletResponse response = mockMvc.perform(get('/buildServices')
@@ -143,7 +156,7 @@ class InfoControllerSpec extends Specification {
       then:
       def actualAccounts = new JsonSlurper().parseText(response.contentAsString);
       actualAccounts.size == 1
-      actualAccounts[0].name == 'master2'
+      actualAccounts[0].name == 'controller2'
 
     }
 
@@ -235,13 +248,13 @@ class InfoControllerSpec extends Specification {
         )
     }
 
-    void 'is able to get jobs for a jenkins master'() {
+    void 'is able to get jobs for a jenkins controller'() {
         given:
         JenkinsService jenkinsService = Stub(JenkinsService)
-        createMocks(['master1': jenkinsService])
+        createMocks(['controller1': jenkinsService])
 
         when:
-        MockHttpServletResponse response = mockMvc.perform(get('/jobs/master1/')
+        MockHttpServletResponse response = mockMvc.perform(get('/jobs/controller1/')
             .accept(MediaType.APPLICATION_JSON)).andReturn().response
 
         then:
@@ -253,13 +266,13 @@ class InfoControllerSpec extends Specification {
         response.contentAsString == '["job1","job2","job3"]'
     }
 
-    void 'is able to get jobs for a jenkins master with the folders plugin'() {
+    void 'is able to get jobs for a jenkins controller with the folders plugin'() {
         given:
         JenkinsService jenkinsService = Stub(JenkinsService)
-        createMocks(['master1': jenkinsService])
+        createMocks(['controller1': jenkinsService])
 
         when:
-        MockHttpServletResponse response = mockMvc.perform(get('/jobs/master1/')
+        MockHttpServletResponse response = mockMvc.perform(get('/jobs/controller1/')
             .accept(MediaType.APPLICATION_JSON)).andReturn().response
 
         then:
@@ -274,30 +287,30 @@ class InfoControllerSpec extends Specification {
         response.contentAsString == '["folder/job/job1","folder/job/job2","job3"]'
     }
 
-    void 'is able to get jobs for a travis master'() {
+    void 'is able to get jobs for a travis controller'() {
         given:
         TravisService travisService = Stub(TravisService)
-        createMocks(['travis-master1': travisService])
+        createMocks(['travis-controller1': travisService])
 
         when:
-        MockHttpServletResponse response = mockMvc.perform(get('/jobs/travis-master1')
+        MockHttpServletResponse response = mockMvc.perform(get('/jobs/travis-controller1')
             .accept(MediaType.APPLICATION_JSON)).andReturn().response
 
         then:
         travisService.getBuildServiceProvider() >> BuildServiceProvider.TRAVIS
-        1 * cache.getJobNames('travis-master1') >> ["some-job"]
+        1 * cache.getJobNames('travis-controller1') >> ["some-job"]
         response.contentAsString == '["some-job"]'
 
     }
 
-    void 'is able to get jobs for a wercker master'() {
+    void 'is able to get jobs for a wercker controller'() {
         given:
         def werckerJob = 'myOrg/myApp/myTarget'
         WerckerService werckerService = Stub(WerckerService)
-        createMocks(['wercker-master': werckerService])
+        createMocks(['wercker-controller': werckerService])
 
         when:
-        MockHttpServletResponse response = mockMvc.perform(get('/jobs/wercker-master')
+        MockHttpServletResponse response = mockMvc.perform(get('/jobs/wercker-controller')
             .accept(MediaType.APPLICATION_JSON)).andReturn().response
 
         then:
@@ -325,10 +338,10 @@ class InfoControllerSpec extends Specification {
     void 'is able to get a job config at url #url'() {
         given:
         setResponse(getJobConfig())
-        createMocks(['master1': service])
+        createMocks(['controller1': service])
 
         when:
-        MockHttpServletResponse response = mockMvc.perform(get('/jobs/master1/MY-JOB')
+        MockHttpServletResponse response = mockMvc.perform(get('/jobs/controller1/MY-JOB')
             .accept(MediaType.APPLICATION_JSON)).andReturn().response
 
         then:
@@ -340,16 +353,16 @@ class InfoControllerSpec extends Specification {
         output.firstBuild == null
 
         where:
-        url << ['/jobs/master1/MY-JOB', '/jobs/master1/folder/job/MY-JOB']
+        url << ['/jobs/controller1/MY-JOB', '/jobs/controller1/folder/job/MY-JOB']
     }
 
     void 'is able to get a job config where a parameter includes choices'() {
         given:
         setResponse(getJobConfigWithChoices())
-        createMocks(['master1': service])
+        createMocks(['controller1': service])
 
         when:
-        MockHttpServletResponse response = mockMvc.perform(get('/jobs/master1/MY-JOB')
+        MockHttpServletResponse response = mockMvc.perform(get('/jobs/controller1/MY-JOB')
             .accept(MediaType.APPLICATION_JSON)).andReturn().response
 
         then:

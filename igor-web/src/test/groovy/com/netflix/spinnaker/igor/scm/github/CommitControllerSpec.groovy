@@ -19,7 +19,7 @@ package com.netflix.spinnaker.igor.scm.github
 import com.netflix.spinnaker.igor.config.GitHubProperties
 import com.netflix.spinnaker.igor.scm.AbstractCommitController
 import com.netflix.spinnaker.igor.scm.github.client.GitHubClient
-import com.netflix.spinnaker.igor.scm.github.client.GitHubMaster
+import com.netflix.spinnaker.igor.scm.github.client.GitHubController
 import com.netflix.spinnaker.igor.scm.github.client.model.Author
 import com.netflix.spinnaker.igor.scm.github.client.model.Commit
 import com.netflix.spinnaker.igor.scm.github.client.model.CommitInfo
@@ -45,7 +45,7 @@ class CommitControllerSpec extends Specification {
     def GITHUB_ADDRESS = "https://github.com"
 
     void setup() {
-        controller = new CommitController(executor: Executors.newSingleThreadExecutor(), master: new GitHubMaster(gitHubClient: client, baseUrl : GITHUB_ADDRESS), gitHubProperties: new GitHubProperties(commitDisplayLength: 8))
+        controller = new CommitController(executor: Executors.newSingleThreadExecutor(), controller: new GitHubController(gitHubClient: client, baseUrl : GITHUB_ADDRESS), gitHubProperties: new GitHubProperties(commitDisplayLength: 8))
     }
 
     void 'missing query params'() {
