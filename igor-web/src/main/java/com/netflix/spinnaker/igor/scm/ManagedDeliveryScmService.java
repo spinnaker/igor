@@ -111,7 +111,8 @@ public class ManagedDeliveryScmService {
       final String repository,
       final String directory,
       final String manifest,
-      final String ref) {
+      final String ref,
+      final boolean raw) {
 
     if (scmType == null || project == null || repository == null) {
       throw new IllegalArgumentException("scmType, project and repository are required arguments");
@@ -132,6 +133,10 @@ public class ManagedDeliveryScmService {
         "Retrieving delivery config manifest from " + project + ":" + repository + "/" + path);
     String manifestContents =
         getScmMaster(scmType).getTextFileContents(project, repository, path, ref);
+
+    if (raw) {
+      return Map.of("manifest", manifestContents);
+    }
 
     try {
       if (manifest.endsWith(".json")) {
