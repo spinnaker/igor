@@ -67,6 +67,12 @@ class GoogleCloudBuildAccount {
     cache.updateBuild(buildId, status, serializedBuild);
   }
 
+  Build stopBuild(String buildId) {
+    Build build = client.stopBuild(buildId);
+    buildString = googleCloudBuildParser.serialize(build);
+    cache.updateBuild(buildId, build.getStatus(), buildString);
+  }
+
   Build getBuild(String buildId) {
     String buildString = cache.getBuild(buildId);
     if (buildString == null) {
