@@ -61,8 +61,8 @@ class GoogleCloudBuildClient {
     return executor.execute(() -> cloudBuild.projects().builds().get(projectId, buildId));
   }
 
-  Build stopBuild(Build build) {
-    return executor.execute(() -> cloudBuild.projects().builds().cancel(projectId, build));
+  Build stopBuild(String buildId) {
+    return executor.execute(() -> cloudBuild.projects().builds().cancel(projectId, buildId));
   }
 
   ListBuildTriggersResponse listTriggers() {
