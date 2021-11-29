@@ -335,6 +335,7 @@ public class TravisService implements BuildOperations, BuildProperties {
                 TravisBuildState.failed,
                 TravisBuildState.canceled)
             .stream()
+            .filter(job -> job.getBuild() != null)
             .collect(
                 Collectors.groupingBy(V3Job::getBuild, LinkedHashMap::new, Collectors.toList()));
 
