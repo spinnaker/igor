@@ -60,6 +60,12 @@ interface JenkinsClient {
     @GET('/job/{jobName}/lastCompletedBuild/api/xml')
     Build getLatestBuild(@EncodedPath('jobName') String jobName)
 
+    @GET('/job/{jobName}/lastCompletedBuild/consoleText')
+    Response getLatestBuildOutput(@EncodedPath('jobName') String jobName)
+
+    @GET('/job/{jobName}/{buildNumber}/consoleText')
+    Response getBuildOutput(@EncodedPath('jobName') String jobName, @Path('buildNumber') String buildNumber)
+
     @GET('/queue/item/{itemNumber}/api/xml')
     QueuedJob getQueuedItem(@Path('itemNumber') Integer item)
 
@@ -68,6 +74,10 @@ interface JenkinsClient {
 
     @POST('/job/{jobName}/buildWithParameters')
     Response buildWithParameters(@EncodedPath('jobName') String jobName, @QueryMap Map<String, String> queryParams, @Body String EmptyRequest, @Header("Jenkins-Crumb") String crumb)
+
+    @FormUrlEncoded
+    @POST('/job/{jobName}/{buildNumber}/submitDescription')
+    Response submitDescription(@EncodedPath('jobName') String jobName, @Path('buildNumber') Integer buildNumber, @Field("description") String description, @Header("Jenkins-Crumb") String crumb)
 
     @POST('/job/{jobName}/{buildNumber}/stop')
     Response stopRunningBuild(@EncodedPath('jobName') String jobName, @Path('buildNumber') Integer buildNumber,  @Body String EmptyRequest, @Header("Jenkins-Crumb") String crumb)
