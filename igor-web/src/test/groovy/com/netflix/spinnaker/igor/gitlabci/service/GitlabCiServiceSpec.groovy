@@ -66,6 +66,8 @@ class GitlabCiServiceSpec extends Specification {
         Pipeline ps1 = new Pipeline(id: PIPELINE_1_ID)
         Pipeline ps2 = new Pipeline(id: PIPELINE_2_ID)
         client.getPipelineSummaries(String.valueOf(PROJECT_ID), PAGE_SIZE) >> [ps1, ps2]
+        client.getPipeline(String.valueOf(PROJECT_ID), PIPELINE_1_ID) >> new Pipeline(id: PIPELINE_1_ID)
+        client.getPipeline(String.valueOf(PROJECT_ID), PIPELINE_1_ID) >> new Pipeline(id: PIPELINE_1_ID)
 
         when:
         List<Pipeline> pipelines = service.getPipelines(project, PAGE_SIZE)
@@ -74,10 +76,6 @@ class GitlabCiServiceSpec extends Specification {
         pipelines.size() == 2
         pipelines[0].id == PIPELINE_1_ID
         pipelines[1].id == PIPELINE_2_ID
-
-        //1 * client.getPipelineSummaries(String.valueOf(PROJECT_ID), PAGE_SIZE) >> [ps1, ps2]
-        //1 * client.getPipeline(String.valueOf(PROJECT_ID), PIPELINE_1_ID) >> new Pipeline(id: PIPELINE_1_ID)
-        //1 * client.getPipeline(String.valueOf(PROJECT_ID), PIPELINE_2_ID) >> new Pipeline(id: PIPELINE_2_ID)
     }
 
     def "verify retrieving of empty pipelines"() {
