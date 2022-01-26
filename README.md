@@ -168,7 +168,7 @@ default may be configured using the `regexes` list.
 
 In your configuration block (either in igor.yml, igor-local.yml, spinnaker.yml or spinnaker-local.yml), you can define multiple masters blocks by using the list format.
 
-To authenticate with Gitlab CI create use a [Personal Access Token](https://docs.gitlab.com/ee/security/token_overview.html#personal-access-tokens) with permissions `read_api`.
+To authenticate with Gitlab CI use a [Personal Access Token](https://docs.gitlab.com/ee/security/token_overview.html#personal-access-tokens) with permissions `read_api`.
 
 ```
 gitlab-ci:
@@ -180,7 +180,6 @@ gitlab-ci:
       # Optional:
       limitByOwnership: false # defaults false, limits API results to projects/groups owned by the token creator
       limitByMembership: true # defaults true, limits API results to projects/groups the token creator is a member in
-
 ```
 
 Build properties are automatically read from successful Gitlab CI Pipelines using the pattern `SPINNAKER_PROPERTY_*=value`.  For example a log containing a line
