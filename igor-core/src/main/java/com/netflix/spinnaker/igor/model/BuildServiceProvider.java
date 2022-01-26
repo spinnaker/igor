@@ -22,7 +22,7 @@ public enum BuildServiceProvider {
   JENKINS,
   TRAVIS,
   CONCOURSE,
-  GITLAB_CI,
+  GITLABCI,
   WERCKER,
   GCB;
 }

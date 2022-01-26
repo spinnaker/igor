@@ -1,5 +1,6 @@
 /*
  * Copyright 2017 Netflix, Inc.
+ * Copyright 2022 Redbox Entertainment, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,13 +41,13 @@ import retrofit.client.OkClient;
 import retrofit.converter.JacksonConverter;
 
 @Configuration
-@ConditionalOnProperty("gitlab-ci.enabled")
+@ConditionalOnProperty("gitlabci.enabled")
 @EnableConfigurationProperties(GitlabCiProperties.class)
 public class GitlabCiConfig {
   private static final Logger log = LoggerFactory.getLogger(GitlabCiConfig.class);
 
   @Bean
-  public Map<String, GitlabCiService> gitlabCiMasters(
+  public Map<String, GitlabCiService> masters(
       BuildServices buildServices,
       final IgorConfigurationProperties igorConfigurationProperties,
       GitlabCiProperties gitlabCiProperties,
@@ -58,7 +59,7 @@ public class GitlabCiConfig {
                 gitlabCiHost ->
                     gitlabCiService(
                         igorConfigurationProperties,
-                        "gitlab-ci-" + gitlabCiHost.getName(),
+                        gitlabCiHost.getName(),
                         gitlabCiHost,
                         objectMapper))
             .collect(Collectors.toMap(GitlabCiService::getName, Function.identity()));
