@@ -41,7 +41,7 @@ import retrofit.client.OkClient;
 import retrofit.converter.JacksonConverter;
 
 @Configuration
-@ConditionalOnProperty("gitlabci.enabled")
+@ConditionalOnProperty("gitlab-ci.enabled")
 @EnableConfigurationProperties(GitlabCiProperties.class)
 public class GitlabCiConfig {
   private static final Logger log = LoggerFactory.getLogger(GitlabCiConfig.class);

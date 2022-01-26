@@ -23,7 +23,7 @@ import org.hibernate.validator.constraints.NotEmpty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
-@ConfigurationProperties(prefix = "gitlabci")
+@ConfigurationProperties(prefix = "gitlab-ci")
 @Validated
 public class GitlabCiProperties implements BuildServerProperties<GitlabCiProperties.GitlabCiHost> {
   private int cachedJobTTLDays = 60;

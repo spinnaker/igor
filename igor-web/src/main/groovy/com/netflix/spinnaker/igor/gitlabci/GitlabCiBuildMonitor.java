@@ -55,7 +55,7 @@ import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
 
 @Service
-@ConditionalOnProperty("gitlabci.enabled")
+@ConditionalOnProperty("gitlab-ci.enabled")
 public class GitlabCiBuildMonitor
     extends CommonPollingMonitor<
         GitlabCiBuildMonitor.BuildDelta, GitlabCiBuildMonitor.BuildPollingDelta> {

@@ -168,10 +168,10 @@ default may be configured using the `regexes` list.
 
 In your configuration block (either in igor.yml, igor-local.yml, spinnaker.yml or spinnaker-local.yml), you can define multiple masters blocks by using the list format.
 
-To authenticate with Travis you use a "Personal Access Token" on a git user with permissions `read_api`.
+To authenticate with Gitlab CI create use a [Personal Access Token](https://docs.gitlab.com/ee/security/token_overview.html#personal-access-tokens) with permissions `read_api`.
 
 ```
-gitlabci:
+gitlab-ci:
   enabled: true
   masters:
     - address: "https://git.mycompany.com"
