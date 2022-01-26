@@ -93,7 +93,7 @@ public class GitlabCiBuildMonitor
 
   @Override
   public void poll(boolean sendEvents) {
-    buildServices.getServiceNames(BuildServiceProvider.GITLABCI).stream()
+    buildServices.getServiceNames(BuildServiceProvider.GITLAB_CI).stream()
         .map(it -> new PollContext(it, !sendEvents))
         .forEach(this::pollSingle);
   }
@@ -218,7 +218,7 @@ public class GitlabCiBuildMonitor
 
     GenericBuildContent content = new GenericBuildContent();
     content.setMaster(master);
-    content.setType(BuildServiceProvider.GITLABCI.name());
+    content.setType(BuildServiceProvider.GITLAB_CI.name());
     content.setProject(genericProject);
 
     GenericBuildEvent event = new GenericBuildEvent();

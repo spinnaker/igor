@@ -75,7 +75,7 @@ public class GitlabCiService implements BuildOperations, BuildProperties {
 
   @Override
   public BuildServiceProvider getBuildServiceProvider() {
-    return BuildServiceProvider.GITLABCI;
+    return BuildServiceProvider.GITLAB_CI;
   }
 
   @Override
