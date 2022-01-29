@@ -53,6 +53,7 @@ public class GitlabCiProperties implements BuildServerProperties<GitlabCiPropert
     private boolean limitByMembership = true;
     private boolean limitByOwnership = false;
     private Integer itemUpperThreshold = 1000;
+    private Integer defaultMaxHttpRetries = 5;
     private Permissions.Builder permissions = new Permissions.Builder();
 
     public String getName() {
@@ -117,6 +118,14 @@ public class GitlabCiProperties implements BuildServerProperties<GitlabCiPropert
 
     public void setPermissions(Permissions.Builder permissions) {
       this.permissions = permissions;
+    }
+
+    public Integer getDefaultMaxHttpRetries() {
+      return defaultMaxHttpRetries;
+    }
+
+    public void setDefaultMaxHttpRetries(Integer defaultMaxHttpRetries) {
+      this.defaultMaxHttpRetries = defaultMaxHttpRetries;
     }
   }
 }

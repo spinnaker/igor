@@ -79,9 +79,7 @@ public class GitlabCiConfig {
             igorConfigurationProperties.getClient().getTimeout(),
             objectMapper),
         name,
-        host.getAddress(),
-        host.getLimitByMembership(),
-        host.getLimitByOwnership(),
+        host,
         host.getPermissions().build());
   }
 

@@ -119,6 +119,8 @@ public class GitlabCiBuildMonitor
     projects.parallelStream()
         .forEach(
             project -> {
+              // Gitlab Pipeline API is broken up by project, check for new pipelines for each
+              // project individually
               List<Pipeline> pipelines =
                   filterOldPipelines(
                       gitlabCiService.getPipelines(project, MAX_NUMBER_OF_PIPELINES));
@@ -188,6 +190,10 @@ public class GitlabCiBuildMonitor
     return pipelines.stream()
         .filter(
             pipeline ->
+                // Finished timestamp is not available from Gitlab pipeline List APIs, but created
+                // at is
+                // createdAt is the best property available to use without querying each pipeline
+                // individually
                 (pipeline.getCreatedAt() != null)
                     && (pipeline.getCreatedAt().getTime() > threshold))
         .collect(Collectors.toList());

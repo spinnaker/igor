@@ -16,6 +16,8 @@
 package com.netflix.spinnaker.igor.gitlabci.service
 
 import com.netflix.spinnaker.fiat.model.resources.Permissions
+import com.netflix.spinnaker.igor.config.GitlabCiProperties
+import com.netflix.spinnaker.igor.config.GitlabCiProperties.GitlabCiHost
 import com.netflix.spinnaker.igor.gitlabci.client.GitlabApiCannedResponses
 import com.netflix.spinnaker.igor.gitlabci.client.GitlabCiClient
 import com.netflix.spinnaker.igor.gitlabci.client.model.Pipeline
@@ -30,9 +32,13 @@ class GitlabCiServiceSpec extends Specification {
     @Shared
     GitlabCiService service
 
+    @Shared
+    GitlabCiHost hostConfig
+
     void setup() {
         client = Mock(GitlabCiClient)
-        service = new GitlabCiService(client, "gitlab", null, false, false, Permissions.EMPTY)
+        hostConfig = Mock(GitlabCiHost)
+        service = new GitlabCiService(client, "gitlab", hostConfig, Permissions.EMPTY)
     }
 
     def "verify project pagination"() {

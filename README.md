@@ -173,6 +173,7 @@ To authenticate with Gitlab CI use a [Personal Access Token](https://docs.gitlab
 ```
 gitlab-ci:
   enabled: true
+  itemUpperThreshold: 1000 # Optional, default 1000.  Determines max new pipeline count before a cache cycle is rejected
   masters:
     - address: "https://git.mycompany.com"
       name: mygitlab
@@ -180,6 +181,7 @@ gitlab-ci:
       # Optional:
       limitByOwnership: false # defaults false, limits API results to projects/groups owned by the token creator
       limitByMembership: true # defaults true, limits API results to projects/groups the token creator is a member in
+      defaultMaxHttpRetries: 5 # defaults 5, # default max number of retries when hitting Gitlab APIs and errors occur
 ```
 
 Build properties are automatically read from successful Gitlab CI Pipelines using the pattern `SPINNAKER_PROPERTY_*=value`.  For example a log containing a line

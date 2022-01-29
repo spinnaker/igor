@@ -18,12 +18,12 @@ package com.netflix.spinnaker.igor.gitlabci.service;
 
 import static net.logstash.logback.argument.StructuredArguments.kv;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.fiat.model.resources.Permissions;
 import com.netflix.spinnaker.igor.build.model.GenericBuild;
 import com.netflix.spinnaker.igor.build.model.GenericGitRevision;
 import com.netflix.spinnaker.igor.build.model.JobConfiguration;
 import com.netflix.spinnaker.igor.build.model.Result;
+import com.netflix.spinnaker.igor.config.GitlabCiProperties;
 import com.netflix.spinnaker.igor.gitlabci.client.GitlabCiClient;
 import com.netflix.spinnaker.igor.gitlabci.client.model.*;
 import com.netflix.spinnaker.igor.model.BuildServiceProvider;
@@ -46,25 +46,18 @@ import retrofit.RetrofitError;
 public class GitlabCiService implements BuildOperations, BuildProperties {
   private final String name;
   private final GitlabCiClient client;
-  private final String address;
-  private final boolean limitByMembership;
-  private final boolean limitByOwnership;
+  private final GitlabCiProperties.GitlabCiHost hostConfig;
   private final Permissions permissions;
   private final RetrySupport retrySupport = new RetrySupport();
-  private final ObjectMapper objectMapper = new ObjectMapper();
 
   public GitlabCiService(
       GitlabCiClient client,
       String name,
-      String address,
-      boolean limitByMembership,
-      boolean limitByOwnership,
+      GitlabCiProperties.GitlabCiHost hostConfig,
       Permissions permissions) {
     this.client = client;
     this.name = name;
-    this.address = address;
-    this.limitByMembership = limitByMembership;
-    this.limitByOwnership = limitByOwnership;
+    this.hostConfig = hostConfig;
     this.permissions = permissions;
   }
 
@@ -95,7 +88,7 @@ public class GitlabCiService implements BuildOperations, BuildProperties {
       return null;
     }
     return GitlabCiPipelineUtils.genericBuild(
-        pipeline, this.address, project.getPathWithNamespace());
+        pipeline, this.hostConfig.getAddress(), project.getPathWithNamespace());
   }
 
   @Override
@@ -170,9 +163,8 @@ public class GitlabCiService implements BuildOperations, BuildProperties {
                   kv("project", projectId),
                   kv("status", status));
             }
-            // Pipeline has many jobs, jobs have many artifacts
-            // No way to list all job's artifacts so loop the jobs
-            // trying to find the artifact.  Return if/when one is found
+            // Pipelines logs are stored within each stage (job), loop all jobs of this pipeline
+            // and any jobs of child pipeline's to parse all logs for the pipeline
             List<Job> jobs = getJobsWithBridges(projectId, pipelineId);
             for (Job job : jobs) {
               InputStream logStream = this.client.getJobLog(projectId, job.getId()).getBody().in();
@@ -199,7 +191,7 @@ public class GitlabCiService implements BuildOperations, BuildProperties {
             return properties;
           }
         },
-        5,
+        this.hostConfig.getDefaultMaxHttpRetries(),
         Duration.ofSeconds(2),
         false);
   }
@@ -211,12 +203,14 @@ public class GitlabCiService implements BuildOperations, BuildProperties {
   }
 
   public String getAddress() {
-    return address;
+    return this.hostConfig.getAddress();
   }
 
   private List<Project> getProjectsRec(List<Project> projects, int page, int pageSize) {
     isValidPageSize(pageSize);
-    List<Project> slice = client.getProjects(limitByMembership, limitByOwnership, page, pageSize);
+    List<Project> slice =
+        client.getProjects(
+            hostConfig.getLimitByMembership(), hostConfig.getLimitByOwnership(), page, pageSize);
     if (slice.isEmpty()) {
       return projects;
     } else {

@@ -45,12 +45,6 @@ public interface GitlabCiClient {
   @GET("/api/v4/projects/{projectId}/pipelines/{pipelineId}")
   Pipeline getPipeline(@Path("projectId") String projectId, @Path("pipelineId") long pipelineId);
 
-  @GET("/api/v4/projects/{projectId}/jobs/{jobId}/artifacts/{artifactPath}")
-  Response getArtifactFile(
-      @Path("projectId") String projectId,
-      @Path("jobId") int jobId,
-      @Path("artifactPath") String artifactPath);
-
   @GET("/api/v4/projects/{projectId}/pipelines/{pipelineId}/jobs")
   List<Job> getJobs(@Path("projectId") String projectId, @Path("pipelineId") int pipelineId);
 
