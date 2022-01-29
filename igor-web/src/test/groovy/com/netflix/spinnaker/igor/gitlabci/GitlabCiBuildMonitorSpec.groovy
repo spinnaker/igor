@@ -63,7 +63,7 @@ class GitlabCiBuildMonitorSpec extends Specification {
 
     @Ignore("Spock 1.3: The assertions on echoService never worked, but now 1.3 is smart enough to fail on that")
     @Unroll
-    def "send 1 events for a new build and store them in cache"() {
+    def "send 1 event for a new build and store it in cache"() {
         given:
         Project project = new Project(pathWithNamespace: 'user1/project1')
         Pipeline pipeline = new Pipeline(id: 101, tag: false, ref: 'master', createdAt: new Date(), status: PipelineStatus.success)
