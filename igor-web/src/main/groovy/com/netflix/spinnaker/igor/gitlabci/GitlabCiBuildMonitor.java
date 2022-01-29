@@ -190,10 +190,8 @@ public class GitlabCiBuildMonitor
     return pipelines.stream()
         .filter(
             pipeline ->
-                // Finished timestamp is not available from Gitlab pipeline List APIs, but created
-                // at is
-                // createdAt is the best property available to use without querying each pipeline
-                // individually
+                // Finished timestamp is not available without querying the pipelines individually
+                // creates at is the closest timestamp value available in the list APIs
                 (pipeline.getCreatedAt() != null)
                     && (pipeline.getCreatedAt().getTime() > threshold))
         .collect(Collectors.toList());
