@@ -152,6 +152,12 @@ public class GitlabCiProperties implements BuildServerProperties<GitlabCiPropert
     }
 
     public void setDefaultHttpPageLength(Integer defaultHttpPageLength) {
+      if (defaultHttpPageLength == null
+          || defaultHttpPageLength < 1
+          || defaultHttpPageLength > 100) {
+        throw new IllegalArgumentException(
+            "Invalid Gitlab CI config.  defaultHttpPageLength must be a valid number between 1-100");
+      }
       this.defaultHttpPageLength = defaultHttpPageLength;
     }
   }

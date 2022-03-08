@@ -26,7 +26,6 @@ import retrofit.http.Path;
 import retrofit.http.Query;
 
 public interface GitlabCiClient {
-  int MAX_PAGE_SIZE = 100;
 
   @GET("/api/v4/projects")
   List<Project> getProjects(

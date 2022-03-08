@@ -41,6 +41,14 @@ class GitlabCiServiceSpec extends Specification {
         service = new GitlabCiService(client, "gitlab", hostConfig, Permissions.EMPTY)
     }
 
+    def "verify invalid config of http page size"() {
+      when:
+      hostConfig.setDefaultHttpPageLength(999999999)
+
+      then:
+      thrown IllegalArgumentException
+    }
+
     def "verify project pagination"() {
         given:
         client.getProjects(_, _, 1, _) >> [new Project(pathWithNamespace: "project1", buildsAccessLevel: "enabled")]
