@@ -37,7 +37,7 @@ class GitlabCiServiceSpec extends Specification {
 
     void setup() {
         client = Mock(GitlabCiClient)
-        hostConfig = Mock(GitlabCiHost)
+        hostConfig = new GitlabCiHost()
         service = new GitlabCiService(client, "gitlab", hostConfig, Permissions.EMPTY)
     }
 
@@ -52,14 +52,6 @@ class GitlabCiServiceSpec extends Specification {
 
         then:
         projects.size() == 2
-    }
-
-    def "verify retrieving of pipelines: too large page"() {
-        when:
-        service.getPipelines(new Project(), 100500)
-
-        then:
-        thrown IllegalArgumentException
     }
 
     def "verify retrieving of pipelines"() {

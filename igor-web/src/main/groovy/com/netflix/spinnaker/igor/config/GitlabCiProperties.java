@@ -52,8 +52,11 @@ public class GitlabCiProperties implements BuildServerProperties<GitlabCiPropert
     private String privateToken;
     private boolean limitByMembership = true;
     private boolean limitByOwnership = false;
+    private Integer defaultHttpPageLength = 100;
     private Integer itemUpperThreshold = 1000;
-    private Integer defaultMaxHttpRetries = 5;
+    private Integer httpRetryMaxAttempts = 5;
+    private Integer httpRetryWaitSeconds = 2;
+    private Boolean httpRetryExponentialBackoff = false;
     private Permissions.Builder permissions = new Permissions.Builder();
 
     public String getName() {
@@ -120,12 +123,36 @@ public class GitlabCiProperties implements BuildServerProperties<GitlabCiPropert
       this.permissions = permissions;
     }
 
-    public Integer getDefaultMaxHttpRetries() {
-      return defaultMaxHttpRetries;
+    public Integer getHttpRetryWaitSeconds() {
+      return httpRetryWaitSeconds;
     }
 
-    public void setDefaultMaxHttpRetries(Integer defaultMaxHttpRetries) {
-      this.defaultMaxHttpRetries = defaultMaxHttpRetries;
+    public void setHttpRetryWaitSeconds(Integer httpRetryWaitSeconds) {
+      this.httpRetryWaitSeconds = httpRetryWaitSeconds;
+    }
+
+    public Integer getHttpRetryMaxAttempts() {
+      return httpRetryMaxAttempts;
+    }
+
+    public void setHttpRetryMaxAttempts(Integer httpRetryMaxAttempts) {
+      this.httpRetryMaxAttempts = httpRetryMaxAttempts;
+    }
+
+    public Boolean getHttpRetryExponentialBackoff() {
+      return httpRetryExponentialBackoff;
+    }
+
+    public void setHttpRetryExponentialBackoff(Boolean httpRetryExponentialBackoff) {
+      this.httpRetryExponentialBackoff = httpRetryExponentialBackoff;
+    }
+
+    public Integer getDefaultHttpPageLength() {
+      return defaultHttpPageLength;
+    }
+
+    public void setDefaultHttpPageLength(Integer defaultHttpPageLength) {
+      this.defaultHttpPageLength = defaultHttpPageLength;
     }
   }
 }

@@ -93,7 +93,7 @@ public class GitlabCiService implements BuildOperations, BuildProperties {
 
   @Override
   public List<Pipeline> getBuilds(String job) {
-    return this.client.getPipelineSummaries(job, 25);
+    return this.client.getPipelineSummaries(job, this.hostConfig.getDefaultHttpPageLength());
   }
 
   @Override
@@ -112,7 +112,7 @@ public class GitlabCiService implements BuildOperations, BuildProperties {
   }
 
   public List<Project> getProjects() {
-    return getProjectsRec(new ArrayList<>(), 1, 100).parallelStream()
+    return getProjectsRec(new ArrayList<>(), 1).parallelStream()
         // Ignore projects that don't have Gitlab CI enabled.  It is not possible to filter this
         // using the GitLab
         // API. We need to filter it after retrieving all projects
@@ -191,41 +191,35 @@ public class GitlabCiService implements BuildOperations, BuildProperties {
             return properties;
           }
         },
-        this.hostConfig.getDefaultMaxHttpRetries(),
-        Duration.ofSeconds(2),
-        false);
+        this.hostConfig.getHttpRetryMaxAttempts(),
+        Duration.ofSeconds(this.hostConfig.getHttpRetryWaitSeconds()),
+        this.hostConfig.getHttpRetryExponentialBackoff());
   }
 
-  public List<Pipeline> getPipelines(final Project project, int limit) {
-    isValidPageSize(limit);
+  public List<Pipeline> getPipelines(final Project project, int pageSize) {
+    return client.getPipelineSummaries(String.valueOf(project.getId()), pageSize);
+  }
 
-    return client.getPipelineSummaries(String.valueOf(project.getId()), limit);
+  public List<Pipeline> getPipelines(final Project project) {
+    return getPipelines(project, this.hostConfig.getDefaultHttpPageLength());
   }
 
   public String getAddress() {
     return this.hostConfig.getAddress();
   }
 
-  private List<Project> getProjectsRec(List<Project> projects, int page, int pageSize) {
-    isValidPageSize(pageSize);
+  private List<Project> getProjectsRec(List<Project> projects, int page) {
     List<Project> slice =
         client.getProjects(
-            hostConfig.getLimitByMembership(), hostConfig.getLimitByOwnership(), page, pageSize);
+            hostConfig.getLimitByMembership(),
+            hostConfig.getLimitByOwnership(),
+            page,
+            hostConfig.getDefaultHttpPageLength());
     if (slice.isEmpty()) {
       return projects;
     } else {
       projects.addAll(slice);
-      return getProjectsRec(projects, page + 1, pageSize);
-    }
-  }
-
-  private static void isValidPageSize(int perPage) {
-    if (perPage > GitlabCiClient.MAX_PAGE_SIZE) {
-      throw new IllegalArgumentException(
-          "Gitlab API call page size should be no more than "
-              + GitlabCiClient.MAX_PAGE_SIZE
-              + " but was "
-              + perPage);
+      return getProjectsRec(projects, page + 1);
     }
   }
 }

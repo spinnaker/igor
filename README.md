@@ -179,9 +179,12 @@ gitlab-ci:
       name: mygitlab
       privateToken: kjsdf023ofku209823
       # Optional:
+      defaultHttpPageLength: 100 # defaults 100, page length when querying paginated Gitlab API endpoints (100 is max per Gitlab docs)
       limitByOwnership: false # defaults false, limits API results to projects/groups owned by the token creator
       limitByMembership: true # defaults true, limits API results to projects/groups the token creator is a member in
-      defaultMaxHttpRetries: 5 # defaults 5, # default max number of retries when hitting Gitlab APIs and errors occur
+      httpRetryMaxAttempts: 5 # defaults 5, # default max number of retries when hitting Gitlab APIs and errors occur
+      httpRetryWaitSeconds: 2 # defaults 2, # of seconds to wait between retries
+      httpRetryExponentialBackoff: false # deafults false, if true retries to Gitlab will increase exponentially using the httpRetryWaitSeconds option's value
 ```
 
 Build properties are automatically read from successful Gitlab CI Pipelines using the pattern `SPINNAKER_PROPERTY_*=value`.  For example a log containing a line
