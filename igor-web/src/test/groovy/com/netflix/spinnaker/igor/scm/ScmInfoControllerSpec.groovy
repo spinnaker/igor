@@ -17,11 +17,11 @@
 package com.netflix.spinnaker.igor.scm
 
 import com.netflix.spinnaker.igor.scm.github.client.GitHubClient
-import com.netflix.spinnaker.igor.scm.github.client.GitHubMaster
+import com.netflix.spinnaker.igor.scm.github.client.GitHubController
 import com.netflix.spinnaker.igor.scm.stash.client.StashClient
-import com.netflix.spinnaker.igor.scm.stash.client.StashMaster
+import com.netflix.spinnaker.igor.scm.stash.client.StashController
 import com.netflix.spinnaker.igor.scm.bitbucket.client.BitBucketClient
-import com.netflix.spinnaker.igor.scm.bitbucket.client.BitBucketMaster
+import com.netflix.spinnaker.igor.scm.bitbucket.client.BitBucketController
 import spock.lang.Specification
 import spock.lang.Subject
 
@@ -38,18 +38,29 @@ class ScmInfoControllerSpec extends Specification {
     BitBucketClient bitBucketClient = Mock(BitBucketClient)
 
     void setup() {
-        controller = new ScmInfoController(gitHubMaster: new GitHubMaster(gitHubClient: gitHubClient, baseUrl: "https://github.com"),
-                                           stashMaster: new StashMaster(stashClient: stashClient, baseUrl: "http://stash.com"),
-                                           bitBucketMaster: new BitBucketMaster(bitBucketClient: bitBucketClient, baseUrl: "https://api.bitbucket.org"))
+        controller = new ScmInfoController(gitHubController: new GitHubController(gitHubClient: gitHubClient, baseUrl: "https://github.com"),
+          stashController: new StashController(stashClient: stashClient, baseUrl: "http://stash.com"),
+          bitBucketController: new BitBucketController(bitBucketClient: bitBucketClient, baseUrl: "https://api.bitbucket.org"))
     }
 
+    @Deprecated(forRemoval = true)
     void 'list masters'() {
         when:
-        Map listMastersResponse = controller.listMasters()
+        Map listControllersResponse = controller.listMasters()
 
         then:
-        listMastersResponse.stash == "http://stash.com"
-        listMastersResponse.gitHub == "https://github.com"
-        listMastersResponse.bitBucket == "https://api.bitbucket.org"
+        listControllersResponse.stash == "http://stash.com"
+        listControllersResponse.gitHub == "https://github.com"
+        listControllersResponse.bitBucket == "https://api.bitbucket.org"
+    }
+
+    void 'list controllers'() {
+        when:
+        Map listControllersResponse = controller.listControllers()
+
+        then:
+        listControllersResponse.stash == "http://stash.com"
+        listControllersResponse.gitHub == "https://github.com"
+        listControllersResponse.bitBucket == "https://api.bitbucket.org"
     }
 }

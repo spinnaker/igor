@@ -41,21 +41,21 @@ import retrofit.RestAdapter
 @EnableConfigurationProperties(WerckerProperties)
 class WerckerConfig {
     @Bean
-    Map<String, WerckerService> werckerMasters(
+    Map<String, WerckerService> werckerControllers(
         BuildServices buildServices,
         WerckerCache cache,
         IgorConfigurationProperties igorConfigurationProperties,
         OkHttpClientProvider clientProvider,
         @Valid WerckerProperties werckerProperties,
         RestAdapter.LogLevel retrofitLogLevel) {
-        log.debug "creating werckerMasters"
-        Map<String, WerckerService> werckerMasters = werckerProperties?.masters?.collectEntries { WerckerHost host ->
+        log.debug "creating werckerControllers"
+        Map<String, WerckerService> werckerControllers = werckerProperties?.controllers?.collectEntries { WerckerHost host ->
             log.debug "bootstrapping Wercker ${host.address} as ${host.name}"
             [(host.name): new WerckerService(host, cache, werckerClient(host, igorConfigurationProperties.getClient().timeout, clientProvider, retrofitLogLevel), host.permissions.build())]
         }
 
-        buildServices.addServices(werckerMasters)
-        werckerMasters
+        buildServices.addServices(werckerControllers)
+        werckerControllers
     }
 
     static WerckerClient werckerClient(WerckerHost host, int timeout = 30000, OkHttpClientProvider clientProvider, RestAdapter.LogLevel retrofitLogLevel) {

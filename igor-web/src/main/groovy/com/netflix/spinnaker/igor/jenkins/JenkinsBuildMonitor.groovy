@@ -93,49 +93,49 @@ class JenkinsBuildMonitor extends CommonPollingMonitor<JobDelta, JobPollingDelta
     @Override
     void poll(boolean sendEvents) {
         buildServices.getServiceNames(BuildServiceProvider.JENKINS).stream().forEach(
-            { master -> pollSingle(new PollContext(master, !sendEvents)) }
+            { controller -> pollSingle(new PollContext(controller, !sendEvents)) }
         )
     }
 
     /**
-     * Gets a list of jobs for this master & processes builds between last poll stamp and a sliding upper bound stamp,
+     * Gets a list of jobs for this controller & processes builds between last poll stamp and a sliding upper bound stamp,
      * the cursor will be used to advanced to the upper bound when all builds are completed in the commit phase.
      */
     @Override
     protected JobPollingDelta generateDelta(PollContext ctx) {
-        String master = ctx.partitionName
-        log.trace("Checking for new builds for $master")
+        String controller = ctx.partitionName
+        log.trace("Checking for new builds for $controller")
 
         final List<JobDelta> delta = []
-        registry.timer("pollingMonitor.jenkins.retrieveProjects", [new BasicTag("partition", master)]).record {
-            JenkinsService jenkinsService = buildServices.getService(master) as JenkinsService
+        registry.timer("pollingMonitor.jenkins.retrieveProjects", [new BasicTag("partition", controller)]).record {
+            JenkinsService jenkinsService = buildServices.getService(controller) as JenkinsService
             List<Project> jobs = jenkinsService.getProjects()?.getList() ?:[]
-            jobs.forEach( { job -> processBuildsOfProject(jenkinsService, master, job, delta)})
+            jobs.forEach( { job -> processBuildsOfProject(jenkinsService, controller, job, delta)})
         }
-        return new JobPollingDelta(master: master, items: delta)
+        return new JobPollingDelta(controller: controller, items: delta)
     }
 
-    private void processBuildsOfProject(JenkinsService jenkinsService, String master, Project job, List<JobDelta> delta) {
+    private void processBuildsOfProject(JenkinsService jenkinsService, String controller, Project job, List<JobDelta> delta) {
         if (!job.lastBuild) {
-            log.trace("[{}:{}] has no builds skipping...", kv("master", master), kv("job", job.name))
+            log.trace("[{}:{}] has no builds skipping...", kv("controller", controller), kv("job", job.name))
             return
         }
 
         try {
-            Long cursor = cache.getLastPollCycleTimestamp(master, job.name)
+            Long cursor = cache.getLastPollCycleTimestamp(controller, job.name)
             Long lastBuildStamp = job.lastBuild.timestamp as Long
             Date upperBound = new Date(lastBuildStamp)
             if (cursor == lastBuildStamp) {
-                log.trace("[${master}:${job.name}] is up to date. skipping")
+                log.trace("[${controller}:${job.name}] is up to date. skipping")
                 return
             }
 
             if (!cursor && !igorProperties.spinnaker.build.handleFirstBuilds) {
-                cache.setLastPollCycleTimestamp(master, job.name, lastBuildStamp)
+                cache.setLastPollCycleTimestamp(controller, job.name, lastBuildStamp)
                 return
             }
 
-            List<Build> allBuilds = getBuilds(jenkinsService, master, job, cursor, lastBuildStamp)
+            List<Build> allBuilds = getBuilds(jenkinsService, controller, job, cursor, lastBuildStamp)
             List<Build> currentlyBuilding = allBuilds.findAll { it.building }
             List<Build> completedBuilds = allBuilds.findAll { !it.building }
             cursor = !cursor ? lastBuildStamp : cursor
@@ -156,17 +156,17 @@ class JenkinsBuildMonitor extends CommonPollingMonitor<JobDelta, JobPollingDelta
             ))
 
         } catch (e) {
-            log.error("Error processing builds for [{}:{}]", kv("master", master), kv("job", job.name), e)
+            log.error("Error processing builds for [{}:{}]", kv("controller", controller), kv("job", job.name), e)
             if (e.cause instanceof RetrofitError) {
                 def re = (RetrofitError) e.cause
-                log.error("Error communicating with jenkins for [{}:{}]: {}", kv("master", master), kv("job", job.name), kv("url", re.url), re)
+                log.error("Error communicating with jenkins for [{}:{}]: {}", kv("controller", controller), kv("job", job.name), kv("url", re.url), re)
             }
         }
     }
 
-    private List<Build> getBuilds(JenkinsService jenkinsService, String master, Project job, Long cursor, Long lastBuildStamp) {
+    private List<Build> getBuilds(JenkinsService jenkinsService, String controller, Project job, Long cursor, Long lastBuildStamp) {
         if (!cursor) {
-            log.debug("[${master}:${job.name}] setting new cursor to ${lastBuildStamp}")
+            log.debug("[${controller}:${job.name}] setting new cursor to ${lastBuildStamp}")
             return jenkinsService.getBuilds(job.name) ?: []
         }
 
@@ -192,52 +192,52 @@ class JenkinsBuildMonitor extends CommonPollingMonitor<JobDelta, JobPollingDelta
 
     @Override
     protected void commitDelta(JobPollingDelta delta, boolean sendEvents) {
-        String master = delta.master
+        String controller = delta.controller
 
         delta.items.stream().forEach { job ->
             // post events for finished builds
             job.completedBuilds.forEach { build ->
-                Boolean eventPosted = cache.getEventPosted(master, job.name, job.cursor, build.number)
+                Boolean eventPosted = cache.getEventPosted(controller, job.name, job.cursor, build.number)
                 if (!eventPosted) {
                     if (sendEvents) {
-                        postEvent(new Project(name: job.name, lastBuild: build), master)
-                        log.debug("[${master}:${job.name}]:${build.number} event posted")
+                        postEvent(new Project(name: job.name, lastBuild: build), controller)
+                        log.debug("[${controller}:${job.name}]:${build.number} event posted")
                     } else {
                       registry.counter(missedNotificationId.withTags("monitor", getName(), "reason", "fastForward")).increment()
                     }
 
-                    cache.setEventPosted(master, job.name, job.cursor, build.number)
+                    cache.setEventPosted(controller, job.name, job.cursor, build.number)
                 }
             }
 
             // advance cursor when all builds have completed in the interval
             if (job.runningBuilds.isEmpty()) {
                 log.info("[{}:{}] has no other builds between [${job.lowerBound} - ${job.upperBound}], " +
-                    "advancing cursor to ${job.lastBuildStamp}", kv("master", master), kv("job", job.name))
-                cache.pruneOldMarkers(master, job.name, job.cursor)
-                cache.setLastPollCycleTimestamp(master, job.name, job.lastBuildStamp)
+                    "advancing cursor to ${job.lastBuildStamp}", kv("controller", controller), kv("job", job.name))
+                cache.pruneOldMarkers(controller, job.name, job.cursor)
+                cache.setLastPollCycleTimestamp(controller, job.name, job.lastBuildStamp)
             }
         }
     }
 
     @Override
     protected Integer getPartitionUpperThreshold(String partition) {
-        return jenkinsProperties.masters.find { partition == it.name }?.itemUpperThreshold
+        return jenkinsProperties.controllers.find { partition == it.name }?.itemUpperThreshold
     }
 
-    private void postEvent(Project project, String master) {
+    private void postEvent(Project project, String controller) {
         if (!echoService.isPresent()) {
             log.warn("Cannot send build notification: Echo is not configured")
             registry.counter(missedNotificationId.withTag("monitor", getName())).increment()
             return
         }
         AuthenticatedRequest.allowAnonymous {
-            echoService.get().postEvent(new BuildEvent(content: new BuildContent(project: project, master: master)))
+            echoService.get().postEvent(new BuildEvent(content: new BuildContent(project: project, controller: controller)))
         }
     }
 
     private static class JobPollingDelta implements PollingDelta<JobDelta> {
-        String master
+        String controller
         List<JobDelta> items
     }
 

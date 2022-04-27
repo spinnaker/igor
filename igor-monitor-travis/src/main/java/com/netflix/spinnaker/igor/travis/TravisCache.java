@@ -47,11 +47,11 @@ public class TravisCache {
     this.igorConfigurationProperties = igorConfigurationProperties;
   }
 
-  public Map<String, Integer> getQueuedJob(String master, int queueNumber) {
+  public Map<String, Integer> getQueuedJob(String controller, int queueNumber) {
     Map<String, String> result =
         redisClientDelegate.withCommandsClient(
             c -> {
-              return c.hgetAll(makeKey(QUEUE_TYPE, master, queueNumber));
+              return c.hgetAll(makeKey(QUEUE_TYPE, controller, queueNumber));
             });
 
     if (result.isEmpty()) {
@@ -65,8 +65,8 @@ public class TravisCache {
     return converted;
   }
 
-  public int setQueuedJob(String master, int repositoryId, int requestId) {
-    String key = makeKey(QUEUE_TYPE, master, requestId);
+  public int setQueuedJob(String controller, int repositoryId, int requestId) {
+    String key = makeKey(QUEUE_TYPE, controller, requestId);
     redisClientDelegate.withCommandsClient(
         c -> {
           c.hset(key, "requestId", Integer.toString(requestId));
@@ -75,31 +75,31 @@ public class TravisCache {
     return requestId;
   }
 
-  public void removeQuededJob(String master, int queueId) {
+  public void removeQuededJob(String controller, int queueId) {
     redisClientDelegate.withCommandsClient(
         c -> {
-          c.del(makeKey(QUEUE_TYPE, master, queueId));
+          c.del(makeKey(QUEUE_TYPE, controller, queueId));
         });
   }
 
-  public void setJobLog(String master, int jobId, String log) {
-    String key = makeKey(LOG_TYPE, master, jobId);
+  public void setJobLog(String controller, int jobId, String log) {
+    String key = makeKey(LOG_TYPE, controller, jobId);
     redisClientDelegate.withCommandsClient(
         c -> {
           c.setex(key, LOG_EXPIRE_SECONDS, log);
         });
   }
 
-  public String getJobLog(String master, int jobId) {
-    String key = makeKey(LOG_TYPE, master, jobId);
+  public String getJobLog(String controller, int jobId) {
+    String key = makeKey(LOG_TYPE, controller, jobId);
     return redisClientDelegate.withCommandsClient(
         c -> {
           return c.get(key);
         });
   }
 
-  private String makeKey(String type, String master, int id) {
-    return baseKey() + ":" + type + ":" + master + ":" + id;
+  private String makeKey(String type, String controller, int id) {
+    return baseKey() + ":" + type + ":" + controller + ":" + id;
   }
 
   private String baseKey() {

@@ -35,7 +35,7 @@ class BuildCacheSpec extends Specification {
     @Subject
     BuildCache cache = new BuildCache(redisClientDelegate, new IgorConfigurationProperties())
 
-    def master = 'master'
+    def controller = 'controller'
     def test = 'test'
     def int TTL = 42
 
@@ -48,31 +48,31 @@ class BuildCacheSpec extends Specification {
 
     void 'new build numbers get overridden'() {
         when:
-        cache.setLastBuild(master, 'job1', 78, true, TTL)
+        cache.setLastBuild(controller, 'job1', 78, true, TTL)
 
         then:
-        cache.getLastBuild(master, 'job1', true) == 78
+        cache.getLastBuild(controller, 'job1', true) == 78
 
         when:
-        cache.setLastBuild(master, 'job1', 80, true, TTL)
+        cache.setLastBuild(controller, 'job1', 80, true, TTL)
 
         then:
-        cache.getLastBuild(master, 'job1', true) == 80
+        cache.getLastBuild(controller, 'job1', true) == 80
     }
 
     void 'running and completed builds are handled separately'() {
         when:
-        cache.setLastBuild(master, 'job1', 78, true, TTL)
+        cache.setLastBuild(controller, 'job1', 78, true, TTL)
 
         then:
-        cache.getLastBuild(master, 'job1', true) == 78
+        cache.getLastBuild(controller, 'job1', true) == 78
 
         when:
-        cache.setLastBuild(master, 'job1', 80, false, TTL)
+        cache.setLastBuild(controller, 'job1', 80, false, TTL)
 
         then:
-        cache.getLastBuild(master, 'job1', false) == 80
-        cache.getLastBuild(master, 'job1', true) == 78
+        cache.getLastBuild(controller, 'job1', false) == 80
+        cache.getLastBuild(controller, 'job1', true) == 78
     }
 
     void 'when value is not found, -1 is returned'() {
@@ -80,32 +80,32 @@ class BuildCacheSpec extends Specification {
         cache.getLastBuild('notthere', 'job1', true) == -1
     }
 
-    void 'can set builds for multiple masters'() {
+    void 'can set builds for multiple controllers'() {
         when:
-        cache.setLastBuild(master, 'job1', 78, true, TTL)
+        cache.setLastBuild(controller, 'job1', 78, true, TTL)
         cache.setLastBuild('example2', 'job1', 88, true, TTL)
 
         then:
-        cache.getLastBuild(master, 'job1', true) == 78
+        cache.getLastBuild(controller, 'job1', true) == 78
         cache.getLastBuild('example2', 'job1', true) == 88
     }
 
-    void 'correctly retrieves all jobsNames for a master'() {
+    void 'correctly retrieves all jobsNames for a controller'() {
         when:
-        cache.setLastBuild(master, 'job1', 78, true, TTL)
-        cache.setLastBuild(master, 'job2', 11, false, TTL)
-        cache.setLastBuild(master, 'blurb', 1, false, TTL)
+        cache.setLastBuild(controller, 'job1', 78, true, TTL)
+        cache.setLastBuild(controller, 'job2', 11, false, TTL)
+        cache.setLastBuild(controller, 'blurb', 1, false, TTL)
 
         then:
-        cache.getJobNames(master) == ['blurb', 'job2']
+        cache.getJobNames(controller) == ['blurb', 'job2']
     }
 
     @Unroll
     void 'retrieves all matching jobs for typeahead #query'() {
         when:
-        cache.setLastBuild(master, 'job1', 1, true, TTL)
+        cache.setLastBuild(controller, 'job1', 1, true, TTL)
         cache.setLastBuild(test, 'job1', 1, false, TTL)
-        cache.setLastBuild(master, 'job2', 1, false, TTL)
+        cache.setLastBuild(controller, 'job2', 1, false, TTL)
         cache.setLastBuild(test, 'job3', 1, false, TTL)
 
         then:
@@ -113,10 +113,10 @@ class BuildCacheSpec extends Specification {
 
         where:
         query  || expected
-        'job'  || ['master:job1', 'master:job2', 'test:job1', 'test:job3']
-        'job1' || ['master:job1', 'test:job1']
-        'ob1'  || ['master:job1', 'test:job1']
-        'B2'   || ['master:job2']
+        'job'  || ['controller:job1', 'controller:job2', 'test:job1', 'test:job3']
+        'job1' || ['controller:job1', 'test:job1']
+        'ob1'  || ['controller:job1', 'test:job1']
+        'B2'   || ['controller:job2']
         '3'    || ['test:job3']
         'nope' || []
     }
@@ -128,19 +128,19 @@ class BuildCacheSpec extends Specification {
         BuildCache secondInstance = new BuildCache(redisClientDelegate, altCfg)
 
         when:
-        secondInstance.setLastBuild(master, 'job1', 1, false, TTL)
+        secondInstance.setLastBuild(controller, 'job1', 1, false, TTL)
 
         then:
-        secondInstance.getJobNames(master) == ['job1']
-        cache.getJobNames(master) == []
+        secondInstance.getJobNames(controller) == ['job1']
+        cache.getJobNames(controller) == []
 
         when:
         embeddedRedis.pool.resource.withCloseable {
-            it.del(cache.makeKey(master, 'job1'))
+            it.del(cache.makeKey(controller, 'job1'))
         }
 
         then:
-        secondInstance.getJobNames(master) == ['job1']
+        secondInstance.getJobNames(controller) == ['job1']
     }
 
     void 'should generate nice keys for completed jobs'() {
@@ -161,10 +161,10 @@ class BuildCacheSpec extends Specification {
 
     void 'completed and running jobs should live in separate key space'() {
         when:
-        def masterKey = 'travis-ci'
+        def controllerKey = 'travis-ci'
         def slug      = 'org/repo'
 
         then:
-        cache.makeKey(masterKey, slug, false) != cache.makeKey(masterKey, slug, true)
+        cache.makeKey(controllerKey, slug, false) != cache.makeKey(controllerKey, slug, true)
     }
 }

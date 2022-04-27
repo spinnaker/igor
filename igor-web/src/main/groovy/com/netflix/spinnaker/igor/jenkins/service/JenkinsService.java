@@ -237,13 +237,13 @@ public class JenkinsService implements BuildOperations, BuildProperties {
   }
 
   @Override
-  public QueuedJob queuedBuild(String master, int item) {
+  public QueuedJob queuedBuild(String controller, int item) {
     try {
       return circuitBreaker.executeSupplier(() -> jenkinsClient.getQueuedItem(item));
     } catch (RetrofitError e) {
       if (e.getResponse() != null && e.getResponse().getStatus() == NOT_FOUND.value()) {
         throw new NotFoundException(
-            String.format("Queued job '%s' not found for master '%s'.", item, master));
+            String.format("Queued job '%s' not found for controller '%s'.", item, controller));
       }
       throw e;
     }
@@ -317,7 +317,7 @@ public class JenkinsService implements BuildOperations, BuildProperties {
                       log.error(
                           "Unable to get igorProperties: Could not find build artifact matching requested filename '{}' on '{}' build '{}",
                           kv("fileName", fileName),
-                          kv("master", serviceName),
+                          kv("controller", serviceName),
                           kv("buildNumber", buildNumber));
                       return new ArtifactNotFoundException(serviceName, job, buildNumber, fileName);
                     }),

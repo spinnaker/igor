@@ -1,8 +1,9 @@
 /*
- * Copyright 2014 Netflix, Inc.
+ * Copyright 2018 Schibsted ASA.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
+ *
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
@@ -14,15 +15,19 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.igor.jenkins.client
+package com.netflix.spinnaker.igor.travis.client;
 
-import com.netflix.spinnaker.igor.jenkins.service.JenkinsService
+import com.netflix.spinnaker.igor.travis.service.TravisService;
+import java.util.Map;
 
-/**
- * Wrapper class for a collection of jenkins clients
- */
-class JenkinsMasters {
+public class TravisControllers {
+  private Map<String, TravisService> map;
 
-    Map<String, JenkinsService> map
+  public Map<String, TravisService> getMap() {
+    return map;
+  }
 
+  public void setMap(Map<String, TravisService> map) {
+    this.map = map;
+  }
 }

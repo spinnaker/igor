@@ -20,10 +20,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.netflix.spinnaker.igor.config.ManagedDeliveryConfigProperties;
-import com.netflix.spinnaker.igor.scm.bitbucket.client.BitBucketMaster;
-import com.netflix.spinnaker.igor.scm.github.client.GitHubMaster;
-import com.netflix.spinnaker.igor.scm.gitlab.client.GitLabMaster;
-import com.netflix.spinnaker.igor.scm.stash.client.StashMaster;
+import com.netflix.spinnaker.igor.scm.bitbucket.client.BitBucketController;
+import com.netflix.spinnaker.igor.scm.github.client.GitHubController;
+import com.netflix.spinnaker.igor.scm.gitlab.client.GitLabController;
+import com.netflix.spinnaker.igor.scm.stash.client.StashController;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -42,25 +42,25 @@ public class ManagedDeliveryScmService {
   private final ManagedDeliveryConfigProperties configProperties;
   private final ObjectMapper jsonMapper;
   private final ObjectMapper yamlMapper;
-  private final Optional<StashMaster> stashMaster;
-  private final Optional<GitHubMaster> gitHubMaster;
-  private final Optional<GitLabMaster> gitLabMaster;
-  private final Optional<BitBucketMaster> bitBucketMaster;
+  private final Optional<StashController> stashController;
+  private final Optional<GitHubController> gitHubController;
+  private final Optional<GitLabController> gitLabController;
+  private final Optional<BitBucketController> bitBucketController;
 
   public ManagedDeliveryScmService(
       Optional<ManagedDeliveryConfigProperties> configProperties,
-      Optional<StashMaster> stashMaster,
-      Optional<GitHubMaster> gitHubMaster,
-      Optional<GitLabMaster> gitLabMaster,
-      Optional<BitBucketMaster> bitBucketMaster) {
+      Optional<StashController> stashController,
+      Optional<GitHubController> gitHubController,
+      Optional<GitLabController> gitLabController,
+      Optional<BitBucketController> bitBucketController) {
     this.configProperties =
         configProperties.isPresent()
             ? configProperties.get()
             : new ManagedDeliveryConfigProperties();
-    this.stashMaster = stashMaster;
-    this.gitHubMaster = gitHubMaster;
-    this.gitLabMaster = gitLabMaster;
-    this.bitBucketMaster = bitBucketMaster;
+    this.stashController = stashController;
+    this.gitHubController = gitHubController;
+    this.gitLabController = gitLabController;
+    this.bitBucketController = bitBucketController;
     this.jsonMapper = new ObjectMapper();
     this.yamlMapper = new ObjectMapper(new YAMLFactory());
   }
@@ -90,8 +90,9 @@ public class ManagedDeliveryScmService {
     log.debug(
         "Listing keel manifests at " + scmType + "://" + project + "/" + repository + "/" + path);
 
-    return getScmMaster(scmType)
-        .listDirectory(project, repository, path, (ref != null) ? ref : ScmMaster.DEFAULT_GIT_REF)
+    return getScmController(scmType)
+        .listDirectory(
+            project, repository, path, (ref != null) ? ref : ScmController.DEFAULT_GIT_REF)
         .stream()
         .filter(it -> it.endsWith("." + ((extension != null) ? extension : "yml")))
         .collect(Collectors.toList());
@@ -131,7 +132,7 @@ public class ManagedDeliveryScmService {
     log.debug(
         "Retrieving delivery config manifest from " + project + ":" + repository + "/" + path);
     String manifestContents =
-        getScmMaster(scmType).getTextFileContents(project, repository, path, ref);
+        getScmController(scmType).getTextFileContents(project, repository, path, ref);
 
     try {
       if (manifest.endsWith(".json")) {
@@ -147,23 +148,23 @@ public class ManagedDeliveryScmService {
     }
   }
 
-  private ScmMaster getScmMaster(final String scmType) {
-    Optional<? extends ScmMaster> scmMaster;
+  private ScmController getScmController(final String scmType) {
+    Optional<? extends ScmController> scmController;
 
     if (scmType.equalsIgnoreCase("bitbucket")) {
-      scmMaster = bitBucketMaster;
+      scmController = bitBucketController;
     } else if (scmType.equalsIgnoreCase("github")) {
-      scmMaster = gitHubMaster;
+      scmController = gitHubController;
     } else if (scmType.equalsIgnoreCase("gitlab")) {
-      scmMaster = gitLabMaster;
+      scmController = gitLabController;
     } else if (scmType.equalsIgnoreCase("stash")) {
-      scmMaster = stashMaster;
+      scmController = stashController;
     } else {
       throw new IllegalArgumentException("Unknown SCM type " + scmType);
     }
 
-    if (scmMaster.isPresent()) {
-      return scmMaster.get();
+    if (scmController.isPresent()) {
+      return scmController.get();
     } else {
       throw new IllegalArgumentException(scmType + " client requested but not configured");
     }

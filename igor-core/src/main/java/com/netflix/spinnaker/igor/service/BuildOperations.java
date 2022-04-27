@@ -77,8 +77,8 @@ public interface BuildOperations extends BuildService {
 
   JobConfiguration getJobConfig(String jobName);
 
-  default Object queuedBuild(String master, int item) {
+  default Object queuedBuild(String controller, int item) {
     throw new UnsupportedOperationException(
-        String.format("Queued builds are not supported for build service %s", master));
+        String.format("Queued builds are not supported for build service %s", controller));
   }
 }

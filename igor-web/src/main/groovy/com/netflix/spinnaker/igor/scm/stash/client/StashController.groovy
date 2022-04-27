@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.igor.scm.stash.client
 
-import com.netflix.spinnaker.igor.scm.AbstractScmMaster
+import com.netflix.spinnaker.igor.scm.AbstractScmController
 import com.netflix.spinnaker.igor.scm.stash.client.model.TextLinesResponse
 import com.netflix.spinnaker.kork.web.exceptions.NotFoundException
 import groovy.util.logging.Slf4j
@@ -26,7 +26,7 @@ import retrofit.RetrofitError
  * Wrapper class for a collection of Stash clients
  */
 @Slf4j
-class StashMaster extends AbstractScmMaster {
+class StashController extends AbstractScmController {
   public static final int DEFAULT_PAGED_RESPONSE_LIMIT = 500
 
   StashClient stashClient

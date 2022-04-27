@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.igor.scm.stash.client
 
 import com.netflix.spinnaker.igor.config.StashConfig
-import com.netflix.spinnaker.igor.scm.ScmMaster
+import com.netflix.spinnaker.igor.scm.ScmController
 import com.netflix.spinnaker.igor.scm.stash.client.model.CompareCommitsResponse
 import com.netflix.spinnaker.igor.scm.stash.client.model.DirectoryListingResponse
 import com.netflix.spinnaker.igor.scm.stash.client.model.TextLinesResponse
@@ -108,7 +108,7 @@ class StashClientSpec extends Specification {
     setResponse('application/json', listDirectoryResponse)
 
     when:
-    DirectoryListingResponse dirListResponse = client.listDirectory('foo', 'repo', '.spinnaker', ScmMaster.DEFAULT_GIT_REF)
+    DirectoryListingResponse dirListResponse = client.listDirectory('foo', 'repo', '.spinnaker', ScmController.DEFAULT_GIT_REF)
 
     then:
     dirListResponse.children.size == 2
@@ -133,7 +133,7 @@ class StashClientSpec extends Specification {
     setResponse('application/json', contents)
 
     when:
-    TextLinesResponse response = client.getTextFileContents('foo', 'repo', 'bananas.txt', ScmMaster.DEFAULT_GIT_REF, 1, start)
+    TextLinesResponse response = client.getTextFileContents('foo', 'repo', 'bananas.txt', ScmController.DEFAULT_GIT_REF, 1, start)
 
     then:
     response.size == size

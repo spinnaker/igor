@@ -194,7 +194,7 @@ class BuildControllerSpec extends Specification {
     response.contentAsString == "[{\"building\":false,\"number\":111},{\"building\":false,\"number\":222}]"
   }
 
-  void 'get properties of a build with a bad master'() {
+  void 'get properties of a build with a bad controller'() {
     given:
     jenkinsService.getBuild(JOB_NAME, BUILD_NUMBER) >> new Build(
       number: BUILD_NUMBER, artifacts: [new BuildArtifact(fileName: "badFile.yml", relativePath: FILE_NAME)])
@@ -202,7 +202,7 @@ class BuildControllerSpec extends Specification {
 
     expect:
     mockMvc.perform(
-      get("/builds/properties/${BUILD_NUMBER}/${FILE_NAME}/badMaster/${JOB_NAME}")
+      get("/builds/properties/${BUILD_NUMBER}/${FILE_NAME}/badController/${JOB_NAME}")
         .accept(MediaType.APPLICATION_JSON))
       .andExpect(status().isNotFound())
       .andReturn().response
@@ -238,7 +238,8 @@ class BuildControllerSpec extends Specification {
     response.contentAsString == "{\"foo\":\"bar\"}"
   }
 
-  void 'trigger a build without parameters'() {
+  @Deprecated
+  void 'trigger a build without parameters to old path'() {
     given:
     1 * jenkinsService.getJobConfig(JOB_NAME) >> new JobConfig(buildable: true)
     1 * jenkinsService.build(JOB_NAME) >> new Response("http://test.com", HTTP_201, "", [new Header("Location", "foo/${BUILD_NUMBER}")], null)
@@ -254,7 +255,24 @@ class BuildControllerSpec extends Specification {
     1 * pendingOperationService.setOperationStatus(_, PendingOperationsCache.OperationStatus.COMPLETED, BUILD_NUMBER.toString())
   }
 
-  void 'trigger a build with parameters to a job with parameters'() {
+  void 'trigger a build without parameters'() {
+    given:
+    1 * jenkinsService.getJobConfig(JOB_NAME) >> new JobConfig(buildable: true)
+    1 * jenkinsService.build(JOB_NAME) >> new Response("http://test.com", HTTP_201, "", [new Header("Location", "foo/${BUILD_NUMBER}")], null)
+
+    when:
+    MockHttpServletResponse response = mockMvc.perform(put("/controllers/${JENKINS_SERVICE}/jobs/${JOB_NAME}")
+      .accept(MediaType.APPLICATION_JSON)).andReturn().response
+
+    then:
+    response.contentAsString == BUILD_NUMBER.toString()
+
+    1 * pendingOperationService.getAndSetOperationStatus(_, _, _) >> { new PendingOperationsCache.OperationState() }
+    1 * pendingOperationService.setOperationStatus(_, PendingOperationsCache.OperationStatus.COMPLETED, BUILD_NUMBER.toString())
+  }
+
+  @Deprecated
+  void 'trigger a build with parameters to a job with parameters to old path'() {
     given:
     1 * jenkinsService.getJobConfig(JOB_NAME) >> new JobConfig(buildable: true, parameterDefinitionList: [new ParameterDefinition(defaultParameterValue: [name: "name", value: null], description: "description")])
     1 * jenkinsService.buildWithParameters(JOB_NAME, [name: "myName"]) >> new Response("http://test.com", HTTP_201, "", [new Header("Location", "foo/${BUILD_NUMBER}")], null)
@@ -267,7 +285,22 @@ class BuildControllerSpec extends Specification {
     response.contentAsString == BUILD_NUMBER.toString()
   }
 
-  void 'trigger a build without parameters to a job with parameters with default values'() {
+  void 'trigger a build with parameters to a job with parameters'() {
+    given:
+    1 * jenkinsService.getJobConfig(JOB_NAME) >> new JobConfig(buildable: true, parameterDefinitionList: [new ParameterDefinition(defaultParameterValue: [name: "name", value: null], description: "description")])
+    1 * jenkinsService.buildWithParameters(JOB_NAME, [name: "myName"]) >> new Response("http://test.com", HTTP_201, "", [new Header("Location", "foo/${BUILD_NUMBER}")], null)
+
+    when:
+    MockHttpServletResponse response = mockMvc.perform(put("/controllers/${JENKINS_SERVICE}/jobs/${JOB_NAME}")
+      .contentType(MediaType.APPLICATION_JSON).param("name", "myName")).andReturn().response
+
+    then:
+    response.contentAsString == BUILD_NUMBER.toString()
+  }
+
+
+  @Deprecated
+  void 'trigger a build without parameters to a job with parameters with default values to old path'() {
     given:
     1 * jenkinsService.getJobConfig(JOB_NAME) >> new JobConfig(buildable: true, parameterDefinitionList: [new ParameterDefinition(defaultParameterValue: [name: "name", value: "value"], description: "description")])
     1 * jenkinsService.buildWithParameters(JOB_NAME, ['startedBy': "igor"]) >> new Response("http://test.com", HTTP_201, "", [new Header("Location", "foo/${BUILD_NUMBER}")], null)
@@ -280,7 +313,21 @@ class BuildControllerSpec extends Specification {
     response.contentAsString == BUILD_NUMBER.toString()
   }
 
-  void 'trigger a build with parameters to a job without parameters'() {
+  void 'trigger a build without parameters to a job with parameters with default values'() {
+    given:
+    1 * jenkinsService.getJobConfig(JOB_NAME) >> new JobConfig(buildable: true, parameterDefinitionList: [new ParameterDefinition(defaultParameterValue: [name: "name", value: "value"], description: "description")])
+    1 * jenkinsService.buildWithParameters(JOB_NAME, ['startedBy': "igor"]) >> new Response("http://test.com", HTTP_201, "", [new Header("Location", "foo/${BUILD_NUMBER}")], null)
+
+    when:
+    MockHttpServletResponse response = mockMvc.perform(put("/controllers/${JENKINS_SERVICE}/jobs/${JOB_NAME}", "")
+      .accept(MediaType.APPLICATION_JSON)).andReturn().response
+
+    then:
+    response.contentAsString == BUILD_NUMBER.toString()
+  }
+
+  @Deprecated
+  void 'trigger a build with parameters to a job without parameters to old path'() {
     given:
     1 * jenkinsService.getJobConfig(JOB_NAME) >> new JobConfig(buildable: true)
 
@@ -292,7 +339,20 @@ class BuildControllerSpec extends Specification {
     response.status == HttpStatus.INTERNAL_SERVER_ERROR.value()
   }
 
-  void 'trigger a build with an invalid choice'() {
+  void 'trigger a build with parameters to a job without parameters'() {
+    given:
+    1 * jenkinsService.getJobConfig(JOB_NAME) >> new JobConfig(buildable: true)
+
+    when:
+    MockHttpServletResponse response = mockMvc.perform(put("/controllers/${JENKINS_SERVICE}/jobs/${JOB_NAME}")
+      .contentType(MediaType.APPLICATION_JSON).param("foo", "bar")).andReturn().response
+
+    then:
+    response.status == HttpStatus.INTERNAL_SERVER_ERROR.value()
+  }
+
+  @Deprecated
+  void 'trigger a build with an invalid choice to old path'() {
     given:
     JobConfig config = new JobConfig(buildable: true)
     config.parameterDefinitionList = [
@@ -311,7 +371,27 @@ class BuildControllerSpec extends Specification {
     response.errorMessage == "`bat` is not a valid choice for `foo`. Valid choices are: bar, baz"
   }
 
-  void 'trigger a disabled build'() {
+  void 'trigger a build with an invalid choice'() {
+    given:
+    JobConfig config = new JobConfig(buildable: true)
+    config.parameterDefinitionList = [
+      new ParameterDefinition(type: "ChoiceParameterDefinition", name: "foo", choices: ["bar", "baz"])
+    ]
+    1 * jenkinsService.getJobConfig(JOB_NAME) >> config
+    1 * exceptionMessageDecorator.decorate(_, _) >> "`bat` is not a valid choice for `foo`. Valid choices are: bar, baz"
+
+    when:
+    MockHttpServletResponse response = mockMvc.perform(put("/controllers/${JENKINS_SERVICE}/jobs/${JOB_NAME}")
+      .contentType(MediaType.APPLICATION_JSON).param("foo", "bat")).andReturn().response
+
+    then:
+
+    response.status == HttpStatus.BAD_REQUEST.value()
+    response.errorMessage == "`bat` is not a valid choice for `foo`. Valid choices are: bar, baz"
+  }
+
+  @Deprecated
+  void 'trigger a disabled build to old path'() {
     given:
     JobConfig config = new JobConfig()
     1 * jenkinsService.getJobConfig(JOB_NAME) >> config
@@ -319,6 +399,21 @@ class BuildControllerSpec extends Specification {
 
     when:
     MockHttpServletResponse response = mockMvc.perform(put("/masters/${JENKINS_SERVICE}/jobs/${JOB_NAME}")
+      .contentType(MediaType.APPLICATION_JSON).param("foo", "bat")).andReturn().response
+
+    then:
+    response.status == HttpStatus.BAD_REQUEST.value()
+    response.errorMessage == "Job '${JOB_NAME}' is not buildable. It may be disabled."
+  }
+
+  void 'trigger a disabled build'() {
+    given:
+    JobConfig config = new JobConfig()
+    1 * jenkinsService.getJobConfig(JOB_NAME) >> config
+    1 * exceptionMessageDecorator.decorate(_, _) >> "Job '${JOB_NAME}' is not buildable. It may be disabled."
+
+    when:
+    MockHttpServletResponse response = mockMvc.perform(put("/controllers/${JENKINS_SERVICE}/jobs/${JOB_NAME}")
       .contentType(MediaType.APPLICATION_JSON).param("foo", "bat")).andReturn().response
 
     then:
@@ -361,7 +456,8 @@ class BuildControllerSpec extends Specification {
   }
 
 
-  void "doesn't trigger a build when previous request is still in progress"() {
+  @Deprecated
+  void "doesn't trigger a build when previous request is still in progress to old path"() {
     given:
     pendingOperationService = Stub(PendingOperationsCache)
     pendingOperationService.getAndSetOperationStatus("${JENKINS_SERVICE}:${PENDING_JOB_NAME}:NO_EXECUTION_ID:foo=bat", _, _) >> {
@@ -381,7 +477,28 @@ class BuildControllerSpec extends Specification {
     response.status == HttpStatus.ACCEPTED.value()
   }
 
-  void "resets the cache once the build status has been retrieved"() {
+  void "doesn't trigger a build when previous request is still in progress"() {
+    given:
+    pendingOperationService = Stub(PendingOperationsCache)
+    pendingOperationService.getAndSetOperationStatus("${JENKINS_SERVICE}:${PENDING_JOB_NAME}:NO_EXECUTION_ID:foo=bat", _, _) >> {
+      return new PendingOperationsCache.OperationState(PendingOperationsCache.OperationStatus.PENDING)
+    }
+
+    mockMvc = MockMvcBuilders
+      .standaloneSetup(new BuildController(buildServices, pendingOperationService, Optional.empty(), Optional.empty(), Optional.empty()))
+      .setControllerAdvice(new GenericExceptionHandlers())
+      .build()
+
+    when:
+    MockHttpServletResponse response = mockMvc.perform(put("/controllers/${JENKINS_SERVICE}/jobs/${PENDING_JOB_NAME}")
+      .contentType(MediaType.APPLICATION_JSON).param("foo", "bat")).andReturn().response
+
+    then:
+    response.status == HttpStatus.ACCEPTED.value()
+  }
+
+  @Deprecated
+  void "resets the cache once the build status has been retrieved to old path"() {
     given:
     pendingOperationService = Mock(PendingOperationsCache)
     pendingOperationService.getAndSetOperationStatus("${JENKINS_SERVICE}:${JOB_NAME}:NO_EXECUTION_ID:foo=bat", _, _) >> {
@@ -405,12 +522,61 @@ class BuildControllerSpec extends Specification {
     1 * pendingOperationService.clear("${JENKINS_SERVICE}:${JOB_NAME}:NO_EXECUTION_ID:foo=bat")
   }
 
-  void "updates a jenkins build description"() {
+  void "resets the cache once the build status has been retrieved"() {
+    given:
+    pendingOperationService = Mock(PendingOperationsCache)
+    pendingOperationService.getAndSetOperationStatus("${JENKINS_SERVICE}:${JOB_NAME}:NO_EXECUTION_ID:foo=bat", _, _) >> {
+      PendingOperationsCache.OperationState state = new PendingOperationsCache.OperationState()
+      state.load(PendingOperationsCache.OperationStatus.COMPLETED.toString() + ":" + BUILD_NUMBER)
+      return state
+    }
+
+    mockMvc = MockMvcBuilders
+      .standaloneSetup(new BuildController(buildServices, pendingOperationService, Optional.empty(), Optional.empty(), Optional.empty()))
+      .setControllerAdvice(new GenericExceptionHandlers())
+      .build()
+
+    when:
+    MockHttpServletResponse response = mockMvc.perform(put("/controllers/${JENKINS_SERVICE}/jobs/${JOB_NAME}")
+      .contentType(MediaType.APPLICATION_JSON).param("foo", "bat")).andReturn().response
+
+    then:
+    response.status == HttpStatus.OK.value()
+    response.contentAsString == BUILD_NUMBER.toString()
+    1 * pendingOperationService.clear("${JENKINS_SERVICE}:${JOB_NAME}:NO_EXECUTION_ID:foo=bat")
+  }
+
+  @Deprecated
+  void "updates a jenkins build description to old path"() {
     when:
     MockHttpServletResponse response = mockMvc.perform(
       patch("/masters/${JENKINS_SERVICE}/jobs/${jobName}/update/${BUILD_NUMBER}")
         .contentType(MediaType.APPLICATION_JSON)
       .content("""
+{
+  "description": "this is my new description"
+}
+""")
+    ).andReturn().response
+
+    then:
+    1 * jenkinsService.updateBuild(jobName, BUILD_NUMBER, new UpdatedBuild("this is my new description"))
+    0 * _
+    response.status == 200
+
+    where:
+    jobName << [
+      "complex/job/name/with/slashes",
+      "simpleJobName"
+    ]
+  }
+
+  void "updates a jenkins build description"() {
+    when:
+    MockHttpServletResponse response = mockMvc.perform(
+      patch("/controllers/${JENKINS_SERVICE}/jobs/${jobName}/update/${BUILD_NUMBER}")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content("""
 {
   "description": "this is my new description"
 }

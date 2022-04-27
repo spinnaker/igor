@@ -39,14 +39,14 @@ class GitlabCiBuildMonitorSpec extends Specification {
     EchoService echoService = Mock(EchoService)
     GitlabCiBuildMonitor buildMonitor
 
-    String MASTER = "MASTER"
+    String CONTROLLER = "CONTROLLER"
     int CACHED_JOB_TTL_SECONDS = 172800
     int CACHED_JOB_TTL_DAYS = 2
 
     void setup() {
         def properties = new GitlabCiProperties(cachedJobTTLDays: CACHED_JOB_TTL_DAYS)
         def buildServices = new BuildServices()
-        buildServices.addServices([MASTER: service])
+        buildServices.addServices([CONTROLLER: service])
         buildMonitor = new GitlabCiBuildMonitor(
             new IgorConfigurationProperties(),
             new NoopRegistry(),
@@ -70,15 +70,15 @@ class GitlabCiBuildMonitorSpec extends Specification {
 
         service.getProjects() >> [project]
         service.getPipelines(project, _) >> [pipeline]
-        buildCache.getJobNames(MASTER) >> jobsInCache
-        buildCache.getLastBuild(MASTER, _, false) >> lastBuildNr
+        buildCache.getJobNames(CONTROLLER) >> jobsInCache
+        buildCache.getLastBuild(CONTROLLER, _, false) >> lastBuildNr
 
         when:
-        buildMonitor.pollSingle(new PollContext(MASTER))
+        buildMonitor.pollSingle(new PollContext(CONTROLLER))
 
         then:
-        1 * buildCache.setLastBuild(MASTER, "user1/project1", 101, false, CACHED_JOB_TTL_SECONDS)
-        1 * buildCache.setLastBuild(MASTER, "user1/project1/master", 101, false, CACHED_JOB_TTL_SECONDS)
+        1 * buildCache.setLastBuild(CONTROLLER, "user1/project1", 101, false, CACHED_JOB_TTL_SECONDS)
+        1 * buildCache.setLastBuild(CONTROLLER, "user1/project1/master", 101, false, CACHED_JOB_TTL_SECONDS)
 
         and:
         1 * echoService.postEvent({
@@ -104,15 +104,15 @@ class GitlabCiBuildMonitorSpec extends Specification {
 
         service.getProjects() >> [project]
         service.getPipelines(project, _) >> [pipeline]
-        buildCache.getJobNames(MASTER) >> jobsInCache
-        buildCache.getLastBuild(MASTER, _, false) >> lastBuildNr
+        buildCache.getJobNames(CONTROLLER) >> jobsInCache
+        buildCache.getLastBuild(CONTROLLER, _, false) >> lastBuildNr
 
         when:
-        buildMonitor.pollSingle(new PollContext(MASTER).fastForward())
+        buildMonitor.pollSingle(new PollContext(CONTROLLER).fastForward())
 
         then:
-        1 * buildCache.setLastBuild(MASTER, "user1/project1", 101, false, CACHED_JOB_TTL_SECONDS)
-        1 * buildCache.setLastBuild(MASTER, "user1/project1/master", 101, false, CACHED_JOB_TTL_SECONDS)
+        1 * buildCache.setLastBuild(CONTROLLER, "user1/project1", 101, false, CACHED_JOB_TTL_SECONDS)
+        1 * buildCache.setLastBuild(CONTROLLER, "user1/project1/master", 101, false, CACHED_JOB_TTL_SECONDS)
 
         and:
         0 * echoService.postEvent(_)
@@ -130,10 +130,10 @@ class GitlabCiBuildMonitorSpec extends Specification {
 
         service.getProjects() >> [project]
         service.getPipelines(project, _) >> [pipeline]
-        buildCache.getJobNames(MASTER) >> []
+        buildCache.getJobNames(CONTROLLER) >> []
 
         when:
-        buildMonitor.pollSingle(new PollContext(MASTER))
+        buildMonitor.pollSingle(new PollContext(CONTROLLER))
 
         then:
         0 * buildCache.setLastBuild(_, _, _, _, _)
@@ -149,11 +149,11 @@ class GitlabCiBuildMonitorSpec extends Specification {
 
         service.getProjects() >> [project]
         service.getPipelines(project, _) >> [pipeline]
-        buildCache.getJobNames(MASTER) >> ["user1/project1/master"]
-        buildCache.getLastBuild(MASTER, "user1/project1/master", false) >> 102
+        buildCache.getJobNames(CONTROLLER) >> ["user1/project1/master"]
+        buildCache.getLastBuild(CONTROLLER, "user1/project1/master", false) >> 102
 
         when:
-        buildMonitor.pollSingle(new PollContext(MASTER))
+        buildMonitor.pollSingle(new PollContext(CONTROLLER))
 
         then:
         0 * buildCache.setLastBuild(_, _, _, _, _)

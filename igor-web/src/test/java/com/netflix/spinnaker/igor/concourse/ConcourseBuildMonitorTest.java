@@ -59,7 +59,7 @@ class ConcourseBuildMonitorTest {
     host.setPassword("fake");
 
     ConcourseProperties props = new ConcourseProperties();
-    props.setMasters(Collections.singletonList(host));
+    props.setControllers(Collections.singletonList(host));
 
     BuildServices buildServices = new BuildServices();
     buildServices.addServices(

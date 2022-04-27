@@ -18,7 +18,7 @@ package com.netflix.spinnaker.igor.scm.github
 
 import com.netflix.spinnaker.igor.config.GitHubProperties
 import com.netflix.spinnaker.igor.scm.AbstractCommitController
-import com.netflix.spinnaker.igor.scm.github.client.GitHubMaster
+import com.netflix.spinnaker.igor.scm.github.client.GitHubController
 import com.netflix.spinnaker.igor.scm.github.client.model.CompareCommitsResponse
 import com.netflix.spinnaker.kork.web.exceptions.NotFoundException
 import groovy.util.logging.Slf4j
@@ -37,7 +37,7 @@ import retrofit.RetrofitError
 @RequestMapping("/github")
 class CommitController extends AbstractCommitController {
     @Autowired
-    GitHubMaster master
+    GitHubController controller
 
     @Autowired
     GitHubProperties gitHubProperties
@@ -49,15 +49,15 @@ class CommitController extends AbstractCommitController {
         List result = []
 
         try {
-            commitsResponse = master.gitHubClient.getCompareCommits(projectKey, repositorySlug, requestParams.to, requestParams.from)
+            commitsResponse = controller.gitHubClient.getCompareCommits(projectKey, repositorySlug, requestParams.to, requestParams.from)
         } catch (RetrofitError e) {
             if(e.getKind() == RetrofitError.Kind.NETWORK) {
-                throw new NotFoundException("Could not find the server ${master.baseUrl}")
+                throw new NotFoundException("Could not find the server ${controller.baseUrl}")
             } else if(e.response.status == 404) {
-                return getNotFoundCommitsResponse(projectKey, repositorySlug, requestParams.to, requestParams.from, master.baseUrl)
+                return getNotFoundCommitsResponse(projectKey, repositorySlug, requestParams.to, requestParams.from, controller.baseUrl)
             }
             log.error("Unhandled error response, acting like commit response was not found", e)
-            return getNotFoundCommitsResponse(projectKey, repositorySlug, requestParams.to, requestParams.from, master.baseUrl)
+            return getNotFoundCommitsResponse(projectKey, repositorySlug, requestParams.to, requestParams.from, controller.baseUrl)
         }
 
         commitsResponse.commits.each {

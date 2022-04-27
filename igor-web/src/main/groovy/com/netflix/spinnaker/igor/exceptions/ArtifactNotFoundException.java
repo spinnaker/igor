@@ -24,10 +24,10 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @ResponseStatus(NOT_FOUND)
 public class ArtifactNotFoundException extends NotFoundException {
   public ArtifactNotFoundException(
-      String master, String job, Integer buildNumber, String fileName) {
+      String controller, String job, Integer buildNumber, String fileName) {
     super(
         String.format(
             "Could not find build artifact matching requested filename '%s' on '%s/%s' build %s",
-            fileName, master, job, buildNumber));
+            fileName, controller, job, buildNumber));
   }
 }

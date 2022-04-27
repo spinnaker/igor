@@ -26,12 +26,12 @@ class WerckerServiceSpec extends Specification {
     @Shared
     WerckerService service
     String werckerDev = 'https://dev.wercker.com/'
-    String master = 'WerckerTestMaster'
+    String controller = 'WerckerTestController'
 
     void setup() {
         client = Mock(WerckerClient)
         service = new WerckerService(
-                new WerckerHost(name: master, address: werckerDev), cache, client, Permissions.EMPTY)
+                new WerckerHost(name: controller, address: werckerDev), cache, client, Permissions.EMPTY)
     }
 
     void 'get pipelines as jobs'() {
@@ -130,7 +130,7 @@ class WerckerServiceSpec extends Specification {
         def runId = "testGenericBuild_werckerRunId"
         int buildNumber = 6
         setup:
-        cache.getRunID(master, job, buildNumber) >> runId
+        cache.getRunID(controller, job, buildNumber) >> runId
         client.getRunById(_, runId) >> new Run(id: runId)
 
         expect:
@@ -156,7 +156,7 @@ class WerckerServiceSpec extends Specification {
         ]
         client.triggerBuild(_, _) >> ['id': runId]
         client.getRunById(_, runId) >> new Run(id: runId)
-        cache.updateBuildNumbers(master, pipeline, _) >> ['test_triggerBuild_runId': buildNumber]
+        cache.updateBuildNumbers(controller, pipeline, _) >> ['test_triggerBuild_runId': buildNumber]
 
         expect:
         service.triggerBuildWithParameters(pipeline, [:]) == buildNumber

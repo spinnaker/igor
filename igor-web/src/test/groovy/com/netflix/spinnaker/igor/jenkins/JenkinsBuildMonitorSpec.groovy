@@ -45,11 +45,11 @@ class   JenkinsBuildMonitorSpec extends Specification {
     IgorConfigurationProperties igorConfigurationProperties = new IgorConfigurationProperties()
     JenkinsBuildMonitor monitor
 
-    def MASTER = 'MASTER'
+    def CONTROLLER = 'CONTROLLER'
 
     void setup() {
         def buildServices = new BuildServices()
-        buildServices.addServices([MASTER: jenkinsService])
+        buildServices.addServices([CONTROLLER: jenkinsService])
         monitor = new JenkinsBuildMonitor(
             igorConfigurationProperties,
             new NoopRegistry(),
@@ -70,7 +70,7 @@ class   JenkinsBuildMonitorSpec extends Specification {
         jenkinsService.getProjects().getList() >> new Exception("failed")
 
         when:
-        monitor.pollSingle(new PollContext(MASTER))
+        monitor.pollSingle(new PollContext(CONTROLLER))
 
         then:
         notThrown(Exception)
@@ -81,10 +81,10 @@ class   JenkinsBuildMonitorSpec extends Specification {
         jenkinsService.getProjects() >> new ProjectsList(list: [new Project(name: 'job2', lastBuild: null)])
 
         when:
-        monitor.pollSingle(new PollContext(MASTER))
+        monitor.pollSingle(new PollContext(CONTROLLER))
 
         then:
-        0 * cache.getLastPollCycleTimestamp(MASTER, 'job2')
+        0 * cache.getLastPollCycleTimestamp(CONTROLLER, 'job2')
         0 * cache.setLastPollCycleTimestamp(_,_,_)
     }
 
@@ -94,13 +94,13 @@ class   JenkinsBuildMonitorSpec extends Specification {
         def lastBuild = new Build(number: 1, timestamp: '1494624092610', building: false, result: 'SUCCESS')
 
         and:
-        cache.getLastPollCycleTimestamp(MASTER, 'job') >> previousCursor
+        cache.getLastPollCycleTimestamp(CONTROLLER, 'job') >> previousCursor
         jenkinsService.getProjects() >> new ProjectsList(list: [ new Project(name: 'job', lastBuild: lastBuild) ])
         cache.getEventPosted(_,_,_,_) >> false
         jenkinsService.getBuilds('job') >> [lastBuild ]
 
         when:
-        monitor.pollSingle(new PollContext(MASTER))
+        monitor.pollSingle(new PollContext(CONTROLLER))
 
         then:
         1 * echoService.postEvent({ it.content.project.lastBuild.number == 1 && it.content.project.lastBuild.result == 'SUCCESS'} as Event)
@@ -112,13 +112,13 @@ class   JenkinsBuildMonitorSpec extends Specification {
         def lastBuild = new Build(number: 1, timestamp: '1494624092610', building: false, result: 'SUCCESS')
 
         and:
-        cache.getLastPollCycleTimestamp(MASTER, 'job') >> previousCursor
+        cache.getLastPollCycleTimestamp(CONTROLLER, 'job') >> previousCursor
         jenkinsService.getProjects() >> new ProjectsList(list: [ new Project(name: 'job', lastBuild: lastBuild) ])
         cache.getEventPosted(_,_,_,_) >> false
         jenkinsService.getBuilds('job') >> [lastBuild ]
 
         when:
-        monitor.pollSingle(new PollContext(MASTER).fastForward())
+        monitor.pollSingle(new PollContext(CONTROLLER).fastForward())
 
         then:
         0 * echoService.postEvent(_)
@@ -139,7 +139,7 @@ class   JenkinsBuildMonitorSpec extends Specification {
         assert new Date(stamp3 as Long) < new Date(stamp4 as Long)
 
         and:
-        cache.getLastPollCycleTimestamp(MASTER, 'job') >> (previousCursor as Long)
+        cache.getLastPollCycleTimestamp(CONTROLLER, 'job') >> (previousCursor as Long)
         jenkinsService.getProjects() >> new ProjectsList(list: [ new Project(name: 'job', lastBuild: lastBuild) ])
         cache.getEventPosted(_,_,_,_) >> false
         jenkinsService.getBuilds('job') >> [
@@ -151,7 +151,7 @@ class   JenkinsBuildMonitorSpec extends Specification {
         ]
 
         when:
-        monitor.pollSingle(new PollContext(MASTER))
+        monitor.pollSingle(new PollContext(CONTROLLER))
 
         then: 'only builds between lowerBound(previousCursor) and upperbound(stamp3) will fire events'
         1 * echoService.postEvent({ it.content.project.lastBuild.number == 1 && it.content.project.lastBuild.result == 'SUCCESS'} as Event)
@@ -173,7 +173,7 @@ class   JenkinsBuildMonitorSpec extends Specification {
         assert new Date(stamp3 as Long) < new Date(stamp4 as Long)
 
         and:
-        cache.getLastPollCycleTimestamp(MASTER, 'job') >> (previousCursor as Long)
+        cache.getLastPollCycleTimestamp(CONTROLLER, 'job') >> (previousCursor as Long)
         jenkinsService.getProjects() >> new ProjectsList(list: [ new Project(name: 'job', lastBuild: lastBuild) ])
         cache.getEventPosted(_,_,_,_) >> false
         jenkinsService.getBuilds('job') >> [
@@ -184,7 +184,7 @@ class   JenkinsBuildMonitorSpec extends Specification {
         ]
 
         when:
-        monitor.pollSingle(new PollContext(MASTER))
+        monitor.pollSingle(new PollContext(CONTROLLER))
 
         then: 'only builds between lowerBound(previousCursor) and upperbound(stamp3) will fire events'
         1 * echoService.postEvent({ it.content.project.lastBuild.number == 1 && it.content.project.lastBuild.result == 'SUCCESS'} as Event)
@@ -192,8 +192,8 @@ class   JenkinsBuildMonitorSpec extends Specification {
         1 * echoService.postEvent({ it.content.project.lastBuild.number == 3 && it.content.project.lastBuild.result == 'SUCCESS'} as Event)
 
         and: 'prune old markers and set new cursor'
-        1 * cache.pruneOldMarkers(MASTER, 'job', 1494624092609)
-        1 * cache.setLastPollCycleTimestamp(MASTER, 'job', 1494624092612)
+        1 * cache.pruneOldMarkers(CONTROLLER, 'job', 1494624092609)
+        1 * cache.setLastPollCycleTimestamp(CONTROLLER, 'job', 1494624092612)
     }
 
 
@@ -228,7 +228,7 @@ class   JenkinsBuildMonitorSpec extends Specification {
         ]
 
         when:
-        monitor.pollSingle(new PollContext(MASTER))
+        monitor.pollSingle(new PollContext(CONTROLLER))
 
         then: 'build #3 only will be processed'
         0 * echoService.postEvent({ it.content.project.lastBuild.number == 1 && it.content.project.lastBuild.result == 'SUCCESS'} as Event)
@@ -236,7 +236,7 @@ class   JenkinsBuildMonitorSpec extends Specification {
         1 * echoService.postEvent({ it.content.project.lastBuild.number == 3 && it.content.project.lastBuild.result == 'SUCCESS'} as Event)
     }
 
-    def 'should continue processing other builds from a master even if one or more build fetches fail'() {
+    def 'should continue processing other builds from a controller even if one or more build fetches fail'() {
         given:
         long now = System.currentTimeMillis()
         long nowMinus30min = now - (30 * 60 * 1000) // 30 minutes ago
@@ -244,7 +244,7 @@ class   JenkinsBuildMonitorSpec extends Specification {
 
         igorConfigurationProperties.spinnaker.build.processBuildsOlderThanLookBackWindow = true
 
-        and: 'three jobs in a master'
+        and: 'three jobs in a controller'
         jenkinsService.getProjects() >> new ProjectsList(list: [
             new Project(name: 'job1', lastBuild: new Build(number: 1, timestamp: now)),
             new Project(name: 'job2', lastBuild: new Build(number: 2, timestamp: now)),
@@ -267,7 +267,7 @@ class   JenkinsBuildMonitorSpec extends Specification {
         monitor.log = Mock(Logger);
 
         when:
-        monitor.pollSingle(new PollContext(MASTER))
+        monitor.pollSingle(new PollContext(CONTROLLER))
 
         then: 'Builds are processed for job1'
         1 * echoService.postEvent({ it.content.project.name == 'job1'} as Event)

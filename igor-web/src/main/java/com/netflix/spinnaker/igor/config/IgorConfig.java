@@ -63,7 +63,7 @@ public class IgorConfig implements WebMvcConfigurer {
         new MetricsInterceptor(
             this.registry,
             "controller.invocations",
-            Collections.singletonList("master"),
+            Collections.singletonList("controller"),
             null,
             Collections.singletonList("BasicErrorController")));
   }

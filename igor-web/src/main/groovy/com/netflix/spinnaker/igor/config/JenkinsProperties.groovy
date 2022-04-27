@@ -18,7 +18,7 @@ package com.netflix.spinnaker.igor.config
 
 import com.netflix.spinnaker.fiat.model.resources.Permissions
 import groovy.transform.CompileStatic
-import org.hibernate.validator.constraints.NotEmpty
+import javax.validation.constraints.NotEmpty;
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.validation.annotation.Validated
 
@@ -32,8 +32,19 @@ import java.security.KeyStore
 @ConfigurationProperties(prefix = 'jenkins')
 @Validated
 class JenkinsProperties implements BuildServerProperties<JenkinsProperties.JenkinsHost> {
+    @Deprecated(forRemoval = true)
     @Valid
     List<JenkinsHost> masters
+
+    @Deprecated(forRemoval = true)
+    public List<JenkinsProperties.JenkinsHost> getMasters() { return controllers; }
+
+
+    @Deprecated(forRemoval = true)
+    public void setMasters(List<JenkinsProperties.JenkinsHost> controllers) { this.controllers = controllers; }
+
+    @Valid
+    List<JenkinsHost> controllers
 
     static class JenkinsHost implements BuildServerProperties.Host {
         @NotEmpty

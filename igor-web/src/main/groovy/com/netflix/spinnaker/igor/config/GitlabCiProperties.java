@@ -28,7 +28,7 @@ import org.springframework.validation.annotation.Validated;
 public class GitlabCiProperties implements BuildServerProperties<GitlabCiProperties.GitlabCiHost> {
   private int cachedJobTTLDays = 60;
 
-  @Valid private List<GitlabCiHost> masters = new ArrayList<>();
+  @Valid private List<GitlabCiHost> controllers = new ArrayList<>();
 
   public int getCachedJobTTLDays() {
     return cachedJobTTLDays;
@@ -38,12 +38,22 @@ public class GitlabCiProperties implements BuildServerProperties<GitlabCiPropert
     this.cachedJobTTLDays = cachedJobTTLDays;
   }
 
+  @Deprecated(forRemoval = true)
   public List<GitlabCiHost> getMasters() {
-    return masters;
+    return controllers;
   }
 
-  public void setMasters(List<GitlabCiHost> masters) {
-    this.masters = masters;
+  @Deprecated(forRemoval = true)
+  public void setMasters(List<GitlabCiHost> controllers) {
+    this.controllers = controllers;
+  }
+
+  public List<GitlabCiHost> getControllers() {
+    return controllers;
+  }
+
+  public void setControllers(List<GitlabCiHost> controllers) {
+    this.controllers = controllers;
   }
 
   public static class GitlabCiHost implements BuildServerProperties.Host {

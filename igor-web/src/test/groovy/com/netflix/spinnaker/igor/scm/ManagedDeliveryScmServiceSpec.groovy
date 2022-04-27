@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.netflix.spinnaker.igor.config.ManagedDeliveryConfigProperties
 import com.netflix.spinnaker.igor.scm.stash.client.StashClient
-import com.netflix.spinnaker.igor.scm.stash.client.StashMaster
+import com.netflix.spinnaker.igor.scm.stash.client.StashController
 import com.netflix.spinnaker.igor.scm.stash.client.model.DirectoryChild
 import com.netflix.spinnaker.igor.scm.stash.client.model.DirectoryChildren
 import com.netflix.spinnaker.igor.scm.stash.client.model.DirectoryListingResponse
@@ -29,7 +29,7 @@ import com.netflix.spinnaker.igor.scm.stash.client.model.TextLinesResponse
 import spock.lang.Specification
 import spock.lang.Subject
 
-import static com.netflix.spinnaker.igor.scm.stash.client.StashMaster.DEFAULT_PAGED_RESPONSE_LIMIT
+import static com.netflix.spinnaker.igor.scm.stash.client.StashController.DEFAULT_PAGED_RESPONSE_LIMIT
 
 class ManagedDeliveryScmServiceSpec extends Specification {
   @Subject
@@ -44,7 +44,7 @@ class ManagedDeliveryScmServiceSpec extends Specification {
   void setup() {
       service = new ManagedDeliveryScmService(
         Optional.of(new ManagedDeliveryConfigProperties(manifestBasePath: ".spinnaker")),
-        Optional.of(new StashMaster(stashClient: client, baseUrl : STASH_ADDRESS)),
+        Optional.of(new StashController(stashClient: client, baseUrl : STASH_ADDRESS)),
         Optional.empty(),
         Optional.empty(),
         Optional.empty()

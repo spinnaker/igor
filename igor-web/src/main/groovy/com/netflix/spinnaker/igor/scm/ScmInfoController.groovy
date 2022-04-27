@@ -16,10 +16,10 @@
 
 package com.netflix.spinnaker.igor.scm
 
-import com.netflix.spinnaker.igor.scm.github.client.GitHubMaster
-import com.netflix.spinnaker.igor.scm.gitlab.client.GitLabMaster
-import com.netflix.spinnaker.igor.scm.stash.client.StashMaster
-import com.netflix.spinnaker.igor.scm.bitbucket.client.BitBucketMaster
+import com.netflix.spinnaker.igor.scm.github.client.GitHubController
+import com.netflix.spinnaker.igor.scm.gitlab.client.GitLabController
+import com.netflix.spinnaker.igor.scm.stash.client.StashController
+import com.netflix.spinnaker.igor.scm.bitbucket.client.BitBucketController
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RequestMapping
@@ -34,31 +34,37 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/scm")
 class ScmInfoController {
     @Autowired(required = false)
-    StashMaster stashMaster
+    StashController stashController
 
     @Autowired(required = false)
-    GitHubMaster gitHubMaster
+    GitHubController gitHubController
 
     @Autowired(required = false)
-    GitLabMaster gitLabMaster
+    GitLabController gitLabController
 
     @Autowired(required = false)
-    BitBucketMaster bitBucketMaster
+    BitBucketController bitBucketController
 
+    @Deprecated(forRemoval = true)
     @RequestMapping(value = '/masters', method = RequestMethod.GET)
     Map listMasters() {
-        def result = [:]
-        if(stashMaster)
-            result << [stash : stashMaster.baseUrl]
-
-        if(gitHubMaster)
-            result << [gitHub : gitHubMaster.baseUrl]
-
-        if(gitLabMaster)
-            result << [gitLab : gitLabMaster.baseUrl]
-
-        if(bitBucketMaster)
-            result << [bitBucket : bitBucketMaster.baseUrl]
-        result
+        listControllers()
     }
+
+  @RequestMapping(value = '/controllers', method = RequestMethod.GET)
+  Map listControllers() {
+    def result = [:]
+    if(stashController)
+      result << [stash : stashController.baseUrl]
+
+    if(gitHubController)
+      result << [gitHub : gitHubController.baseUrl]
+
+    if(gitLabController)
+      result << [gitLab : gitLabController.baseUrl]
+
+    if(bitBucketController)
+      result << [bitBucket : bitBucketController.baseUrl]
+    result
+  }
 }

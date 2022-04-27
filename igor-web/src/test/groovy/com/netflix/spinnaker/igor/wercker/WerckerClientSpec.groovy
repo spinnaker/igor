@@ -100,7 +100,7 @@ class WerckerClientSpec extends Specification {
                 .setHeader('Content-Type', 'application/json; charset=utf-8')
                 )
         server.start()
-        def host = new WerckerHost(name: 'werckerMaster', address: server.url('/').toString())
+        def host = new WerckerHost(name: 'werckerCONTROLLER', address: server.url('/').toString())
         client = new WerckerConfig().werckerClient(host, 30000, new OkHttpClientProvider([new InsecureOkHttpClientBuilderProvider(new OkHttpClient())]), RestAdapter.LogLevel.BASIC)
     }
 

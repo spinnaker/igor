@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.igor.scm.bitbucket.client
 
 import com.netflix.spinnaker.igor.config.BitBucketProperties
-import com.netflix.spinnaker.igor.scm.AbstractScmMaster
+import com.netflix.spinnaker.igor.scm.AbstractScmController
 import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger
 import com.squareup.okhttp.Credentials
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -32,15 +32,15 @@ import javax.validation.Valid
 /**
  * Wrapper class for a collection of BitBucket clients
  */
-class BitBucketMaster extends AbstractScmMaster {
+class BitBucketController extends AbstractScmController {
   BitBucketClient bitBucketClient
   String baseUrl
 
   @Bean
   @ConditionalOnProperty('bitbucket.base-url')
-  BitBucketMaster bitBucketMaster(@Valid BitBucketProperties bitBucketProperties) {
+  BitBucketController bitBucketController(@Valid BitBucketProperties bitBucketProperties) {
     log.info "bootstrapping ${bitBucketProperties.baseUrl}"
-    new BitBucketMaster(
+    new BitBucketController(
         bitBucketClient : bitBucketClient(bitBucketProperties.baseUrl, bitBucketProperties.username, bitBucketProperties.password),
         baseUrl: bitBucketProperties.baseUrl)
   }

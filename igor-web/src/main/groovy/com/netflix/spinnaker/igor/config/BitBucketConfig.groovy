@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.igor.config
 
 import com.netflix.spinnaker.igor.scm.bitbucket.client.BitBucketClient
-import com.netflix.spinnaker.igor.scm.bitbucket.client.BitBucketMaster
+import com.netflix.spinnaker.igor.scm.bitbucket.client.BitBucketController
 import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger
 import com.squareup.okhttp.Credentials
 import groovy.transform.CompileStatic
@@ -44,9 +44,9 @@ import javax.validation.Valid
 class BitBucketConfig {
 
   @Bean
-  BitBucketMaster bitBucketMaster(@Valid BitBucketProperties bitBucketProperties) {
+  BitBucketController bitBucketController(@Valid BitBucketProperties bitBucketProperties) {
     log.info "bootstrapping ${bitBucketProperties.baseUrl} as bitbucket"
-    new BitBucketMaster(
+    new BitBucketController(
       bitBucketClient: bitBucketClient(bitBucketProperties.baseUrl, bitBucketProperties.username, bitBucketProperties.password),
       baseUrl: bitBucketProperties.baseUrl)
   }

@@ -92,13 +92,18 @@ public class ConcourseService implements BuildOperations, BuildProperties {
     this.permissions = host.getPermissions().build();
   }
 
+  @Deprecated(forRemoval = true)
   public String getMaster() {
+    return getController();
+  }
+
+  public String getController() {
     return "concourse-" + host.getName();
   }
 
   @Override
   public String getName() {
-    return getMaster();
+    return getController();
   }
 
   @Override

@@ -25,5 +25,5 @@ import com.netflix.spinnaker.igor.jenkins.client.model.Project
  */
 class BuildContent {
     Project project
-    String master
+    String controller
 }

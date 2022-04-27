@@ -34,7 +34,7 @@ class JenkinsCacheSpec extends Specification {
     @Subject
     JenkinsCache cache = new JenkinsCache(redisClientDelegate, new IgorConfigurationProperties())
 
-    def master = 'master'
+    def controller = 'controller'
     def test = 'test'
 
     void cleanup() {
@@ -46,30 +46,30 @@ class JenkinsCacheSpec extends Specification {
 
     void 'new build numbers get overridden'() {
         when:
-        cache.setLastBuild(master, 'job1', 78, true)
+        cache.setLastBuild(controller, 'job1', 78, true)
 
         then:
-        cache.getLastBuild(master, 'job1').lastBuildLabel == 78
+        cache.getLastBuild(controller, 'job1').lastBuildLabel == 78
 
         when:
-        cache.setLastBuild(master, 'job1', 80, false)
+        cache.setLastBuild(controller, 'job1', 80, false)
 
         then:
-        cache.getLastBuild(master, 'job1').lastBuildLabel == 80
+        cache.getLastBuild(controller, 'job1').lastBuildLabel == 80
     }
 
     void 'statuses get overridden'() {
         when:
-        cache.setLastBuild(master, 'job1', 78, true)
+        cache.setLastBuild(controller, 'job1', 78, true)
 
         then:
-        cache.getLastBuild(master, 'job1').lastBuildBuilding == true
+        cache.getLastBuild(controller, 'job1').lastBuildBuilding == true
 
         when:
-        cache.setLastBuild(master, 'job1', 78, false)
+        cache.setLastBuild(controller, 'job1', 78, false)
 
         then:
-        cache.getLastBuild(master, 'job1').lastBuildBuilding == false
+        cache.getLastBuild(controller, 'job1').lastBuildBuilding == false
 
     }
 
@@ -78,41 +78,41 @@ class JenkinsCacheSpec extends Specification {
         cache.getLastBuild('notthere', 'job1') == [:]
     }
 
-    void 'can set builds for multiple masters'() {
+    void 'can set builds for multiple controllers'() {
         when:
-        cache.setLastBuild(master, 'job1', 78, true)
+        cache.setLastBuild(controller, 'job1', 78, true)
         cache.setLastBuild('example2', 'job1', 88, true)
 
         then:
-        cache.getLastBuild(master, 'job1').lastBuildLabel == 78
+        cache.getLastBuild(controller, 'job1').lastBuildLabel == 78
         cache.getLastBuild('example2', 'job1').lastBuildLabel == 88
     }
 
-    void 'correctly retrieves all jobsNames for a master'() {
+    void 'correctly retrieves all jobsNames for a controller'() {
         when:
-        cache.setLastBuild(master, 'job1', 78, true)
-        cache.setLastBuild(master, 'job2', 11, false)
-        cache.setLastBuild(master, 'blurb', 1, false)
+        cache.setLastBuild(controller, 'job1', 78, true)
+        cache.setLastBuild(controller, 'job2', 11, false)
+        cache.setLastBuild(controller, 'blurb', 1, false)
 
         then:
-        cache.getJobNames(master) == ['blurb', 'job1', 'job2']
+        cache.getJobNames(controller) == ['blurb', 'job1', 'job2']
     }
 
     void 'can remove details for a build'() {
         when:
-        cache.setLastBuild(master, 'job1', 78, true)
-        cache.remove(master, 'job1')
+        cache.setLastBuild(controller, 'job1', 78, true)
+        cache.remove(controller, 'job1')
 
         then:
-        cache.getLastBuild(master, 'job1') == [:]
+        cache.getLastBuild(controller, 'job1') == [:]
     }
 
     @Unroll
     void 'retrieves all matching jobs for typeahead #query'() {
         when:
-        cache.setLastBuild(master, 'job1', 1, true)
+        cache.setLastBuild(controller, 'job1', 1, true)
         cache.setLastBuild(test, 'job1', 1, false)
-        cache.setLastBuild(master, 'job2', 1, false)
+        cache.setLastBuild(controller, 'job2', 1, false)
         cache.setLastBuild(test, 'job3', 1, false)
 
         then:
@@ -120,10 +120,10 @@ class JenkinsCacheSpec extends Specification {
 
         where:
         query  || expected
-        'job'  || ['master:job1', 'master:job2', 'test:job1', 'test:job3']
-        'job1' || ['master:job1', 'test:job1']
-        'ob1'  || ['master:job1', 'test:job1']
-        'B2'   || ['master:job2']
+        'job'  || ['controller:job1', 'controller:job2', 'test:job1', 'test:job3']
+        'job1' || ['controller:job1', 'test:job1']
+        'ob1'  || ['controller:job1', 'test:job1']
+        'B2'   || ['controller:job2']
         '3'    || ['test:job3']
         'nope' || []
     }
@@ -135,16 +135,16 @@ class JenkinsCacheSpec extends Specification {
         JenkinsCache secondInstance = new JenkinsCache(redisClientDelegate, cfg)
 
         when:
-        secondInstance.setLastBuild(master, 'job1', 1, false)
+        secondInstance.setLastBuild(controller, 'job1', 1, false)
 
         then:
-        secondInstance.getJobNames(master) == ['job1']
-        cache.getJobNames(master) == []
+        secondInstance.getJobNames(controller) == ['job1']
+        cache.getJobNames(controller) == []
 
         when:
-        cache.remove(master, 'job1')
+        cache.remove(controller, 'job1')
 
         then:
-        secondInstance.getJobNames(master) == ['job1']
+        secondInstance.getJobNames(controller) == ['job1']
     }
 }

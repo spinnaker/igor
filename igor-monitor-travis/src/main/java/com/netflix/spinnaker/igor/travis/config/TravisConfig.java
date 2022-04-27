@@ -57,7 +57,7 @@ import retrofit.converter.JacksonConverter;
 public class TravisConfig {
 
   @Bean
-  public Map<String, TravisService> travisMasters(
+  public Map<String, TravisService> travisControllers(
       BuildServices buildServices,
       TravisCache travisCache,
       IgorConfigurationProperties igorConfigurationProperties,
@@ -65,12 +65,12 @@ public class TravisConfig {
       ObjectMapper objectMapper,
       Optional<ArtifactDecorator> artifactDecorator,
       CircuitBreakerRegistry circuitBreakerRegistry) {
-    log.info("creating travisMasters");
+    log.info("creating travisControllers");
 
-    Map<String, TravisService> travisMasters =
+    Map<String, TravisService> travisControllers =
         (travisProperties == null
                 ? new ArrayList<TravisProperties.TravisHost>()
-                : travisProperties.getMasters())
+                : travisProperties.getControllers())
             .stream()
                 .map(
                     host -> {
@@ -112,8 +112,8 @@ public class TravisConfig {
                     })
                 .collect(Collectors.toMap(TravisService::getGroupKey, Function.identity()));
 
-    buildServices.addServices(travisMasters);
-    return travisMasters;
+    buildServices.addServices(travisControllers);
+    return travisControllers;
   }
 
   public static TravisClient travisClient(String address, int timeout, ObjectMapper objectMapper) {

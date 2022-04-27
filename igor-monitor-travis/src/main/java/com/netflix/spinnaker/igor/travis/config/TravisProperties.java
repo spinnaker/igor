@@ -35,7 +35,8 @@ public class TravisProperties implements BuildServerProperties<TravisProperties.
   @Deprecated private long newBuildGracePeriodSeconds;
   private boolean repositorySyncEnabled = false;
   private int cachedJobTTLDays = 60;
-  @Valid private List<TravisHost> masters;
+  @Deprecated @Valid private List<TravisHost> masters;
+  @Valid private List<TravisHost> controllers;
   @Valid private List<String> regexes;
   /**
    * Lets you customize the build message used when Spinnaker triggers builds in Travis. If you set
@@ -45,6 +46,19 @@ public class TravisProperties implements BuildServerProperties<TravisProperties.
    * not customizable.
    */
   private String buildMessageKey = "travis.buildMessage";
+
+  @Deprecated(forRemoval = true)
+  public List<TravisHost> getMasters() {
+    return this.controllers;
+  }
+
+  @Deprecated(forRemoval = true)
+  public void setMasters(List<TravisHost> controllers) {
+    log.warn(
+        "The 'travis.masters' property is no longer in use and the value will be ignored. "
+            + "The new option 'travis.controllers' will let you define controllers.");
+    this.controllers = controllers;
+  }
 
   @Deprecated
   public void setNewBuildGracePeriodSeconds(long newBuildGracePeriodSeconds) {
@@ -80,7 +94,7 @@ public class TravisProperties implements BuildServerProperties<TravisProperties.
       log.warn(
           "The 'travis.numberOfRepositories' property is no longer in use and the value will be ignored. "
               + "If you want to limit the number of builds retrieved per polling cycle, you can use the property "
-              + "'travis.[master].numberOfJobs' (default: 100).");
+              + "'travis.[controller].numberOfJobs' (default: 100).");
       this.numberOfRepositories = numberOfRepositories;
     }
   }

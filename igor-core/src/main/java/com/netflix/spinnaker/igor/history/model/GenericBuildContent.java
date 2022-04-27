@@ -22,6 +22,20 @@ import lombok.Data;
 @Data
 public class GenericBuildContent {
   private GenericProject project;
+
+  @Deprecated(forRemoval = true)
   private String master;
+
+  @Deprecated(forRemoval = true)
+  public String getMaster() {
+    return controller;
+  }
+
+  @Deprecated(forRemoval = true)
+  public void setMaster(String controller) {
+    this.controller = controller;
+  }
+
+  private String controller;
   private String type;
 }

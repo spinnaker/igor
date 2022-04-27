@@ -19,7 +19,7 @@ package com.netflix.spinnaker.igor.scm.bitbucket
 import com.netflix.spinnaker.igor.config.BitBucketProperties
 import com.netflix.spinnaker.igor.exceptions.UnhandledDownstreamServiceErrorException
 import com.netflix.spinnaker.igor.scm.AbstractCommitController
-import com.netflix.spinnaker.igor.scm.bitbucket.client.BitBucketMaster
+import com.netflix.spinnaker.igor.scm.bitbucket.client.BitBucketController
 import com.netflix.spinnaker.igor.scm.bitbucket.client.model.CompareCommitsResponse
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
@@ -37,7 +37,7 @@ import retrofit.RetrofitError
 @RequestMapping("/bitbucket")
 class CommitController extends AbstractCommitController {
   @Autowired
-  BitBucketMaster bitBucketMaster
+  BitBucketController bitBucketController
 
   @Autowired
   BitBucketProperties bitBucketProperties
@@ -55,10 +55,10 @@ class CommitController extends AbstractCommitController {
      */
 
     try {
-      commitsResponse = bitBucketMaster.bitBucketClient.getCompareCommits(projectKey, repositorySlug, ['limit': 100, 'include': requestParams.to])
+      commitsResponse = bitBucketController.bitBucketClient.getCompareCommits(projectKey, repositorySlug, ['limit': 100, 'include': requestParams.to])
       if (!commitsResponse.values.any { it.hash == requestParams.from }) {
         while (!commitsResponse.values.any { it.hash == requestParams.from }) {
-          def response = bitBucketMaster.bitBucketClient.getCompareCommits(projectKey, repositorySlug, ['limit': 100, 'include': commitsResponse.values.last().hash])
+          def response = bitBucketController.bitBucketClient.getCompareCommits(projectKey, repositorySlug, ['limit': 100, 'include': commitsResponse.values.last().hash])
           commitsResponse.values.addAll(response.values)
         }
         commitsResponse.values.unique { a, b -> a.hash <=> b.hash }
@@ -70,9 +70,9 @@ class CommitController extends AbstractCommitController {
       }
     } catch (RetrofitError e) {
       if (e.response.status == 404) {
-        return getNotFoundCommitsResponse(projectKey, repositorySlug, requestParams.to, requestParams.from, bitBucketMaster.baseUrl)
+        return getNotFoundCommitsResponse(projectKey, repositorySlug, requestParams.to, requestParams.from, bitBucketController.baseUrl)
       }
-      throw new UnhandledDownstreamServiceErrorException("Unhandled bitbucket error for ${bitBucketMaster.baseUrl}", e)
+      throw new UnhandledDownstreamServiceErrorException("Unhandled bitbucket error for ${bitBucketController.baseUrl}", e)
     }
 
     commitsResponse.values.each {

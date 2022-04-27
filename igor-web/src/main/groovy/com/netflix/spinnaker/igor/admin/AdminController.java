@@ -47,8 +47,8 @@ public class AdminController {
    * Silently fast-forwards a poller. Fast-forwarding means that all pending cache state will be
    * polled and saved, but will not send Echo notifications.
    *
-   * <p>By default all partitions (ex: masters) will be fast-forwarded, however specific partition
-   * names should be used whenever possible.
+   * <p>By default all partitions (ex: controllers) will be fast-forwarded, however specific
+   * partition names should be used whenever possible.
    *
    * @param monitorName The polling monitor name (ex: "DockerMonitor")
    * @param partition The partition name, if not provided, method will re-index the entire monitor

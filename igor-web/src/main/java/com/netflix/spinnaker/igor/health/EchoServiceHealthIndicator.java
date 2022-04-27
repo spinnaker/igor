@@ -94,7 +94,7 @@ public class EchoServiceHealthIndicator implements HealthIndicator {
     final GenericBuildEvent event = new GenericBuildEvent();
     final GenericBuildContent buildContent = new GenericBuildContent();
     final GenericProject project = new GenericProject("spinnaker", new GenericBuild());
-    buildContent.setMaster("IgorHealthCheck");
+    buildContent.setController("IgorHealthCheck");
     buildContent.setProject(project);
     event.setContent(buildContent);
     return event;

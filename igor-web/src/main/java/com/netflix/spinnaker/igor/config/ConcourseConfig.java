@@ -22,23 +22,23 @@ import org.springframework.context.annotation.Configuration;
 @EnableConfigurationProperties(ConcourseProperties.class)
 public class ConcourseConfig {
   @Bean
-  public Map<String, ConcourseService> concourseMasters(
+  public Map<String, ConcourseService> concourseControllers(
       BuildServices buildServices,
       ConcourseCache concourseCache,
       Optional<ArtifactDecorator> artifactDecorator,
       IgorConfigurationProperties igorConfigurationProperties,
       @Valid ConcourseProperties concourseProperties) {
-    List<ConcourseProperties.Host> masters = concourseProperties.getMasters();
-    if (masters == null) {
+    List<ConcourseProperties.Host> controllers = concourseProperties.getControllers();
+    if (controllers == null) {
       return Collections.emptyMap();
     }
 
-    Map<String, ConcourseService> concourseMasters =
-        masters.stream()
+    Map<String, ConcourseService> concourseControllers =
+        controllers.stream()
             .map(m -> new ConcourseService(m, artifactDecorator))
-            .collect(Collectors.toMap(ConcourseService::getMaster, Function.identity()));
+            .collect(Collectors.toMap(ConcourseService::getController, Function.identity()));
 
-    buildServices.addServices(concourseMasters);
-    return concourseMasters;
+    buildServices.addServices(concourseControllers);
+    return concourseControllers;
   }
 }
