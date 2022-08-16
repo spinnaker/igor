@@ -36,7 +36,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 @Slf4j
 public class ArtifactExtractor {
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  private final ObjectMapper objectMapper;
   private final JinjaTemplateService jinjaTemplateService;
   private final JinjaArtifactExtractor.Factory jinjaArtifactExtractorFactory;
 
