@@ -45,7 +45,7 @@ public class ArtifactExtractor {
     try {
       messageString = objectMapper.writeValueAsString(build);
     } catch (JsonProcessingException e) {
-      log.error("Error processing JSON: {}", e);
+      log.error("Error processing JSON:", e);
       return Collections.emptyList();
     }
 
