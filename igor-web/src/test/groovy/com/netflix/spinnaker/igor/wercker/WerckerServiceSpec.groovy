@@ -128,7 +128,7 @@ class WerckerServiceSpec extends Specification {
         def (org, app, pipe) = names
         def job = names.join('/')
         def runId = "testGenericBuild_werckerRunId"
-        int buildNumber = 6
+        int buildNumber = '6'
         setup:
         cache.getRunID(master, job, buildNumber) >> runId
         client.getRunById(_, runId) >> new Run(id: runId)
@@ -147,7 +147,7 @@ class WerckerServiceSpec extends Specification {
         def (org, app, pipe) = names
         def (pipeline, pipelineId) = [names.join('/'), pipe + "ID"]
         def runId = 'test_triggerBuild_runId'
-        int buildNumber = 8
+        int buildNumber = '8'
 
         setup:
         client.getPipelinesForApplication(_, org, app) >> [

@@ -57,7 +57,7 @@ public interface TravisClient {
   public abstract Builds builds(
       @Header("Authorization") String accessToken,
       @Query("slug") String repoSlug,
-      @Query("number") int buildNumber);
+      @Query("number") String buildNumber);
 
   @POST("/repo/{repoSlug}/requests")
   @Headers("Travis-API-Version: 3")

@@ -57,7 +57,7 @@ public class V3Build {
   @JsonProperty("repository_id")
   private int repositoryId;
 
-  private int number;
+  private String number;
 
   @EqualsAndHashCode.Include private TravisBuildState state;
 

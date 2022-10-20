@@ -299,7 +299,7 @@ class TravisServiceSpec extends Specification {
         response.setRequest(request)
 
         when:
-        int buildNumber = service.triggerBuildWithParameters("my/slug/branch", ["travis.buildMessage": "My build message"])
+        String buildNumber = service.triggerBuildWithParameters("my/slug/branch", ["travis.buildMessage": "My build message"])
 
         then:
         1 * client.triggerBuild("token someToken", "my/slug", { RepoRequest repoRequest ->

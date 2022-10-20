@@ -71,14 +71,14 @@ public class BuildCache {
     return results;
   }
 
-  public int getLastBuild(String master, String job, boolean running) {
+  public String getLastBuild(String master, String job, boolean running) {
     String key = makeKey(master, job, running);
     return redisClientDelegate.withCommandsClient(
         c -> {
           if (!c.exists(key)) {
-            return -1;
+            return "-1";
           }
-          return Integer.parseInt(c.get(key));
+          return c.get(key);
         });
   }
 
@@ -101,7 +101,7 @@ public class BuildCache {
         });
   }
 
-  public void setLastBuild(String master, String job, int lastBuild, boolean building, int ttl) {
+  public void setLastBuild(String master, String job, String lastBuild, boolean building, int ttl) {
     if (!building) {
       setBuild(makeKey(master, job), lastBuild, false, master, job, ttl);
     }
@@ -182,19 +182,19 @@ public class BuildCache {
   }
 
   private void setBuild(
-      String key, int lastBuild, boolean building, String master, String job, int ttl) {
+      String key, String lastBuild, boolean building, String master, String job, int ttl) {
     redisClientDelegate.withCommandsClient(
         c -> {
-          c.hset(key, "lastBuildLabel", Integer.toString(lastBuild));
+          c.hset(key, "lastBuildLabel", lastBuild);
           c.hset(key, "lastBuildBuilding", Boolean.toString(building));
         });
     setTTL(key, ttl);
   }
 
-  private void storeLastBuild(String key, int lastBuild, int ttl) {
+  private void storeLastBuild(String key, String lastBuild, int ttl) {
     redisClientDelegate.withCommandsClient(
         c -> {
-          c.set(key, Integer.toString(lastBuild));
+          c.set(key, lastBuild);
         });
     setTTL(key, ttl);
   }
