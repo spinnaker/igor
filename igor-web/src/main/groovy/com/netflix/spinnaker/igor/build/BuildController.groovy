@@ -162,7 +162,7 @@ class BuildController {
   }
 
 
-  void stopJob(String master, int buildNumber, String jobName, String queuedBuild) {
+  void stopJob(String master, String buildNumber, String jobName, String queuedBuild) {
     def buildService = getBuildService(master)
     if (buildService instanceof JenkinsService) {
       // Jobs that haven't been started yet won't have a buildNumber

@@ -86,7 +86,7 @@ class TravisServiceSpec extends Specification {
         GenericBuild genericBuild = service.getGenericBuild(build, "some/repo-slug")
 
         then:
-        genericBuild.number == 1337
+        genericBuild.number == '1337'
         genericBuild.result == Result.SUCCESS
         genericBuild.duration == 32
         genericBuild.timestamp == "1458051084000"
@@ -94,7 +94,7 @@ class TravisServiceSpec extends Specification {
         2 * travisCache.getJobLog('travis-ci', 42) >>> [null, ""]
         1 * client.jobLog(_, 42) >> v3log
         2 * build.job_ids >> [42]
-        2 * build.number >> 1337
+        2 * build.number >> '1337'
         2 * build.state >> 'passed'
         1 * build.duration >> 32
         1 * build.finishedAt >> Instant.now()
@@ -310,7 +310,7 @@ class TravisServiceSpec extends Specification {
         }) >> response
         1 * travisCache.setQueuedJob("travis-ci", 42, 1337) >> 1
 
-        buildNumber == 1
+        buildNumber == '1'
     }
 
     @Unroll

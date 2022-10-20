@@ -76,21 +76,21 @@ class TravisBuildMonitorSpec extends Specification {
         1 * travisService.getLatestBuilds() >> [ build ]
         build.branchedRepoSlug() >> "test-org/test-repo/master"
         build.jobs >> []
-        build.getNumber() >> 4
+        build.getNumber() >> '4'
         build.getState() >> TravisBuildState.passed
         build.repository >> repository
         repository.slug >> 'test-org/test-repo'
 
         1 * travisService.getGenericBuild(build, true) >> TravisBuildConverter.genericBuild(build, MASTER)
-        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/master', false) >> 3
-        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo', false) >> 5
-        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo/master', 4, false, CACHED_JOB_TTL_SECONDS)
-        0 * buildCache.setLastBuild(MASTER, 'test-org/test-repo', 4, false, CACHED_JOB_TTL_SECONDS)
+        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/master', false) >> '3'
+        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo', false) >> '5'
+        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo/master', '4', false, CACHED_JOB_TTL_SECONDS)
+        0 * buildCache.setLastBuild(MASTER, 'test-org/test-repo', '4', false, CACHED_JOB_TTL_SECONDS)
 
         buildPollingDelta.items.size() == 1
         buildPollingDelta.items[0].branchedRepoSlug == 'test-org/test-repo/master'
-        buildPollingDelta.items[0].currentBuildNum == 4
-        buildPollingDelta.items[0].previousBuildNum == 3
+        buildPollingDelta.items[0].currentBuildNum == '4'
+        buildPollingDelta.items[0].previousBuildNum == '3'
     }
 
     void 'send events for build both on branch and on repository'() {
@@ -104,24 +104,25 @@ class TravisBuildMonitorSpec extends Specification {
         then:
         1 * travisService.getLatestBuilds() >> [ build ]
         build.branchedRepoSlug() >> "test-org/test-repo/my_branch"
-        build.getNumber() >> 4
+        build.getNumber() >> '4'
         build.getState() >> TravisBuildState.passed
         build.jobs >> []
         build.repository >> repository
         repository.slug >> 'test-org/test-repo'
 
         1 * travisService.getGenericBuild(build, true) >> TravisBuildConverter.genericBuild(build, MASTER)
-        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/my_branch', false) >> 3
-        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo/my_branch', 4, false, CACHED_JOB_TTL_SECONDS)
-        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo', 4, false, CACHED_JOB_TTL_SECONDS)
+        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo', false) >> '-1'
+        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/my_branch', false) >> '3'
+        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo/my_branch', '4', false, CACHED_JOB_TTL_SECONDS)
+        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo', '4', false, CACHED_JOB_TTL_SECONDS)
 
         1 * echoService.postEvent({
             it.content.project.name == "test-org/test-repo"
-            it.content.project.lastBuild.number == 4
+            it.content.project.lastBuild.number == '4'
         })
         1 * echoService.postEvent({
             it.content.project.name == "test-org/test-repo/my_branch"
-            it.content.project.lastBuild.number == 4
+            it.content.project.lastBuild.number == '4'
         })
     }
 
@@ -136,11 +137,12 @@ class TravisBuildMonitorSpec extends Specification {
         then:
         1 * travisService.getLatestBuilds() >> [ build ]
         build.branchedRepoSlug() >> "test-org/test-repo/my_branch"
-        build.getNumber() >> 4
+        build.getNumber() >> '4'
 
-        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/my_branch', false) >> 3
-        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo/my_branch', 4, false, CACHED_JOB_TTL_SECONDS)
-        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo', 4, false, CACHED_JOB_TTL_SECONDS)
+        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo', false) >> '-1'
+        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/my_branch', false) >> '3'
+        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo/my_branch', '4', false, CACHED_JOB_TTL_SECONDS)
+        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo', '4', false, CACHED_JOB_TTL_SECONDS)
 
         build.jobs >> []
         build.repository >> repository
@@ -162,42 +164,43 @@ class TravisBuildMonitorSpec extends Specification {
         then:
         1 * travisService.getLatestBuilds() >> [ build, buildDifferentBranch ]
         build.branchedRepoSlug() >> "test-org/test-repo/my_branch"
-        build.getNumber() >> 4
+        build.getNumber() >> '4'
         build.getState() >> TravisBuildState.passed
         build.jobs >> []
         build.repository >> repository
         buildDifferentBranch.branchedRepoSlug() >> "test-org/test-repo/different_branch"
-        buildDifferentBranch.getNumber() >> 3
+        buildDifferentBranch.getNumber() >> '3'
         buildDifferentBranch.getState() >> TravisBuildState.passed
         buildDifferentBranch.jobs >> []
         buildDifferentBranch.repository >> repository
         repository.slug >> 'test-org/test-repo'
         1 * travisService.getGenericBuild(build, true) >> TravisBuildConverter.genericBuild(build, MASTER)
         1 * travisService.getGenericBuild(buildDifferentBranch, true) >> TravisBuildConverter.genericBuild(buildDifferentBranch, MASTER)
-        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/my_branch', false) >> 2
-        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo/my_branch', 4, false, CACHED_JOB_TTL_SECONDS)
-        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo', 4, false, CACHED_JOB_TTL_SECONDS)
-        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo', 3, false, CACHED_JOB_TTL_SECONDS)
+        2 * buildCache.getLastBuild(MASTER, 'test-org/test-repo', false) >> '-1'
+        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/my_branch', false) >> '2'
+        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo/my_branch', '4', false, CACHED_JOB_TTL_SECONDS)
+        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo', '4', false, CACHED_JOB_TTL_SECONDS)
+        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo', '3', false, CACHED_JOB_TTL_SECONDS)
 
-        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/different_branch', false) >> 1
-        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo/different_branch', 3, false, CACHED_JOB_TTL_SECONDS)
+        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/different_branch', false) >> '1'
+        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo/different_branch', '3', false, CACHED_JOB_TTL_SECONDS)
 
         1 * echoService.postEvent({
             it.content.project.name == "test-org/test-repo/my_branch" &&
-                it.content.project.lastBuild.number == 4
+                it.content.project.lastBuild.number == '4'
         })
         1 * echoService.postEvent({
             it.content.project.name == "test-org/test-repo" &&
-                it.content.project.lastBuild.number == 4
+                it.content.project.lastBuild.number == '4'
         })
 
         1 * echoService.postEvent({
             it.content.project.name == "test-org/test-repo" &&
-                it.content.project.lastBuild.number == 3
+                it.content.project.lastBuild.number == '3'
         })
         1 * echoService.postEvent({
             it.content.project.name == "test-org/test-repo/different_branch" &&
-                it.content.project.lastBuild.number == 3
+                it.content.project.lastBuild.number == '3'
         })
     }
 
@@ -211,7 +214,7 @@ class TravisBuildMonitorSpec extends Specification {
         build.branch = new V3Branch()
         build.branch.name = "my_branch"
         build.id = 1337
-        build.number = 4
+        build.number = '4'
         build.state = TravisBuildState.started
         build.jobs = []
         build.repository = repository
@@ -233,18 +236,19 @@ class TravisBuildMonitorSpec extends Specification {
         2 * travisService.getGenericBuild(_, _) >> { V3Build b, boolean fetchLogs ->
             TravisBuildConverter.genericBuild(b, MASTER)
         }
-        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/my_branch', true) >> 3
-        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/my_branch', false) >> 3
-        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo/my_branch', 4, false, CACHED_JOB_TTL_SECONDS)
-        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo', 4, false, CACHED_JOB_TTL_SECONDS)
+        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo', false) >> '-1'
+        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/my_branch', true) >> '3'
+        1 * buildCache.getLastBuild(MASTER, 'test-org/test-repo/my_branch', false) >> '3'
+        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo/my_branch', '4', false, CACHED_JOB_TTL_SECONDS)
+        1 * buildCache.setLastBuild(MASTER, 'test-org/test-repo', '4', false, CACHED_JOB_TTL_SECONDS)
 
         1 * echoService.postEvent({
             it.content.project.name == "test-org/test-repo"
-            it.content.project.lastBuild.number == 4
+            it.content.project.lastBuild.number == '4'
         })
         1 * echoService.postEvent({
             it.content.project.name == "test-org/test-repo/my_branch"
-            it.content.project.lastBuild.number == 4
+            it.content.project.lastBuild.number == '4'
         })
     }
 }

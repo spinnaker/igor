@@ -105,13 +105,13 @@ class GitlabCiBuildMonitorSpec extends Specification {
         service.getProjects() >> [project]
         service.getPipelines(project, 5) >> [pipeline]
         buildCache.getJobNames(MASTER) >> jobsInCache
-        buildCache.getLastBuild(MASTER, "999", true) >> lastBuildNr
+        buildCache.getLastBuild(MASTER, "999", false) >> lastBuildNr
 
         when:
         buildMonitor.pollSingle(new PollContext(MASTER).fastForward())
 
         then:
-        1 * buildCache.setLastBuild(MASTER, "999", 101, false, CACHED_JOB_TTL_SECONDS)
+        1 * buildCache.setLastBuild(MASTER, "999", '101', false, CACHED_JOB_TTL_SECONDS)
 
         and:
         0 * echoService.postEvent(_)
