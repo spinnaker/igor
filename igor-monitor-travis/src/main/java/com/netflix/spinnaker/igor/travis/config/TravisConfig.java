@@ -23,6 +23,7 @@ import com.netflix.spinnaker.igor.service.ArtifactDecorator;
 import com.netflix.spinnaker.igor.service.BuildServices;
 import com.netflix.spinnaker.igor.travis.TravisCache;
 import com.netflix.spinnaker.igor.travis.client.TravisClient;
+import com.netflix.spinnaker.igor.travis.client.model.v3.Root;
 import com.netflix.spinnaker.igor.travis.service.TravisService;
 import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger;
 import com.squareup.okhttp.OkHttpClient;
@@ -82,22 +83,23 @@ public class TravisConfig {
                               igorConfigurationProperties.getClient().getTimeout(),
                               objectMapper);
 
-                      // Disabling the use of the log_complete attribute for now. We suspect it can
-                      // cause some trouble.
                       boolean useLegacyLogFetching = true;
-                      //                      try {
-                      //                        Root root = client.getRoot();
-                      //                        useLegacyLogFetching =
-                      // !root.hasLogCompleteAttribute();
-                      //                        if (useLegacyLogFetching) {
-                      //                          log.info(
-                      //                              "It seems Travis Enterprise is older than
-                      // version 2.2.9. Will use legacy log fetching.");
-                      //                        }
-                      //                      } catch (Exception e) {
-                      //                        log.warn("Could not query Travis API to check API
-                      // compability", e);
-                      //                      }
+                      if (host.isUseLogComplete()) {
+                        try {
+                          Root root = client.getRoot();
+                          useLegacyLogFetching = !root.hasLogCompleteAttribute();
+                          if (useLegacyLogFetching) {
+                            log.info(
+                                "It seems Travis Enterprise is older than version 2.2.9. Will use legacy log fetching.");
+                          }
+                        } catch (Exception e) {
+                          log.warn(
+                              "Could not query Travis API to check API compatibility for log_complete. "
+                                  + "Will use legacy log fetching.",
+                              e);
+                        }
+                      }
+
                       return new TravisService(
                           travisName,
                           host.getBaseUrl(),
