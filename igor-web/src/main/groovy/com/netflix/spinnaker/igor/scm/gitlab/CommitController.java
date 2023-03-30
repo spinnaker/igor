@@ -20,6 +20,9 @@ import com.netflix.spinnaker.igor.config.GitLabProperties;
 import com.netflix.spinnaker.igor.scm.AbstractCommitController;
 import com.netflix.spinnaker.igor.scm.gitlab.client.GitLabMaster;
 import com.netflix.spinnaker.igor.scm.gitlab.client.model.CompareCommitsResponse;
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException;
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerNetworkException;
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerServerException;
 import com.netflix.spinnaker.kork.web.exceptions.NotFoundException;
 import java.util.HashMap;
 import java.util.List;
@@ -30,7 +33,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.*;
-import retrofit.RetrofitError;
 
 @RestController(value = "GitLabCommitController")
 @ConditionalOnProperty("gitlab.base-url")
@@ -66,10 +68,11 @@ public class CommitController extends AbstractCommitController {
       queryMap.put("from", fromParam);
       commitsResponse =
           gitLabMaster.getGitLabClient().getCompareCommits(projectKey, repositorySlug, queryMap);
-    } catch (RetrofitError e) {
-      if (e.getKind() == RetrofitError.Kind.NETWORK) {
+    } catch (SpinnakerServerException e) {
+      if (e instanceof SpinnakerNetworkException) {
         throw new NotFoundException("Could not find the server " + gitLabMaster.getBaseUrl());
-      } else if (e.getResponse().getStatus() == 404) {
+      } else if (e instanceof SpinnakerHttpException
+          && ((SpinnakerHttpException) e).getResponseCode() == 404) {
         return getNotFoundCommitsResponse(
             projectKey, repositorySlug, toParam, fromParam, gitLabMaster.getBaseUrl());
       }
