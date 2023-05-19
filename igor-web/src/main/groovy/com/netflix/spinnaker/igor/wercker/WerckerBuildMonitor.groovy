@@ -10,12 +10,9 @@ package com.netflix.spinnaker.igor.wercker
 
 import com.netflix.spinnaker.kork.discovery.DiscoveryStatusListener
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException
 import com.netflix.spinnaker.security.AuthenticatedRequest
 import org.springframework.scheduling.TaskScheduler
-
-import static com.netflix.spinnaker.igor.wercker.model.Run.finishedAtComparator
-import static com.netflix.spinnaker.igor.wercker.model.Run.startedAtComparator
-import static net.logstash.logback.argument.StructuredArguments.kv
 
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.igor.IgorConfigurationProperties
@@ -34,9 +31,8 @@ import com.netflix.spinnaker.igor.polling.PollContext
 import com.netflix.spinnaker.igor.polling.PollingDelta
 import com.netflix.spinnaker.igor.service.BuildServices
 import com.netflix.spinnaker.igor.wercker.model.Run
-
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerServerException
 import groovy.time.TimeCategory
-
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -44,10 +40,9 @@ import org.springframework.stereotype.Service
 
 import java.util.stream.Collectors
 
-import javax.annotation.PreDestroy
-
-import retrofit.RetrofitError
-
+import static com.netflix.spinnaker.igor.wercker.model.Run.finishedAtComparator
+import static com.netflix.spinnaker.igor.wercker.model.Run.startedAtComparator
+import static net.logstash.logback.argument.StructuredArguments.kv
 /**
  * Monitors new wercker runs
  */
@@ -188,9 +183,13 @@ class WerckerBuildMonitor extends CommonPollingMonitor<PipelineDelta, PipelinePo
                     ))
         } catch (e) {
             log.error("Error processing runs for [{}:{}]", kv("master", master), kv("pipeline", pipeline), e)
-            if (e.cause instanceof RetrofitError) {
-                def re = (RetrofitError) e.cause
-                log.error("Error communicating with Wercker for [{}:{}]: {}", kv("master", master), kv("pipeline", pipeline), kv("url", re.url), re)
+            if (e.getCause() instanceof SpinnakerServerException) {
+                def re = (SpinnakerServerException) e.getCause()
+                def url = null
+                if (re instanceof  SpinnakerHttpException){
+                  url = (SpinnakerHttpException)re.getUrl()
+                }
+                log.error("Error communicating with Wercker for [{}:{}]: {}", kv("master", master), kv("pipeline", pipeline), kv("url", url), re)
             }
         }
     }
