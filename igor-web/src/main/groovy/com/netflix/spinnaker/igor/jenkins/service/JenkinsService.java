@@ -44,6 +44,9 @@ import com.netflix.spinnaker.igor.service.BuildOperations;
 import com.netflix.spinnaker.igor.service.BuildProperties;
 import com.netflix.spinnaker.kork.core.RetrySupport;
 import com.netflix.spinnaker.kork.exceptions.SpinnakerException;
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException;
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerNetworkException;
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerServerException;
 import com.netflix.spinnaker.kork.web.exceptions.NotFoundException;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
@@ -92,10 +95,10 @@ public class JenkinsService implements BuildOperations, BuildProperties {
             CircuitBreakerConfig.custom()
                 .ignoreException(
                     (e) -> {
-                      if (e instanceof RetrofitError) {
-                        RetrofitError re = (RetrofitError) e;
-                        return re.getKind() == RetrofitError.Kind.HTTP
-                            && re.getResponse().getStatus() == 404;
+                      if (e instanceof SpinnakerServerException) {
+                        SpinnakerServerException re = (SpinnakerServerException) e;
+                        return re instanceof SpinnakerHttpException
+                            && ((SpinnakerHttpException) re).getResponseCode() == 404;
                       }
                       return false;
                     })
@@ -240,8 +243,9 @@ public class JenkinsService implements BuildOperations, BuildProperties {
   public QueuedJob queuedBuild(String master, int item) {
     try {
       return circuitBreaker.executeSupplier(() -> jenkinsClient.getQueuedItem(item));
-    } catch (RetrofitError e) {
-      if (e.getResponse() != null && e.getResponse().getStatus() == NOT_FOUND.value()) {
+    } catch (SpinnakerServerException e) {
+      if (e instanceof SpinnakerHttpException
+          && ((SpinnakerHttpException) e).getResponseCode() == NOT_FOUND.value()) {
         throw new NotFoundException(
             String.format("Queued job '%s' not found for master '%s'.", item, master));
       }
@@ -331,12 +335,12 @@ public class JenkinsService implements BuildOperations, BuildProperties {
         () -> {
           try {
             return jenkinsClient.getPropertyFile(encode(jobName), buildNumber, fileName);
-          } catch (RetrofitError e) {
+          } catch (SpinnakerServerException e) {
             // retry on network issue, 404 and 5XX
-            if (e.getKind() == RetrofitError.Kind.NETWORK
-                || (e.getKind() == RetrofitError.Kind.HTTP
-                    && (e.getResponse().getStatus() == 404
-                        || e.getResponse().getStatus() >= 500))) {
+            if (e instanceof SpinnakerNetworkException
+                || (e instanceof SpinnakerHttpException
+                    && (((SpinnakerHttpException) e).getResponseCode() == 404
+                        || ((SpinnakerHttpException) e).getResponseCode() >= 500))) {
               throw e;
             }
             SpinnakerException ex = new SpinnakerException(e);
