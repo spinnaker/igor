@@ -31,7 +31,6 @@ import com.netflix.spinnaker.igor.service.BuildOperations;
 import com.netflix.spinnaker.igor.service.BuildProperties;
 import com.netflix.spinnaker.igor.travis.client.logparser.PropertyParser;
 import com.netflix.spinnaker.kork.core.RetrySupport;
-import com.netflix.spinnaker.kork.exceptions.SpinnakerException;
 import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException;
 import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerNetworkException;
 import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerServerException;
@@ -177,17 +176,20 @@ public class GitlabCiService implements BuildOperations, BuildProperties {
 
             return properties;
 
-          } catch (SpinnakerServerException e) {
-            // retry on network issue, 404 and 5XX
-            if (e instanceof SpinnakerNetworkException
-                || (e instanceof SpinnakerHttpException
-                    && (((SpinnakerHttpException) e).getResponseCode() == 404
-                        || ((SpinnakerHttpException) e).getResponseCode() >= 500))) {
+          } catch (SpinnakerNetworkException e) {
+            // retry on network issue
+            throw e;
+          } catch (SpinnakerHttpException e) {
+            // retry on 404 and 5XX
+            if (e.getResponseCode() == 404 || e.getResponseCode() >= 500) {
               throw e;
             }
-            SpinnakerException ex = new SpinnakerException(e);
-            ex.setRetryable(false);
-            throw ex;
+            e.setRetryable(false);
+            throw e;
+          } catch (SpinnakerServerException e) {
+            // do not retry
+            e.setRetryable(false);
+            throw e;
           } catch (IOException e) {
             log.error("Error while parsing GitLab CI log to build properties", e);
             return properties;
