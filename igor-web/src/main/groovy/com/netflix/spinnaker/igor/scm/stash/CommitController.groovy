@@ -46,16 +46,21 @@ class CommitController extends AbstractCommitController {
         CompareCommitsResponse commitsResponse
         try {
             commitsResponse = stashMaster.stashClient.getCompareCommits(projectKey, repositorySlug, requestParams)
-        }  catch (SpinnakerServerException e) {
-            if (e instanceof  SpinnakerNetworkException) {
-                throw new NotFoundException("Could not find the server ${stashMaster.baseUrl}")
-            } else if (e instanceof  SpinnakerHttpException && ((SpinnakerHttpException)e).getResponseCode() == 404) {
+        }   catch (SpinnakerNetworkException e) {
+          throw new NotFoundException("Could not find the server ${stashMaster.baseUrl}")
+        } catch  (SpinnakerHttpException e) {
+          if(e.getResponseCode() == 404) {
                 return getNotFoundCommitsResponse(projectKey, repositorySlug, requestParams.to, requestParams.from, stashMaster.baseUrl)
-            }
-            log.error(
+          }
+          log.error(
                 "Failed to fetch commits for {}/{}, reason: {}",
                 projectKey, repositorySlug, e.message
             )
+        }catch  (SpinnakerServerException e) {
+          log.error(
+            "Failed to fetch commits for {}/{}, reason: {}",
+            projectKey, repositorySlug, e.message
+          )
         }
 
         List result = []

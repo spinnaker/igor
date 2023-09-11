@@ -183,7 +183,7 @@ class WerckerBuildMonitor extends CommonPollingMonitor<PipelineDelta, PipelinePo
                     ))
         } catch (e) {
             log.error("Error processing runs for [{}:{}]", kv("master", master), kv("pipeline", pipeline), e)
-            if (e.getCause() instanceof SpinnakerServerException) {
+            if (e instanceof SpinnakerServerException) {
                 def re = (SpinnakerServerException) e.getCause()
                 def url = null
                 if (re instanceof  SpinnakerHttpException){

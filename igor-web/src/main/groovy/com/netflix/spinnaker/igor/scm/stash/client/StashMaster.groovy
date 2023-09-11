@@ -35,10 +35,10 @@ class StashMaster extends AbstractScmMaster {
   List<String> listDirectory(String projectKey, String repositorySlug, String path, String ref) {
     try {
       return stashClient.listDirectory(projectKey, repositorySlug, path, ref).toChildFilenames()
-    } catch (SpinnakerServerException e) {
-      if (e instanceof  SpinnakerNetworkException) {
-        throw new NotFoundException("Could not find the server ${baseUrl}")
-      }
+    }catch (SpinnakerNetworkException e) {
+      throw new NotFoundException("Could not find the server ${baseUrl}")
+    }
+    catch (SpinnakerServerException e) {
       log.error(
         "Failed to fetch file from {}/{}/{}, reason: {}",
         projectKey, repositorySlug, path, e.message
@@ -61,10 +61,9 @@ class StashMaster extends AbstractScmMaster {
         contents += response.toTextContents() + "\n"
       }
       return contents
-    }  catch (SpinnakerServerException e) {
-      if (e instanceof SpinnakerNetworkException) {
-        throw new NotFoundException("Could not find the server ${baseUrl}")
-      }
+    } catch (SpinnakerNetworkException e) {
+      throw new NotFoundException("Could not find the server ${baseUrl}")
+    } catch(SpinnakerServerException e) {
       log.error(
         "Failed to fetch file from {}/{}/{}, reason: {}",
         projectKey, repositorySlug, path, e.message
