@@ -448,7 +448,7 @@ public class TravisService implements BuildOperations, BuildProperties {
       if (e instanceof SpinnakerHttpException) { // only SpinnakerHttpException has a response body
         try {
           Map<String, Object> body = ((SpinnakerHttpException) e).getResponseBody();
-          if ("log_expired".equals(body.get("error_type"))) {
+          if (body != null && "log_expired".equals(body.get("error_type"))) {
             log.info(
                 "{}: The log for job id {} has expired and the corresponding build was ignored",
                 groupKey,
