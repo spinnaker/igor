@@ -446,22 +446,15 @@ public class TravisService implements BuildOperations, BuildProperties {
       }
     } catch (SpinnakerServerException e) {
       if (e instanceof SpinnakerHttpException) { // only SpinnakerHttpException has a response body
-        try {
-          Map<String, Object> body = ((SpinnakerHttpException) e).getResponseBody();
-          if (body != null && "log_expired".equals(body.get("error_type"))) {
-            log.info(
-                "{}: The log for job id {} has expired and the corresponding build was ignored",
-                groupKey,
-                jobId);
-          } else {
-            log.warn(
-                "{}: Could not get log for job id {}. Error from Travis:\n{}",
-                groupKey,
-                jobId,
-                body);
-          }
-        } catch (RuntimeException ex) {
-          log.warn("{}: Could not parse original error message from Travis", groupKey, ex);
+        Map<String, Object> body = ((SpinnakerHttpException) e).getResponseBody();
+        if (body != null && "log_expired".equals(body.get("error_type"))) {
+          log.info(
+              "{}: The log for job id {} has expired and the corresponding build was ignored",
+              groupKey,
+              jobId);
+        } else {
+          log.warn(
+              "{}: Could not get log for job id {}. Error from Travis:\n{}", groupKey, jobId, body);
         }
       }
     }
