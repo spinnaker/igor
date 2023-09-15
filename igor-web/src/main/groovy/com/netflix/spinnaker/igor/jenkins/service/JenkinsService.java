@@ -95,10 +95,9 @@ public class JenkinsService implements BuildOperations, BuildProperties {
             CircuitBreakerConfig.custom()
                 .ignoreException(
                     (e) -> {
-                      if (e instanceof SpinnakerServerException) {
-                        SpinnakerServerException re = (SpinnakerServerException) e;
-                        return re instanceof SpinnakerHttpException
-                            && ((SpinnakerHttpException) re).getResponseCode() == 404;
+                      if (e instanceof SpinnakerHttpException) {
+                        return e instanceof SpinnakerHttpException
+                            && ((SpinnakerHttpException) e).getResponseCode() == 404;
                       }
                       return false;
                     })
@@ -243,9 +242,8 @@ public class JenkinsService implements BuildOperations, BuildProperties {
   public QueuedJob queuedBuild(String master, int item) {
     try {
       return circuitBreaker.executeSupplier(() -> jenkinsClient.getQueuedItem(item));
-    } catch (SpinnakerServerException e) {
-      if (e instanceof SpinnakerHttpException
-          && ((SpinnakerHttpException) e).getResponseCode() == NOT_FOUND.value()) {
+    } catch (SpinnakerHttpException e) {
+      if (e.getResponseCode() == NOT_FOUND.value()) {
         throw new NotFoundException(
             String.format("Queued job '%s' not found for master '%s'.", item, master));
       }
@@ -335,16 +333,18 @@ public class JenkinsService implements BuildOperations, BuildProperties {
         () -> {
           try {
             return jenkinsClient.getPropertyFile(encode(jobName), buildNumber, fileName);
-          } catch (SpinnakerServerException e) {
-            // retry on network issue, 404 and 5XX
-            if (e instanceof SpinnakerNetworkException
-                || (e instanceof SpinnakerHttpException
-                    && (((SpinnakerHttpException) e).getResponseCode() == 404
-                        || ((SpinnakerHttpException) e).getResponseCode() >= 500))) {
-              throw e;
+          } catch (SpinnakerHttpException e) {
+            if (e.getResponseCode() == 404 || e.getResponseCode() >= 500) {
+              throw e; // retry on 404 and 5XX
             }
             SpinnakerException ex = new SpinnakerException(e);
-            ex.setRetryable(false);
+            ex.setRetryable(false); // disable retry
+            throw ex;
+          } catch (SpinnakerNetworkException e) {
+            throw e; // retry on network issue
+          } catch (SpinnakerServerException e) {
+            SpinnakerException ex = new SpinnakerException(e);
+            ex.setRetryable(false); // disable retry
             throw ex;
           }
         },
