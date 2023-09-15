@@ -74,6 +74,8 @@ dependencies {
     implementation "io.spinnaker.kork:kork-jedis"
     implementation "io.spinnaker.kork:kork-telemetry"
     implementation "io.spinnaker.kork:kork-plugins"
+    implementation "io.spinnaker.kork:kork-retrofit"
+
 
     implementation "io.github.resilience4j:resilience4j-retry"
 
@@ -82,6 +84,8 @@ dependencies {
     implementation "com.google.guava:guava"
     implementation "javax.inject:javax.inject:1"
     implementation "javax.validation:validation-api"
+
+    implementation "io.spinnaker.kork:kork-retrofit"
 
     runtimeOnly "io.spinnaker.kork:kork-runtime"
 
