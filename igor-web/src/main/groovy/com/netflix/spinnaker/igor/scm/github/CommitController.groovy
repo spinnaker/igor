@@ -53,11 +53,12 @@ class CommitController extends AbstractCommitController {
         try {
             commitsResponse = master.gitHubClient.getCompareCommits(projectKey, repositorySlug, requestParams.to, requestParams.from)
         } catch (SpinnakerServerException e) {
-          if(e instanceof  SpinnakerNetworkException) {
+          if (e instanceof SpinnakerNetworkException) {
             throw new NotFoundException("Could not find the server ${master.baseUrl}")
-          } else if(e instanceof SpinnakerHttpException && ((SpinnakerHttpException)e).getResponseCode() == 404) {
+          } else if (e instanceof SpinnakerHttpException && ((SpinnakerHttpException)e).getResponseCode() == 404) {
             return getNotFoundCommitsResponse(projectKey, repositorySlug, requestParams.to, requestParams.from, master.baseUrl)
           }
+          log.error("Unhandled error response, acting like commit response was not found", e)
         }
 
         commitsResponse.commits.each {

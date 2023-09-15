@@ -88,9 +88,9 @@ public class ManagedDeliveryScmController {
         status = HttpStatus.BAD_REQUEST;
       } else if (e instanceof SpinnakerServerException) {
         if (e instanceof SpinnakerHttpException) {
-          SpinnakerHttpException re = (SpinnakerHttpException) e;
-          status = HttpStatus.valueOf(re.getResponseCode());
-          errorDetails = re.getResponseBody();
+          SpinnakerHttpException spinnakerHttpException = (SpinnakerHttpException) e;
+          status = HttpStatus.valueOf(spinnakerHttpException.getResponseCode());
+          errorDetails = spinnakerHttpException.getResponseBody();
         } else {
           errorDetails = "Error calling downstream system: " + e.getMessage();
         }
