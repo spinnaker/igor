@@ -44,6 +44,7 @@ import com.netflix.spinnaker.igor.service.BuildOperations;
 import com.netflix.spinnaker.igor.service.BuildProperties;
 import com.netflix.spinnaker.kork.core.RetrySupport;
 import com.netflix.spinnaker.kork.exceptions.SpinnakerException;
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerConversionException;
 import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException;
 import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerNetworkException;
 import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerServerException;
@@ -65,7 +66,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.util.UriUtils;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
-import retrofit.RetrofitError;
 import retrofit.client.Header;
 import retrofit.client.Response;
 
@@ -217,16 +217,13 @@ public class JenkinsService implements BuildOperations, BuildProperties {
         () -> {
           try {
             return jenkinsClient.getGitDetails(encode(jobName), buildNumber);
-          } catch (RetrofitError e) {
+          } catch (SpinnakerConversionException e) {
             // assuming that a conversion error is unlikely to succeed on retry
-            if (e.getKind() == RetrofitError.Kind.CONVERSION) {
-              log.warn(
-                  "Unable to deserialize git details for build " + buildNumber + " of " + jobName,
-                  e);
-              return null;
-            } else {
-              throw e;
-            }
+            log.warn(
+                "Unable to deserialize git details for build " + buildNumber + " of " + jobName, e);
+            return null;
+          } catch (SpinnakerServerException e) {
+            throw e;
           }
         },
         10,
