@@ -240,8 +240,6 @@ public class JenkinsService implements BuildOperations, BuildProperties {
             String.format("Queued job '%s' not found for master '%s'.", item, master));
       }
       throw e;
-    } catch (SpinnakerServerException e) {
-      throw e;
     }
   }
 
