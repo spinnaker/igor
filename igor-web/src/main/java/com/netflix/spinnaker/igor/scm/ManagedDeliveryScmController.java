@@ -86,15 +86,14 @@ public class ManagedDeliveryScmController {
       Object errorDetails = e.getMessage();
       if (e instanceof IllegalArgumentException) {
         status = HttpStatus.BAD_REQUEST;
+      } else if (e instanceof SpinnakerHttpException) {
+        SpinnakerHttpException spinnakerHttpException = (SpinnakerHttpException) e;
+        status = HttpStatus.valueOf(spinnakerHttpException.getResponseCode());
+        errorDetails = spinnakerHttpException.getResponseBody();
       } else if (e instanceof SpinnakerServerException) {
-        if (e instanceof SpinnakerHttpException) {
-          SpinnakerHttpException spinnakerHttpException = (SpinnakerHttpException) e;
-          status = HttpStatus.valueOf(spinnakerHttpException.getResponseCode());
-          errorDetails = spinnakerHttpException.getResponseBody();
-        } else {
-          errorDetails = "Error calling downstream system: " + e.getMessage();
-        }
+        errorDetails = "Error calling downstream system: " + e.getMessage();
       }
+
       return buildErrorResponse(status, errorDetails);
     }
   }

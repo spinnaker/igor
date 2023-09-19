@@ -68,14 +68,15 @@ public class CommitController extends AbstractCommitController {
       queryMap.put("from", fromParam);
       commitsResponse =
           gitLabMaster.getGitLabClient().getCompareCommits(projectKey, repositorySlug, queryMap);
-    } catch (SpinnakerServerException e) {
-      if (e instanceof SpinnakerNetworkException) {
-        throw new NotFoundException("Could not find the server " + gitLabMaster.getBaseUrl());
-      } else if (e instanceof SpinnakerHttpException
-          && ((SpinnakerHttpException) e).getResponseCode() == 404) {
-        return getNotFoundCommitsResponse(
-            projectKey, repositorySlug, toParam, fromParam, gitLabMaster.getBaseUrl());
+    } catch (SpinnakerNetworkException e) {
+      throw new NotFoundException("Could not find the server " + gitLabMaster.getBaseUrl());
+    } catch (SpinnakerHttpException e) {
+      if (e.getResponseCode() != 404) {
+        log.error("Unhandled error response, acting like commit response was not found", e);
       }
+      return getNotFoundCommitsResponse(
+          projectKey, repositorySlug, toParam, fromParam, gitLabMaster.getBaseUrl());
+    } catch (SpinnakerServerException e) {
       log.error("Unhandled error response, acting like commit response was not found", e);
       return getNotFoundCommitsResponse(
           projectKey, repositorySlug, toParam, fromParam, gitLabMaster.getBaseUrl());

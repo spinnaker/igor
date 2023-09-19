@@ -45,10 +45,10 @@ class GitHubMaster extends AbstractScmMaster {
       return response.stream()
         .map({ r -> r.path })
         .collect(Collectors.toList())
-    }  catch (SpinnakerServerException e) {
-      if (e instanceof SpinnakerNetworkException) {
-        throw new NotFoundException("Could not find the server ${baseUrl}")
-      }
+    }catch (SpinnakerNetworkException e) {
+      throw new NotFoundException("Could not find the server ${baseUrl}")
+    }
+    catch (SpinnakerServerException e) {
       log.error(
         "Failed to fetch file from {}/{}/{}, reason: {}",
         projectKey, repositorySlug, path, e.message
@@ -65,10 +65,9 @@ class GitHubMaster extends AbstractScmMaster {
         throw new NotFoundException("Unexpected content type: ${response.type}");
       }
       return new String(Base64.mimeDecoder.decode(response.content));
-    } catch (SpinnakerServerException e) {
-      if (e instanceof SpinnakerNetworkException) {
-        throw new NotFoundException("Could not find the server ${baseUrl}")
-      }
+    } catch (SpinnakerNetworkException e) {
+      throw new NotFoundException("Could not find the server ${baseUrl}")
+    }catch (SpinnakerServerException e) {
       log.error(
         "Failed to fetch file from {}/{}/{}, reason: {}",
         projectKey, repositorySlug, path, e.message
