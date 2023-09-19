@@ -138,14 +138,15 @@ class WerckerBuildMonitor extends CommonPollingMonitor<PipelineDelta, PipelinePo
      */
     private void processRuns( WerckerService werckerService, String master, String pipeline,
             List<PipelineDelta> delta, List<Run> runs) {
-        List<Run> allRuns = runs ?: werckerService.getBuilds(pipeline)
-        log.info "polling Wercker pipeline: ${pipeline} got ${allRuns.size()} runs"
-        if (allRuns.empty) {
-            log.debug("[{}:{}] has no runs skipping...", kv("master", master), kv("pipeline", pipeline))
-            return
-        }
-        Run lastStartedAt = getLastStartedAt(allRuns)
         try {
+            List<Run> allRuns = runs ?: werckerService.getBuilds(pipeline)
+            log.info "polling Wercker pipeline: ${pipeline} got ${allRuns.size()} runs"
+            if (allRuns.empty) {
+                log.debug("[{}:{}] has no runs skipping...", kv("master", master), kv("pipeline", pipeline))
+                return
+            }
+            Run lastStartedAt = getLastStartedAt(allRuns)
+
             Long cursor = cache.getLastPollCycleTimestamp(master, pipeline)
             //The last build/run
             Long lastBuildStamp = lastStartedAt.startedAt.fastTime
@@ -183,11 +184,11 @@ class WerckerBuildMonitor extends CommonPollingMonitor<PipelineDelta, PipelinePo
                     ))
         } catch (e) {
           log.error("Error processing runs for [{}:{}]", kv("master", master), kv("pipeline", pipeline), e)
-          def url = null
-          if(e instanceof  SpinnakerHttpException) {
-            url = (SpinnakerHttpException) e.getUrl()
+          if (e instanceof SpinnakerHttpException) {
+            log.error("Error communicating with Wercker for [{}:{}]: {}", kv("master", master), kv("pipeline", pipeline), kv("url", e.url), e)
+          }else if (e instanceof SpinnakerServerException) {
+            log.error("Error communicating with Wercker for [{}:{}]: {}", kv("master", master), kv("pipeline", pipeline), e.getCause())
           }
-          log.error("Error communicating with Wercker for [{}:{}]: {}", kv("master", master), kv("pipeline", pipeline), kv("url", url),  e)
         }
     }
 
