@@ -43,7 +43,6 @@ import com.netflix.spinnaker.igor.model.Crumb;
 import com.netflix.spinnaker.igor.service.BuildOperations;
 import com.netflix.spinnaker.igor.service.BuildProperties;
 import com.netflix.spinnaker.kork.core.RetrySupport;
-import com.netflix.spinnaker.kork.exceptions.SpinnakerException;
 import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerConversionException;
 import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException;
 import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerNetworkException;
@@ -329,9 +328,8 @@ public class JenkinsService implements BuildOperations, BuildProperties {
             if (e.getResponseCode() == 404 || e.getResponseCode() >= 500) {
               throw e; // retry on 404 and 5XX
             }
-            SpinnakerException ex = new SpinnakerException(e);
-            ex.setRetryable(false); // disable retry
-            throw ex;
+            e.setRetryable(false); // disable retry
+            throw e;
           } catch (SpinnakerNetworkException e) {
             throw e; // retry on network issue
           } catch (SpinnakerServerException e) {
