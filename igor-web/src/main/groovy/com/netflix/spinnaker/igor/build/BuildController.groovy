@@ -32,7 +32,6 @@ import com.netflix.spinnaker.igor.service.BuildProperties
 import com.netflix.spinnaker.igor.service.BuildServices
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException
-import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerServerException
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.kork.web.exceptions.NotFoundException
 import com.netflix.spinnaker.security.AuthenticatedRequest
@@ -179,8 +178,8 @@ class BuildController {
           if (buildService.metaClass.respondsTo(buildService, 'stopQueuedBuild')) {
             buildService.stopQueuedBuild(queuedBuild)
           }
-        } catch (SpinnakerServerException e) {
-          if (e instanceof SpinnakerHttpException && ((SpinnakerHttpException) e).getResponseCode() != NOT_FOUND.value()) {
+        } catch (SpinnakerHttpException e) {
+          if (e.getResponseCode() != NOT_FOUND.value()) {
             throw e
           }
         }

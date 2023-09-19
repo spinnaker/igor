@@ -95,11 +95,8 @@ public class JenkinsService implements BuildOperations, BuildProperties {
             CircuitBreakerConfig.custom()
                 .ignoreException(
                     (e) -> {
-                      if (e instanceof SpinnakerHttpException) {
-                        return e instanceof SpinnakerHttpException
-                            && ((SpinnakerHttpException) e).getResponseCode() == 404;
-                      }
-                      return false;
+                      return e instanceof SpinnakerHttpException
+                          && ((SpinnakerHttpException) e).getResponseCode() == 404;
                     })
                 .build());
   }
@@ -222,8 +219,6 @@ public class JenkinsService implements BuildOperations, BuildProperties {
             log.warn(
                 "Unable to deserialize git details for build " + buildNumber + " of " + jobName, e);
             return null;
-          } catch (SpinnakerServerException e) {
-            throw e;
           }
         },
         10,
@@ -340,9 +335,8 @@ public class JenkinsService implements BuildOperations, BuildProperties {
           } catch (SpinnakerNetworkException e) {
             throw e; // retry on network issue
           } catch (SpinnakerServerException e) {
-            SpinnakerException ex = new SpinnakerException(e);
-            ex.setRetryable(false); // disable retry
-            throw ex;
+            e.setRetryable(false); // disable retry
+            throw e;
           }
         },
         5,
