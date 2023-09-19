@@ -45,7 +45,7 @@ class GitHubMaster extends AbstractScmMaster {
       return response.stream()
         .map({ r -> r.path })
         .collect(Collectors.toList())
-    }catch (SpinnakerNetworkException e) {
+    } catch (SpinnakerNetworkException e) {
       throw new NotFoundException("Could not find the server ${baseUrl}")
     }
     catch (SpinnakerServerException e) {
