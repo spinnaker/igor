@@ -219,8 +219,6 @@ public class JenkinsService implements BuildOperations, BuildProperties {
             log.warn(
                 "Unable to deserialize git details for build " + buildNumber + " of " + jobName, e);
             return null;
-          } catch (SpinnakerServerException e) {
-            throw e;
           }
         },
         10,
