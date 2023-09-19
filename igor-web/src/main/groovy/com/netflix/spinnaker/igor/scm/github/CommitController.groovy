@@ -59,6 +59,7 @@ class CommitController extends AbstractCommitController {
             return getNotFoundCommitsResponse(projectKey, repositorySlug, requestParams.to, requestParams.from, master.baseUrl)
           }
           log.error("Unhandled error response, acting like commit response was not found", e)
+          return getNotFoundCommitsResponse(projectKey, repositorySlug, requestParams.to, requestParams.from, master.baseUrl)
         }
 
         commitsResponse.commits.each {
