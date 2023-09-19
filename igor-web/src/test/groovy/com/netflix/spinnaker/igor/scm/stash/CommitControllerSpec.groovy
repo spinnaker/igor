@@ -62,9 +62,6 @@ class CommitControllerSpec extends Specification {
     }
 
     void 'get 404 from stashClient and return one commit'() {
-        //given:
-        //RetrofitException retrofitException = new RetrofitException(null,   new Response("http://foo.com", 404, "test reason", [], null),   null, null )
-
         when:
         1 * client.getCompareCommits(projectKey, repositorySlug, queryParams) >> {throw  new SpinnakerHttpException(new RetrofitError(null, null, new Response("http://foo.com", 404, "test reason", [], null), null, null, null, null))}
         def result = controller.compareCommits(projectKey, repositorySlug, queryParams)

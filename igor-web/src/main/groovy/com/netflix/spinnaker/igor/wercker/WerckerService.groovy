@@ -173,18 +173,9 @@ class WerckerService implements BuildOperations {
                 //return the integer build number for this run id
                 return runIdBuildNumbers.get(run.id)
             }  catch (SpinnakerServerException e) {
-              String wkrMsg
-              if(e instanceof  SpinnakerHttpException){
-                def body = e.getResponseBody()
-                if (body instanceof TypedByteArray) {
-                  wkrMsg = new String(((retrofit.mime.TypedByteArray) body).getBytes())
-                } else {
-                  wkrMsg = body.in().text
-                }
-              }
-              log.error("Failed to trigger build for pipeline {}. {}", kv("pipelineName", pipelineName), kv("errMsg", wkrMsg))
+              log.error("Failed to trigger build for pipeline {}. {}", kv("pipelineName", pipelineName), kv("errMsg", e.getMessage()))
               throw new BuildJobError(
-                "Failed to trigger build for pipeline ${pipelineName}! Error from Wercker is: ${wkrMsg}")
+                "Failed to trigger build for pipeline ${pipelineName}! Error from Wercker is: ${e.getMessage()}")
             }
         } else {
             throw new BuildController.InvalidJobParameterException(
