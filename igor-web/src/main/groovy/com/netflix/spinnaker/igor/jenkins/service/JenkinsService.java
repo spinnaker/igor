@@ -219,6 +219,8 @@ public class JenkinsService implements BuildOperations, BuildProperties {
             log.warn(
                 "Unable to deserialize git details for build " + buildNumber + " of " + jobName, e);
             return null;
+          } catch (SpinnakerServerException e) {
+            throw e;
           }
         },
         10,
@@ -239,6 +241,8 @@ public class JenkinsService implements BuildOperations, BuildProperties {
         throw new NotFoundException(
             String.format("Queued job '%s' not found for master '%s'.", item, master));
       }
+      throw e;
+    } catch (SpinnakerServerException e) {
       throw e;
     }
   }
