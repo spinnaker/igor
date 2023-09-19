@@ -10,7 +10,6 @@ package com.netflix.spinnaker.igor.wercker
 
 import com.netflix.spinnaker.kork.discovery.DiscoveryStatusListener
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
-import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException
 import com.netflix.spinnaker.security.AuthenticatedRequest
 import org.springframework.scheduling.TaskScheduler
 
@@ -31,7 +30,6 @@ import com.netflix.spinnaker.igor.polling.PollContext
 import com.netflix.spinnaker.igor.polling.PollingDelta
 import com.netflix.spinnaker.igor.service.BuildServices
 import com.netflix.spinnaker.igor.wercker.model.Run
-import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerServerException
 import groovy.time.TimeCategory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -184,11 +182,6 @@ class WerckerBuildMonitor extends CommonPollingMonitor<PipelineDelta, PipelinePo
                     ))
         } catch (e) {
           log.error("Error processing runs for [{}:{}]", kv("master", master), kv("pipeline", pipeline), e)
-          if (e instanceof SpinnakerHttpException) {
-            log.error("Error communicating with Wercker for [{}:{}]: {}", kv("master", master), kv("pipeline", pipeline), kv("url", e.url), e)
-          }else if (e instanceof SpinnakerServerException) {
-            log.error("Error communicating with Wercker for [{}:{}]: {}", kv("master", master), kv("pipeline", pipeline), e.getCause())
-          }
         }
     }
 
