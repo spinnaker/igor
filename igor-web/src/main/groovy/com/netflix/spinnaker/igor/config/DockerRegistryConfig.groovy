@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.igor.config
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.jakewharton.retrofit.Ok3Client
 import com.netflix.spinnaker.config.DefaultServiceEndpoint
 import com.netflix.spinnaker.config.okhttp3.OkHttpClientProvider
@@ -30,6 +31,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import retrofit.Endpoints
 import retrofit.RestAdapter
+import retrofit.converter.JacksonConverter
 
 @Configuration
 @ConditionalOnProperty(['services.clouddriver.base-url', 'docker-registry.enabled'])
@@ -42,9 +44,12 @@ class DockerRegistryConfig {
     }
 
     @Bean
-    ClouddriverService dockerRegistryProxyService(OkHttpClientProvider clientProvider,
-                                                  IgorConfigurationProperties igorConfigurationProperties,
-                                                  RestAdapter.LogLevel retrofitLogLevel) {
+    ClouddriverService dockerRegistryProxyService(
+      OkHttpClientProvider clientProvider,
+      IgorConfigurationProperties igorConfigurationProperties,
+      RestAdapter.LogLevel retrofitLogLevel,
+      ObjectMapper objectMapper
+    ) {
         def address = igorConfigurationProperties.services.clouddriver.baseUrl ?: 'none'
         if (address == 'none') {
             null
@@ -54,6 +59,7 @@ class DockerRegistryConfig {
                 .setEndpoint(Endpoints.newFixedEndpoint(address))
                 .setClient(new Ok3Client(clientProvider.getClient(new DefaultServiceEndpoint("clouddriver", address))))
                 .setLogLevel(retrofitLogLevel)
+                .setConverter(new JacksonConverter(objectMapper))
                 .setLog(new Slf4jRetrofitLogger(ClouddriverService))
                 .build()
                 .create(ClouddriverService)
