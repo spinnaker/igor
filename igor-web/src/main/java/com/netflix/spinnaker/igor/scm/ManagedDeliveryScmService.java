@@ -104,6 +104,14 @@ public class ManagedDeliveryScmService {
    *
    * <p>This API supports both YAML and JSON for the format of the manifest in source control, but
    * always returns the parsed contents as a Map.
+   *
+   * @param scmType the type of SCM system to use (e.g. "github", "gitlab", etc.)
+   * @param project the name of the project in the SCM system
+   * @param repository the name of the repository in the SCM system
+   * @param directory the directory within the repository to look for the manifest
+   * @param manifest the name of the manifest file to retrieve
+   * @param ref the git reference to use (branch, tag, commit hash, etc.)
+   * @param raw if true, returns the raw contents of the manifest as a string
    */
   public Map<String, Object> getDeliveryConfigManifest(
       final String scmType,
