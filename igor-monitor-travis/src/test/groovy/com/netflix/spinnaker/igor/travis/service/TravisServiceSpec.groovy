@@ -37,8 +37,13 @@ import com.netflix.spinnaker.igor.travis.client.model.v3.V3Job
 import com.netflix.spinnaker.igor.travis.client.model.v3.V3Jobs
 import com.netflix.spinnaker.igor.travis.client.model.v3.V3Log
 import com.netflix.spinnaker.igor.travis.client.model.v3.V3Repository
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
 import org.assertj.core.util.Lists
+import retrofit.RetrofitError
+import retrofit.client.Response
+import retrofit.converter.JacksonConverter
+import retrofit.mime.TypedString
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -77,7 +82,7 @@ class TravisServiceSpec extends Specification {
         Build build = Mock(Build)
         def v3log = new V3Log()
         def logPart = new V3Log.V3LogPart()
-        logPart.content = ""
+        logPart.content = "Done. Your build exited with 0."
         logPart.final = true
         logPart.number = 0
         v3log.logParts = [logPart]
@@ -92,7 +97,6 @@ class TravisServiceSpec extends Specification {
         genericBuild.timestamp == "1458051084000"
 
         2 * travisCache.getJobLog('travis-ci', 42) >>> [null, ""]
-        1 * travisCache.setJobLog('travis-ci', 42, "") >>> [null, ""]
         1 * client.jobLog(_, 42) >> v3log
         2 * build.job_ids >> [42]
         2 * build.number >> 1337
@@ -105,7 +109,7 @@ class TravisServiceSpec extends Specification {
     @Unroll
     def "getLatestBuilds() with #numberOfJobs jobs should query Travis #expectedNumberOfPages time(s)"() {
         given:
-        service = new TravisService('travis-ci', 'http://my.travis.ci', 'someToken', numberOfJobs, TRAVIS_BUILD_RESULT_LIMIT, emptyList(), client, travisCache, artifactDecorator, [], "travis.buildMessage", Permissions.EMPTY, false, CircuitBreakerRegistry.ofDefaults())
+        service = new TravisService('travis-ci', 'http://my.travis.ci', 'someToken', numberOfJobs, TRAVIS_BUILD_RESULT_LIMIT, emptyList(), client, travisCache, artifactDecorator, [], "travis.buildMessage", Permissions.EMPTY, true, CircuitBreakerRegistry.ofDefaults())
         AccessToken accessToken = new AccessToken()
         accessToken.accessToken = "someToken"
         service.accessToken = accessToken
@@ -126,7 +130,7 @@ class TravisServiceSpec extends Specification {
             1 * client.jobs(
                 "token someToken",
                 [TravisBuildState.passed, TravisBuildState.started, TravisBuildState.errored, TravisBuildState.failed, TravisBuildState.canceled].join(","),
-                "job.build,build.log_complete",
+                "job.build",
                 service.getLimit(page, numberOfJobs),
                 (page - 1) * TravisService.TRAVIS_JOB_RESULT_LIMIT) >> partitionedJobs[page - 1]
         }
@@ -156,7 +160,7 @@ class TravisServiceSpec extends Specification {
     def "getLatestBuilds() with filteredRepositories should fetch builds only for those repos"() {
       given:
       List<String> filteredRepos = Lists.newArrayList("myorg/myrepo")
-      service = new TravisService('travis-ci', 'http://my.travis.ci', 'someToken', 100, TRAVIS_BUILD_RESULT_LIMIT, filteredRepos, client, travisCache, artifactDecorator, [], "travis.buildMessage", Permissions.EMPTY, false, CircuitBreakerRegistry.ofDefaults())
+      service = new TravisService('travis-ci', 'http://my.travis.ci', 'someToken', 100, TRAVIS_BUILD_RESULT_LIMIT, filteredRepos, client, travisCache, artifactDecorator, [], "travis.buildMessage", Permissions.EMPTY, true, CircuitBreakerRegistry.ofDefaults())
       AccessToken accessToken = new AccessToken()
       accessToken.accessToken = "someToken"
       service.accessToken = accessToken
@@ -178,7 +182,7 @@ class TravisServiceSpec extends Specification {
 
       then:
       1 * client.v3builds("token someToken", "myorg/myrepo", TRAVIS_BUILD_RESULT_LIMIT,
-        "build.log_complete") >> new V3Builds([builds: [build]])
+        null) >> new V3Builds([builds: [build]])
       0 * client.jobs(*_)
       builds == [build]
     }
@@ -330,14 +334,16 @@ class TravisServiceSpec extends Specification {
         if (!legacyLogFetching) {
             build.logComplete = isLogCompleteFlag
         }
+
+        def logLine = "log" + (isLogReallyComplete ? " Done. Your build exited with 0." : "")
         def v3log = new V3Log([
             logParts: [
                 new V3Log.V3LogPart([
                     number: 0,
-                    content: "log",
+                    content: logLine,
                     isFinal: isLogReallyComplete
                 ])],
-            content: "log"
+            content: logLine
         ])
         service = new TravisService('travis-ci', 'http://my.travis.ci', 'someToken', 25, TRAVIS_BUILD_RESULT_LIMIT, emptyList(), client, travisCache, artifactDecorator, [], "travis.buildMessage", Permissions.EMPTY, legacyLogFetching, CircuitBreakerRegistry.ofDefaults())
         AccessToken accessToken = new AccessToken()
@@ -352,7 +358,7 @@ class TravisServiceSpec extends Specification {
             legacyLogFetching ? null : "build.log_complete") >> new V3Builds([builds: [build]])
         (isLogCompleteFlag ? 0 : 1) * travisCache.getJobLog("travis-ci", 2) >> (isLogCached ? "log" : null)
         (!isLogCompleteFlag && !isLogCached ? 1 : 0) * client.jobLog("token someToken", 2) >> v3log
-        (!isLogCompleteFlag && !isLogCached && isLogReallyComplete ? 1 : 0) * travisCache.setJobLog("travis-ci", 2, "log")
+        (!isLogCompleteFlag && !isLogCached && isLogReallyComplete ? 1 : 0) * travisCache.setJobLog("travis-ci", 2, logLine)
         genericBuilds.size() == expectedNumberOfBuilds
 
         where:
@@ -365,5 +371,39 @@ class TravisServiceSpec extends Specification {
         true              | null              | true        | true                | 1
         true              | null              | false       | true                | 1
         true              | null              | false       | false               | 0
+    }
+
+    def "should ignore expired logs from the Travis API when fetching logs"() {
+        given:
+        def v3log = new V3Log([
+            logParts: [
+                new V3Log.V3LogPart([
+                    number : 0,
+                    content: "Done. Your build exited with 0.",
+                    isFinal: true
+                ])],
+            content : "Done. Your build exited with 0."
+        ])
+
+        when:
+        def ready = service.isLogReady([1, 2])
+
+        then:
+        2 * travisCache.getJobLog("travis-ci", _) >> null
+        1 * client.jobLog(_, 1) >> v3log
+        1 * client.jobLog(_, 2) >> {
+            throw new SpinnakerHttpException(RetrofitError.httpError(
+                "https://travis-ci.com/api/job/2/log",
+                new Response("https://travis-ci.com/api/job/2/log", 403, "Forbidden", [], new TypedString(
+                    """{
+                            "@type": "error",
+                            "error_type": "log_expired",
+                            "error_message": "We're sorry, but this data is not available anymore. Please check the repository settings in Travis CI."
+                        }
+                    """)),
+                new JacksonConverter(),
+                Map))
+        }
+        !ready
     }
 }

@@ -68,7 +68,7 @@ public class TravisBuildMonitor
   private final TravisProperties travisProperties;
   private final Optional<EchoService> echoService;
 
-  public static final int TRACKING_TTL = (int) TimeUnit.HOURS.toMinutes(5);
+  static final int TRACKING_TTL_SECS = (int) TimeUnit.HOURS.toSeconds(5);
 
   @Autowired
   public TravisBuildMonitor(
@@ -81,14 +81,14 @@ public class TravisBuildMonitor
       TravisProperties travisProperties,
       Optional<EchoService> echoService,
       Optional<LockService> lockService,
-      TaskScheduler scheduler) {
+      TaskScheduler taskScheduler) {
     super(
         properties,
         registry,
         dynamicConfigService,
         discoveryStatusListener,
         lockService,
-        scheduler);
+        taskScheduler);
     this.buildCache = buildCache;
     this.buildServices = buildServices;
     this.travisProperties = travisProperties;
@@ -206,7 +206,7 @@ public class TravisBuildMonitor
       case created:
       case started:
         buildCache.setTracking(
-            master, build.getRepository().getSlug(), build.getId(), TRACKING_TTL);
+            master, build.getRepository().getSlug(), build.getId(), TRACKING_TTL_SECS);
         break;
       case passed:
         if (!travisService.isLogReady(build)) {

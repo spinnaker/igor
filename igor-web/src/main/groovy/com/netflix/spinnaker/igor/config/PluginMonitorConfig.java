@@ -16,6 +16,7 @@
  */
 package com.netflix.spinnaker.igor.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jakewharton.retrofit.Ok3Client;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.config.DefaultServiceEndpoint;
@@ -31,6 +32,7 @@ import com.netflix.spinnaker.igor.polling.LockService;
 import com.netflix.spinnaker.kork.discovery.DiscoveryStatusListener;
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
 import com.netflix.spinnaker.kork.jedis.RedisClientDelegate;
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerRetrofitErrorHandler;
 import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger;
 import java.util.Optional;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -39,6 +41,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.TaskScheduler;
 import retrofit.Endpoints;
 import retrofit.RestAdapter;
+import retrofit.converter.JacksonConverter;
 
 @Configuration
 @ConditionalOnProperty("services.front50.base-url")
@@ -54,7 +57,8 @@ public class PluginMonitorConfig {
   public PluginReleaseService pluginReleaseService(
       OkHttpClientProvider clientProvider,
       IgorConfigurationProperties properties,
-      RestAdapter.LogLevel retrofitLogLevel) {
+      RestAdapter.LogLevel retrofitLogLevel,
+      ObjectMapper objectMapper) {
     String address = properties.getServices().getFront50().getBaseUrl();
 
     Front50Service front50Service =
@@ -65,6 +69,8 @@ public class PluginMonitorConfig {
                     clientProvider.getClient(new DefaultServiceEndpoint("front50", address))))
             .setLogLevel(retrofitLogLevel)
             .setLog(new Slf4jRetrofitLogger(Front50Service.class))
+            .setConverter(new JacksonConverter(objectMapper))
+            .setErrorHandler(SpinnakerRetrofitErrorHandler.getInstance())
             .build()
             .create(Front50Service.class);
 
@@ -81,7 +87,7 @@ public class PluginMonitorConfig {
       PluginReleaseService pluginReleaseService,
       PluginCache pluginCache,
       Optional<EchoService> echoService,
-      TaskScheduler scheduler) {
+      TaskScheduler taskScheduler) {
     return new PluginsBuildMonitor(
         properties,
         registry,
@@ -91,6 +97,6 @@ public class PluginMonitorConfig {
         pluginReleaseService,
         pluginCache,
         echoService,
-        scheduler);
+        taskScheduler);
   }
 }

@@ -22,6 +22,7 @@ import com.netflix.spinnaker.igor.scm.gitlab.client.GitLabClient
 import com.netflix.spinnaker.igor.scm.gitlab.client.GitLabMaster
 import com.netflix.spinnaker.igor.scm.gitlab.client.model.Commit
 import com.netflix.spinnaker.igor.scm.gitlab.client.model.CompareCommitsResponse
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException
 import retrofit.RetrofitError
 import retrofit.client.Response
 import spock.lang.Specification
@@ -67,7 +68,7 @@ class CommitControllerSpec extends Specification {
     void 'get 404 from client and return one commit'() {
         when:
         1 * client.getCompareCommits(projectKey, repositorySlug, [from: queryParams.to, to: queryParams.from]) >> {
-            throw new RetrofitError(null, null, new Response("http://foo.com", 404, "test reason", [], null), null, null, null, null)
+            throw new SpinnakerHttpException(new RetrofitError(null, null, new Response("http://foo.com", 404, "test reason", [], null), null, null, null, null))
         }
         def result = controller.compareCommits(projectKey, repositorySlug, queryParams)
 
@@ -93,7 +94,7 @@ class CommitControllerSpec extends Specification {
         List commitsResponse = controller.compareCommits(projectKey, repositorySlug, ['to': toCommit, 'from': fromCommit])
 
         then:
-        commitsResponse.size == 2
+        commitsResponse.size() == 2
 
         with(commitsResponse[0]) {
             displayId == "12345123"

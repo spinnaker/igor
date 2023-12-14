@@ -20,10 +20,14 @@ package com.netflix.spinnaker.igor.travis.client.model.v3;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class V3Log {
+
+  private static final Set<String> KNOWN_TRAVIS_TERMINATION_STRINGS =
+      Set.of("Done. Your build exited with ", "travis_terminate", "Your build has been stopped");
   private Integer id;
   private String content;
 
@@ -62,7 +66,11 @@ public class V3Log {
     }
     int numberOfParts = logParts.size() - 1;
     V3LogPart lastLogPart = logParts.get(numberOfParts);
-    return numberOfParts == lastLogPart.number && lastLogPart.isFinal();
+    String logContent = getContent();
+    return numberOfParts == lastLogPart.number
+        && lastLogPart.isFinal()
+        && logContent != null
+        && KNOWN_TRAVIS_TERMINATION_STRINGS.stream().anyMatch(logContent::contains);
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)
