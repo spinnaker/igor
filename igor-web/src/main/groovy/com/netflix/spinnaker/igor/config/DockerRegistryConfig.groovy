@@ -23,6 +23,7 @@ import com.netflix.spinnaker.config.okhttp3.OkHttpClientProvider
 import com.netflix.spinnaker.igor.IgorConfigurationProperties
 import com.netflix.spinnaker.igor.docker.model.DockerRegistryAccounts
 import com.netflix.spinnaker.igor.docker.service.ClouddriverService
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerRetrofitErrorHandler
 import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger
 import groovy.transform.CompileStatic
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -61,6 +62,7 @@ class DockerRegistryConfig {
                 .setLogLevel(retrofitLogLevel)
                 .setConverter(new JacksonConverter(objectMapper))
                 .setLog(new Slf4jRetrofitLogger(ClouddriverService))
+                .setErrorHandler(SpinnakerRetrofitErrorHandler.getInstance())
                 .build()
                 .create(ClouddriverService)
     }

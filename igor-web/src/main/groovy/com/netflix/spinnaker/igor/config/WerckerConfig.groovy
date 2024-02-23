@@ -18,6 +18,7 @@ import com.netflix.spinnaker.igor.service.BuildServices
 import com.netflix.spinnaker.igor.wercker.WerckerCache
 import com.netflix.spinnaker.igor.wercker.WerckerClient
 import com.netflix.spinnaker.igor.wercker.WerckerService
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerRetrofitErrorHandler
 import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger
 
 import groovy.transform.CompileStatic
@@ -76,6 +77,7 @@ class WerckerConfig {
                 .setLogLevel(retrofitLogLevel)
                 .setConverter(new JacksonConverter(objectMapper))
                 .setEndpoint(Endpoints.newFixedEndpoint(host.address))
+                .setErrorHandler(SpinnakerRetrofitErrorHandler.getInstance())
                 .setClient(new Ok3Client(client))
                 .build()
                 .create(WerckerClient)

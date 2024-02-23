@@ -10,14 +10,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      - uses: actions/setup-java@v3
+        uses: docker/setup-buildx-action@v3
+      - uses: actions/setup-java@v4
         with:
           java-version: |
             17
@@ -34,7 +34,7 @@ jobs:
           ORG_GRADLE_PROJECT_version: ${{ steps.build_variables.outputs.VERSION }}
         run: ./gradlew build ${{ steps.build_variables.outputs.REPO }}-web:installDist
       - name: Build slim container image
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: Dockerfile.slim
@@ -45,7 +45,7 @@ jobs:
             "${{ env.CONTAINER_REGISTRY }}/${{ steps.build_variables.outputs.REPO }}:latest-slim"
             "${{ env.CONTAINER_REGISTRY }}/${{ steps.build_variables.outputs.REPO }}:${{ steps.build_variables.outputs.VERSION }}-slim"
       - name: Build ubuntu container image
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: Dockerfile.ubuntu
@@ -54,7 +54,7 @@ jobs:
             "${{ env.CONTAINER_REGISTRY }}/${{ steps.build_variables.outputs.REPO }}:latest-ubuntu"
             "${{ env.CONTAINER_REGISTRY }}/${{ steps.build_variables.outputs.REPO }}:${{ steps.build_variables.outputs.VERSION }}-ubuntu"
       - name: Build slim JRE 11 container image
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: Dockerfile.java11.slim
@@ -65,7 +65,7 @@ jobs:
             "${{ env.CONTAINER_REGISTRY }}/${{ steps.build_variables.outputs.REPO }}:latest-java11-slim"
             "${{ env.CONTAINER_REGISTRY }}/${{ steps.build_variables.outputs.REPO }}:${{ steps.build_variables.outputs.VERSION }}-java11-slim"
       - name: Build ubuntu JRE 11 container image
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: Dockerfile.java11.ubuntu

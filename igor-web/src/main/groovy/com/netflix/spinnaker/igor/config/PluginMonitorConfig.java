@@ -32,6 +32,7 @@ import com.netflix.spinnaker.igor.polling.LockService;
 import com.netflix.spinnaker.kork.discovery.DiscoveryStatusListener;
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
 import com.netflix.spinnaker.kork.jedis.RedisClientDelegate;
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerRetrofitErrorHandler;
 import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger;
 import java.util.Optional;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -69,6 +70,7 @@ public class PluginMonitorConfig {
             .setLogLevel(retrofitLogLevel)
             .setLog(new Slf4jRetrofitLogger(Front50Service.class))
             .setConverter(new JacksonConverter(objectMapper))
+            .setErrorHandler(SpinnakerRetrofitErrorHandler.getInstance())
             .build()
             .create(Front50Service.class);
 
