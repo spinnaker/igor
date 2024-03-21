@@ -13,7 +13,6 @@ dependencies {
     implementation project(":igor-monitor-plugins")
     implementation project(":igor-monitor-travis")
 
-    runtimeOnly "org.springframework.boot:spring-boot-properties-migrator"
     implementation "org.springframework.boot:spring-boot-starter-actuator"
     implementation "org.springframework.boot:spring-boot-starter-web"
 
