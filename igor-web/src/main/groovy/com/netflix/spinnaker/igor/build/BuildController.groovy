@@ -107,12 +107,36 @@ class BuildController {
     return jobStatus(buildService, master, job, buildNumber)
   }
 
+  @RequestMapping(value = '/builds/status/{buildNumber}/{master}')
+  @PreAuthorize("hasPermission(#master, 'BUILD_SERVICE', 'READ')")
+  GenericBuild getJobStatus(
+    @PathVariable String master,
+    @PathVariable Integer buildNumber,
+    @RequestParam("job") String job) {
+    def buildService = getBuildService(master)
+    return jobStatus(buildService, master, job, buildNumber)
+  }
+
   @RequestMapping(value = '/builds/artifacts/{buildNumber}/{master:.+}/**')
   @PreAuthorize("hasPermission(#master, 'BUILD_SERVICE', 'READ')")
   List<Artifact> getBuildResults(@PathVariable String master, @PathVariable
     Integer buildNumber, @Query("propertyFile") String propertyFile, HttpServletRequest request) {
     def job = ((String) request.getAttribute(
       HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE)).split('/').drop(5).join('/')
+    def buildService = getBuildService(master)
+    GenericBuild build = jobStatus(buildService, master, job, buildNumber)
+    if (build && buildService instanceof BuildProperties && artifactExtractor != null) {
+      build.properties = buildService.getBuildProperties(job, build, propertyFile)
+      return artifactExtractor.extractArtifacts(build)
+    }
+    return Collections.emptyList()
+  }
+
+
+  @RequestMapping(value = '/builds/artifacts/{buildNumber}/{master}')
+  @PreAuthorize("hasPermission(#master, 'BUILD_SERVICE', 'READ')")
+  List<Artifact> getBuildResults(@PathVariable String master, @PathVariable
+    Integer buildNumber, @RequestParam("job") String job ,@Query("propertyFile") String propertyFile) {
     def buildService = getBuildService(master)
     GenericBuild build = jobStatus(buildService, master, job, buildNumber)
     if (build && buildService instanceof BuildProperties && artifactExtractor != null) {
@@ -316,6 +340,22 @@ class BuildController {
       String fileName, HttpServletRequest request) {
     def job = ((String) request.getAttribute(
       HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE)).split('/').drop(6).join('/')
+    def buildService = getBuildService(master)
+    if (buildService instanceof BuildProperties) {
+      BuildProperties buildProperties = (BuildProperties) buildService
+      def genericBuild = buildService.getGenericBuild(job, buildNumber)
+      return buildProperties.getBuildProperties(job, genericBuild, fileName)
+    }
+    return Collections.emptyMap()
+  }
+
+
+  @RequestMapping(value = '/builds/properties/{buildNumber}/{fileName}/{master}')
+  @PreAuthorize("hasPermission(#master, 'BUILD_SERVICE', 'READ')")
+  Map<String, Object> getProperties(
+    @PathVariable String master,
+    @PathVariable Integer buildNumber, @PathVariable
+      String fileName, @RequestParam("job") String job) {
     def buildService = getBuildService(master)
     if (buildService instanceof BuildProperties) {
       BuildProperties buildProperties = (BuildProperties) buildService
