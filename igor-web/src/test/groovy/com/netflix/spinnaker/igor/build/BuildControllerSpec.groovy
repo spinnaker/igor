@@ -73,7 +73,7 @@ class BuildControllerSpec extends Specification {
   def JENKINS_SERVICE = 'JENKINS_SERVICE'
   def TRAVIS_SERVICE = 'TRAVIS_SERVICE'
   def HTTP_201 = 201
-  def BUILD_NUMBER = 123
+  def BUILD_NUMBER = '123'
   def BUILD_ID = 654321
   def QUEUED_JOB_NUMBER = 123456
   def JOB_NAME = "job/name/can/have/slashes"
@@ -126,7 +126,7 @@ class BuildControllerSpec extends Specification {
       .accept(MediaType.APPLICATION_JSON)).andReturn().response
 
     then:
-    response.contentAsString == "{\"building\":false,\"number\":${BUILD_NUMBER}}"
+    response.contentAsString == "{\"building\":false,\"number\":\"${BUILD_NUMBER}\"}"
   }
 
   void 'get the status of a build with job name as query parameter'() {
@@ -198,14 +198,14 @@ class BuildControllerSpec extends Specification {
 
   void 'get a list of builds for a job'() {
     given:
-    1 * jenkinsService.getBuilds(JOB_NAME) >> [new Build(number: 111), new Build(number: 222)]
+    1 * jenkinsService.getBuilds(JOB_NAME) >> [new Build(number: '111'), new Build(number: '222')]
 
     when:
     MockHttpServletResponse response = mockMvc.perform(get("/builds/all/${JENKINS_SERVICE}/${JOB_NAME}")
       .accept(MediaType.APPLICATION_JSON)).andReturn().response
 
     then:
-    response.contentAsString == "[{\"building\":false,\"number\":111},{\"building\":false,\"number\":222}]"
+    response.contentAsString == "[{\"building\":false,\"number\":\"111\"},{\"building\":false,\"number\":\"222\"}]"
   }
 
   void 'get properties of a build with a bad master'() {

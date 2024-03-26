@@ -43,7 +43,7 @@ public class Build {
   @JsonProperty("repository_id")
   private int repositoryId;
 
-  private int number;
+  private String number;
 
   private TravisBuildState state;
 

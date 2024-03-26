@@ -90,8 +90,8 @@ class JenkinsServiceSpec extends Specification {
         where:
         method                | extra_args
         'getDependencies'     | []
-        'getBuild'            | [2]
-        'getGitDetails'       | [2]
+        'getBuild'            | ['2']
+        'getGitDetails'       | ['2']
         'getLatestBuild'      | []
         'getJobConfig'        | []
     }
@@ -145,7 +145,7 @@ class JenkinsServiceSpec extends Specification {
         method                | extra_args
         'build'               | []
         'buildWithParameters' | [['key': 'value']]
-        'stopRunningBuild'    | [1]
+        'stopRunningBuild'    | ['1']
         'stopQueuedBuild'     | []
     }
 
@@ -289,7 +289,7 @@ class JenkinsServiceSpec extends Specification {
         client = new JenkinsConfig().jenkinsClient(host)
         service = new JenkinsService('http://my.jenkins.net', client, false, Permissions.EMPTY, circuitBreakerRegistry)
         def genericBuild = new GenericBuild()
-        genericBuild.number = 1
+        genericBuild.number = '1'
 
         when:
         List<GenericGitRevision> genericGitRevision = service.getGenericGitRevisions('test', genericBuild)
@@ -344,7 +344,7 @@ class JenkinsServiceSpec extends Specification {
         client = new JenkinsConfig().jenkinsClient(host)
         service = new JenkinsService('http://my.jenkins.net', client, false, Permissions.EMPTY, circuitBreakerRegistry)
         def genericBuild = new GenericBuild()
-        genericBuild.number = 1
+        genericBuild.number = '1'
 
         when:
         List<GenericGitRevision> genericGitRevision = service.getGenericGitRevisions('test', genericBuild)
@@ -399,7 +399,7 @@ class JenkinsServiceSpec extends Specification {
         client = new JenkinsConfig().jenkinsClient(host)
         service = new JenkinsService('http://my.jenkins.net', client, false, Permissions.EMPTY, circuitBreakerRegistry)
         def genericBuild = new GenericBuild()
-        genericBuild.number = 1
+        genericBuild.number = '1'
 
         when:
         List<GenericGitRevision> genericGitRevision = service.getGenericGitRevisions('test', genericBuild)
@@ -460,7 +460,7 @@ class JenkinsServiceSpec extends Specification {
         client = new JenkinsConfig().jenkinsClient(host)
         service = new JenkinsService('http://my.jenkins.net', client, false, Permissions.EMPTY, circuitBreakerRegistry)
         def genericBuild = new GenericBuild()
-        genericBuild.number = 1
+        genericBuild.number = '1'
 
         when:
         List<GenericGitRevision> genericGitRevision = service.getGenericGitRevisions('test', genericBuild)
@@ -524,7 +524,7 @@ class JenkinsServiceSpec extends Specification {
         client = new JenkinsConfig().jenkinsClient(host)
         service = new JenkinsService('http://my.jenkins.net', client, false, Permissions.EMPTY, circuitBreakerRegistry)
         def genericBuild = new GenericBuild()
-        genericBuild.number = 1
+        genericBuild.number = '1'
 
         when:
         List<GenericGitRevision> genericGitRevision = service.getGenericGitRevisions('test', genericBuild)
@@ -588,7 +588,7 @@ class JenkinsServiceSpec extends Specification {
         client = new JenkinsConfig().jenkinsClient(host)
         service = new JenkinsService('http://my.jenkins.net', client, false, Permissions.EMPTY, circuitBreakerRegistry)
         def genericBuild = new GenericBuild()
-        genericBuild.number = 1
+        genericBuild.number = '1'
 
         when:
         List<GenericGitRevision> genericGitRevision = service.getGenericGitRevisions('test', genericBuild)
@@ -642,7 +642,7 @@ class JenkinsServiceSpec extends Specification {
         client = new JenkinsConfig().jenkinsClient(host)
         service = new JenkinsService('http://my.jenkins.net', client, false, Permissions.EMPTY, circuitBreakerRegistry)
         def genericBuild = new GenericBuild()
-        genericBuild.number = 1
+        genericBuild.number = '1'
 
         expect:
         service.getBuildProperties("PropertiesTest", genericBuild, "props$extension") == testCase.result
@@ -695,7 +695,7 @@ class JenkinsServiceSpec extends Specification {
     def "getBuildProperties retries on transient Jenkins failure"() {
       given:
       def jobName = "job1"
-      def buildNumber = 10
+      def buildNumber = '10'
       def artifact = new BuildArtifact()
       artifact.displayPath = "test.properties"
       artifact.relativePath = "test.properties"
@@ -726,7 +726,7 @@ class JenkinsServiceSpec extends Specification {
     def "getBuildProperties retries on 404"() {
       given:
       def jobName = "job1"
-      def buildNumber = 10
+      def buildNumber = '10'
       def artifact = new BuildArtifact()
       artifact.displayPath = "test.properties"
       artifact.relativePath = "test.properties"
@@ -757,7 +757,7 @@ class JenkinsServiceSpec extends Specification {
     def "getBuildProperties does not retry on 400"() {
       given:
       def jobName = "job1"
-      def buildNumber = 10
+      def buildNumber = '10'
       def artifact = new BuildArtifact()
       artifact.displayPath = "test.properties"
       artifact.relativePath = "test.properties"

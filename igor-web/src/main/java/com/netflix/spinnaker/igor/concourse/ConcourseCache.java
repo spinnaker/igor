@@ -50,18 +50,17 @@ public class ConcourseCache {
   }
 
   public boolean getEventPosted(
-      ConcourseProperties.Host host, Job job, Long cursor, Integer buildNumber) {
+      ConcourseProperties.Host host, Job job, Long cursor, String buildNumber) {
     String key = makeKey(host, job) + ":" + POLL_STAMP + ":" + cursor;
-    return redisClientDelegate.withCommandsClient(
-        c -> c.hget(key, Integer.toString(buildNumber)) != null);
+    return redisClientDelegate.withCommandsClient(c -> c.hget(key, buildNumber) != null);
   }
 
   public void setEventPosted(
-      ConcourseProperties.Host host, Job job, Long cursor, Integer buildNumber) {
+      ConcourseProperties.Host host, Job job, Long cursor, String buildNumber) {
     String key = makeKey(host, job) + ":" + POLL_STAMP + ":" + cursor;
     redisClientDelegate.withCommandsClient(
         c -> {
-          c.hset(key, Integer.toString(buildNumber), "POSTED");
+          c.hset(key, buildNumber, "POSTED");
         });
   }
 

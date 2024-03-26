@@ -130,9 +130,9 @@ public class GitlabCiBuildMonitor
                   continue;
                 }
                 String pipelineIdCacheKey = String.valueOf(project.getId());
-                int cachedBuildId = buildCache.getLastBuild(master, pipelineIdCacheKey, false);
+                String cachedBuildId = buildCache.getLastBuild(master, pipelineIdCacheKey, false);
                 // GitLab CI pipelineIds increment; Determine if it is new using the ID
-                if (pipeline.getId() > cachedBuildId) {
+                if (Integer.toString(pipeline.getId()).compareTo(cachedBuildId) > 0) {
                   updatedBuilds.incrementAndGet();
                   boolean isPipelineRunning = GitlabCiResultConverter.running(pipeline.getStatus());
                   delta.add(
@@ -174,10 +174,10 @@ public class GitlabCiBuildMonitor
                   "Build update [{}:{}:{}] [status:{}]",
                   kv("master", delta.master),
                   item.cacheKey,
-                  item.pipeline.getId(),
+                  Integer.toString(item.pipeline.getId()),
                   item.pipeline.getStatus());
               buildCache.setLastBuild(
-                  delta.master, item.cacheKey, item.pipeline.getId(), false, ttl);
+                  delta.master, item.cacheKey, Integer.toString(item.pipeline.getId()), false, ttl);
               if (sendEvents) {
                 sendEvent(item.project, item.pipeline, gitlabCiService.getAddress(), delta.master);
               }
