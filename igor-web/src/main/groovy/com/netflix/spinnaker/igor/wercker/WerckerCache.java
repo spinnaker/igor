@@ -84,7 +84,7 @@ public class WerckerCache {
         });
   }
 
-  public String getRunID(String master, String pipeline, final int buildNumber) {
+  public String getRunID(String master, String pipeline, final String buildNumber) {
     String key = makeKey(master, pipeline) + ":runs";
     final Map<String, String> existing =
         redisClientDelegate.withCommandsClient(
@@ -94,7 +94,7 @@ public class WerckerCache {
               }
               return c.hgetAll(key);
             });
-    String build = Integer.toString(buildNumber);
+    String build = buildNumber;
     for (Entry<String, String> entry : existing.entrySet()) {
       if (entry.getValue().equals(build)) {
         return entry.getKey();

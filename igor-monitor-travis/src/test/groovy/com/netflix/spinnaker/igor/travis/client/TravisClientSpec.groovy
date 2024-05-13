@@ -269,11 +269,11 @@ class TravisClientSpec extends Specification {
             }'''
 
         when:
-        Builds builds = client.builds("someToken", "some/build", 31)
+        Builds builds = client.builds("someToken", "some/build", '31')
 
         then:
         Build build = builds.builds.first()
-        build.number == 31
+        build.number == '31'
         build.duration == 8
         build.finishedAt.toEpochMilli() == 1458051084000
     }
@@ -320,11 +320,11 @@ class TravisClientSpec extends Specification {
             }'''
 
         when:
-        Builds builds = client.builds("someToken", "some/build", 31)
+        Builds builds = client.builds("someToken", "some/build", '31')
 
         then:
         Build build = builds.builds.first()
-        build.number == 3
+        build.number == '3'
         build.config.globalEnv.size() == 1
         build.config.globalEnv.first() == "TARGET_ENV=test.environment"
     }
@@ -334,7 +334,7 @@ class TravisClientSpec extends Specification {
         setResponse '''{"builds":[],"commits":[]}'''
 
         when:
-        Builds builds = client.builds("someToken", "some/build", 31)
+        Builds builds = client.builds("someToken", "some/build", '31')
 
         then:
         builds.builds.size() == 0
@@ -373,7 +373,7 @@ class TravisClientSpec extends Specification {
         }'''
 
         when:
-        Builds builds = client.builds("someToken", "org/repo", 39)
+        Builds builds = client.builds("someToken", "org/repo", '39')
 
         then:
         builds.commits.first().isTag()
@@ -412,7 +412,7 @@ class TravisClientSpec extends Specification {
         }'''
 
         when:
-        Builds builds = client.builds("someToken", "org/repo", 31)
+        Builds builds = client.builds("someToken", "org/repo", '31')
 
         then:
         builds.commits.first().timestamp == LocalDateTime.of(2016, Month.JUNE, 1, 18, 57, 48).toInstant(ZoneOffset.UTC)
@@ -645,7 +645,7 @@ class TravisClientSpec extends Specification {
     V3Build build = client.v3build("someToken", 7128433, "build.log_complete")
 
     then:
-    build.number == 265
+    build.number == '265'
     build.commit.committer.name == "Alice"
     build.commit.author.name == "Bob"
     build.jobs*.id == [7128434]
@@ -687,7 +687,7 @@ class TravisClientSpec extends Specification {
         '''
 
         when:
-        Builds builds = client.builds("someToken", "org/repo", 38)
+        Builds builds = client.builds("someToken", "org/repo", '38')
 
         then:
         !builds.commits.first().isTag()

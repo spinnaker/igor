@@ -178,11 +178,11 @@ public class TravisBuildMonitor
 
   private Stream<? extends BuildDelta> createBuildDelta(
       String master, TravisService travisService, V3Build v3Build) {
-    int lastBuild =
+    String lastBuild =
         buildCache.getLastBuild(master, v3Build.branchedRepoSlug(), v3Build.getState().isRunning());
     return Stream.of(v3Build)
         .filter(build -> !build.spinnakerTriggered())
-        .filter(build -> build.getNumber() > lastBuild)
+        .filter(build -> build.getNumber().compareTo(lastBuild) > 0)
         .map(
             build ->
                 BuildDelta.builder()
@@ -212,9 +212,12 @@ public class TravisBuildMonitor
         if (!travisService.isLogReady(build)) {
           break;
         }
-        if (build.getNumber()
-            > buildCache.getLastBuild(
-                master, build.getRepository().getSlug(), build.getState().isRunning())) {
+        if (build
+                .getNumber()
+                .compareTo(
+                    buildCache.getLastBuild(
+                        master, build.getRepository().getSlug(), build.getState().isRunning()))
+            > 0) {
           buildCache.setLastBuild(
               master,
               build.getRepository().getSlug(),
@@ -226,7 +229,7 @@ public class TravisBuildMonitor
           }
         }
 
-        if (build.getNumber() > item.previousBuildNum) {
+        if (build.getNumber().compareTo(item.previousBuildNum) > 0) {
           buildCache.setLastBuild(
               master,
               build.branchedRepoSlug(),
@@ -311,7 +314,7 @@ public class TravisBuildMonitor
     private final V3Build build;
     private final GenericBuild genericBuild;
     private final String travisBaseUrl;
-    private final int currentBuildNum;
-    private final int previousBuildNum;
+    private final String currentBuildNum;
+    private final String previousBuildNum;
   }
 }

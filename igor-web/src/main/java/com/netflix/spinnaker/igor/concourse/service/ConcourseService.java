@@ -145,9 +145,9 @@ public class ConcourseService implements BuildOperations, BuildProperties {
 
   @Nullable
   @Override
-  public GenericBuild getGenericBuild(String jobPath, int buildNumber) {
+  public GenericBuild getGenericBuild(String jobPath, String buildNumber) {
     return getBuilds(jobPath, null).stream()
-        .filter(build -> build.getNumber() == buildNumber)
+        .filter(build -> Objects.equals(build.getNumber(), buildNumber))
         .sorted()
         .findFirst()
         .map(build -> getGenericBuild(jobPath, build, true))
@@ -160,7 +160,7 @@ public class ConcourseService implements BuildOperations, BuildProperties {
     GenericBuild build = new GenericBuild();
     build.setId(b.getId());
     build.setBuilding(false);
-    build.setNumber(b.getNumber());
+    build.setNumber(b.getNumber() + "");
     build.setResult(b.getResult());
     build.setName(job.getName());
     build.setFullDisplayName(job.getTeamName() + "/" + job.getPipelineName() + "/" + job.getName());
