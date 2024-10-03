@@ -34,7 +34,7 @@ import javax.xml.bind.annotation.XmlRootElement
 @XmlRootElement
 class Build {
     boolean building
-    Integer number
+    String number
     @XmlElement(required = false)
     String result
     String timestamp
@@ -63,7 +63,7 @@ class Build {
     List<TestResults> testResults
 
     GenericBuild genericBuild(String jobName) {
-        GenericBuild genericBuild = new GenericBuild(id: "${jobName}-${String.valueOf(number)}", building: building, number: number.intValue(), duration: duration.intValue(), result: result as Result, name: jobName, url: url, timestamp: timestamp, fullDisplayName: fullDisplayName)
+        GenericBuild genericBuild = new GenericBuild(id: "${jobName}-${number}", building: building, number: number, duration: duration.intValue(), result: result as Result, name: jobName, url: url, timestamp: timestamp, fullDisplayName: fullDisplayName)
         if (artifacts) {
             genericBuild.artifacts = artifacts.collect { buildArtifact ->
                 GenericArtifact artifact = buildArtifact.getGenericArtifact()

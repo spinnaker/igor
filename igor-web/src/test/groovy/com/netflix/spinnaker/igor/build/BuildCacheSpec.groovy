@@ -48,53 +48,53 @@ class BuildCacheSpec extends Specification {
 
     void 'new build numbers get overridden'() {
         when:
-        cache.setLastBuild(master, 'job1', 78, true, TTL)
+        cache.setLastBuild(master, 'job1', '78', true, TTL)
 
         then:
-        cache.getLastBuild(master, 'job1', true) == 78
+        cache.getLastBuild(master, 'job1', true) == '78'
 
         when:
-        cache.setLastBuild(master, 'job1', 80, true, TTL)
+        cache.setLastBuild(master, 'job1', '80', true, TTL)
 
         then:
-        cache.getLastBuild(master, 'job1', true) == 80
+        cache.getLastBuild(master, 'job1', true) == '80'
     }
 
     void 'running and completed builds are handled separately'() {
         when:
-        cache.setLastBuild(master, 'job1', 78, true, TTL)
+        cache.setLastBuild(master, 'job1', '78', true, TTL)
 
         then:
-        cache.getLastBuild(master, 'job1', true) == 78
+        cache.getLastBuild(master, 'job1', true) == '78'
 
         when:
-        cache.setLastBuild(master, 'job1', 80, false, TTL)
+        cache.setLastBuild(master, 'job1', '80', false, TTL)
 
         then:
-        cache.getLastBuild(master, 'job1', false) == 80
-        cache.getLastBuild(master, 'job1', true) == 78
+        cache.getLastBuild(master, 'job1', false) == '80'
+        cache.getLastBuild(master, 'job1', true) == '78'
     }
 
     void 'when value is not found, -1 is returned'() {
         expect:
-        cache.getLastBuild('notthere', 'job1', true) == -1
+        cache.getLastBuild('notthere', 'job1', true) == '-1'
     }
 
     void 'can set builds for multiple masters'() {
         when:
-        cache.setLastBuild(master, 'job1', 78, true, TTL)
-        cache.setLastBuild('example2', 'job1', 88, true, TTL)
+        cache.setLastBuild(master, 'job1', '78', true, TTL)
+        cache.setLastBuild('example2', 'job1', '88', true, TTL)
 
         then:
-        cache.getLastBuild(master, 'job1', true) == 78
-        cache.getLastBuild('example2', 'job1', true) == 88
+        cache.getLastBuild(master, 'job1', true) == '78'
+        cache.getLastBuild('example2', 'job1', true) == '88'
     }
 
     void 'correctly retrieves all jobsNames for a master'() {
         when:
-        cache.setLastBuild(master, 'job1', 78, true, TTL)
-        cache.setLastBuild(master, 'job2', 11, false, TTL)
-        cache.setLastBuild(master, 'blurb', 1, false, TTL)
+        cache.setLastBuild(master, 'job1', '78', true, TTL)
+        cache.setLastBuild(master, 'job2', '11', false, TTL)
+        cache.setLastBuild(master, 'blurb', '1', false, TTL)
 
         then:
         cache.getJobNames(master) == ['blurb', 'job2']
@@ -103,10 +103,10 @@ class BuildCacheSpec extends Specification {
     @Unroll
     void 'retrieves all matching jobs for typeahead #query'() {
         when:
-        cache.setLastBuild(master, 'job1', 1, true, TTL)
-        cache.setLastBuild(test, 'job1', 1, false, TTL)
-        cache.setLastBuild(master, 'job2', 1, false, TTL)
-        cache.setLastBuild(test, 'job3', 1, false, TTL)
+        cache.setLastBuild(master, 'job1', '1', true, TTL)
+        cache.setLastBuild(test, 'job1', '1', false, TTL)
+        cache.setLastBuild(master, 'job2', '1', false, TTL)
+        cache.setLastBuild(test, 'job3', '1', false, TTL)
 
         then:
         cache.getTypeaheadResults(query) == expected
@@ -128,7 +128,7 @@ class BuildCacheSpec extends Specification {
         BuildCache secondInstance = new BuildCache(redisClientDelegate, altCfg)
 
         when:
-        secondInstance.setLastBuild(master, 'job1', 1, false, TTL)
+        secondInstance.setLastBuild(master, 'job1', '1', false, TTL)
 
         then:
         secondInstance.getJobNames(master) == ['job1']

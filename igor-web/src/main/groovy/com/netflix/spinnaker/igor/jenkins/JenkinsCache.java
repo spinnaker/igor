@@ -83,17 +83,17 @@ public class JenkinsCache {
     }
 
     Map<String, Object> converted = new HashMap<>();
-    converted.put("lastBuildLabel", Integer.parseInt(result.get("lastBuildLabel")));
+    converted.put("lastBuildLabel", result.get("lastBuildLabel"));
     converted.put("lastBuildBuilding", Boolean.valueOf(result.get("lastBuildBuilding")));
 
     return converted;
   }
 
-  public void setLastBuild(String master, String job, int lastBuild, boolean building) {
+  public void setLastBuild(String master, String job, String lastBuild, boolean building) {
     String key = makeKey(master, job);
     redisClientDelegate.withCommandsClient(
         c -> {
-          c.hset(key, "lastBuildLabel", Integer.toString(lastBuild));
+          c.hset(key, "lastBuildLabel", lastBuild);
           c.hset(key, "lastBuildBuilding", Boolean.toString(building));
         });
   }
@@ -114,17 +114,16 @@ public class JenkinsCache {
         });
   }
 
-  public Boolean getEventPosted(String master, String job, Long cursor, Integer buildNumber) {
+  public Boolean getEventPosted(String master, String job, Long cursor, String buildNumber) {
     String key = makeKey(master, job) + ":" + POLL_STAMP + ":" + cursor;
-    return redisClientDelegate.withCommandsClient(
-        c -> c.hget(key, Integer.toString(buildNumber)) != null);
+    return redisClientDelegate.withCommandsClient(c -> c.hget(key, buildNumber) != null);
   }
 
-  public void setEventPosted(String master, String job, Long cursor, Integer buildNumber) {
+  public void setEventPosted(String master, String job, Long cursor, String buildNumber) {
     String key = makeKey(master, job) + ":" + POLL_STAMP + ":" + cursor;
     redisClientDelegate.withCommandsClient(
         c -> {
-          c.hset(key, Integer.toString(buildNumber), "POSTED");
+          c.hset(key, buildNumber, "POSTED");
         });
   }
 
