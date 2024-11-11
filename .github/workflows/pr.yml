@@ -77,7 +77,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: Dockerfile.slim
+          file: Dockerfile.java11.slim
           load: true
           platforms: local
           tags: |
