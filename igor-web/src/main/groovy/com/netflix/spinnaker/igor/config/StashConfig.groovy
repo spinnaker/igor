@@ -16,12 +16,13 @@
 
 package com.netflix.spinnaker.igor.config
 
+import com.jakewharton.retrofit.Ok3Client
 import com.netflix.spinnaker.igor.scm.stash.client.StashClient
 import com.netflix.spinnaker.igor.scm.stash.client.StashMaster
 import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger
-import com.squareup.okhttp.Credentials
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import okhttp3.Credentials
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
@@ -29,8 +30,8 @@ import org.springframework.context.annotation.Configuration
 import retrofit.Endpoints
 import retrofit.RequestInterceptor
 import retrofit.RestAdapter
-import retrofit.client.OkClient
 import retrofit.converter.JacksonConverter
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerRetrofitErrorHandler;
 
 import javax.validation.Valid
 
@@ -57,11 +58,12 @@ class StashConfig {
         new RestAdapter.Builder()
             .setEndpoint(Endpoints.newFixedEndpoint(address))
             .setRequestInterceptor(new BasicAuthRequestInterceptor(username, password))
-            .setClient(new OkClient())
+            .setClient(new Ok3Client())
             .setConverter(new JacksonConverter())
             .setLogLevel(retrofitLogLevel)
             .setLog(new Slf4jRetrofitLogger(StashClient))
-            .build()
+                .setErrorHandler(SpinnakerRetrofitErrorHandler.getInstance())
+                .build()
             .create(StashClient)
     }
 

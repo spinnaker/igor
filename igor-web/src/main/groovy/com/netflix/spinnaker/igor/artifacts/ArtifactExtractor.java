@@ -19,6 +19,7 @@ package com.netflix.spinnaker.igor.artifacts;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.igor.build.model.GenericBuild;
+import com.netflix.spinnaker.kork.annotations.VisibleForTesting;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.artifacts.parsing.JinjaArtifactExtractor;
 import java.util.ArrayList;
@@ -36,7 +37,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 @Slf4j
 public class ArtifactExtractor {
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  private final ObjectMapper objectMapper;
   private final JinjaTemplateService jinjaTemplateService;
   private final JinjaArtifactExtractor.Factory jinjaArtifactExtractorFactory;
 
@@ -45,7 +46,7 @@ public class ArtifactExtractor {
     try {
       messageString = objectMapper.writeValueAsString(build);
     } catch (JsonProcessingException e) {
-      log.error("Error processing JSON: {}", e);
+      log.error("Error processing JSON:", e);
       return Collections.emptyList();
     }
 
@@ -91,7 +92,8 @@ public class ArtifactExtractor {
     return jinjaTemplateService.getTemplate(messageFormat, templateType);
   }
 
-  private boolean parseCustomFormat(Object customFormat) {
+  @VisibleForTesting
+  boolean parseCustomFormat(Object customFormat) {
     if (customFormat == null) {
       return false;
     }

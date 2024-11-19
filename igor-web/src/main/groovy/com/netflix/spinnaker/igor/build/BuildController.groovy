@@ -31,6 +31,7 @@ import com.netflix.spinnaker.igor.service.BuildOperations
 import com.netflix.spinnaker.igor.service.BuildProperties
 import com.netflix.spinnaker.igor.service.BuildServices
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.kork.web.exceptions.NotFoundException
 import com.netflix.spinnaker.security.AuthenticatedRequest
@@ -45,7 +46,6 @@ import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.servlet.HandlerMapping
-import retrofit.RetrofitError
 import retrofit.http.Query
 
 import javax.annotation.Nullable
@@ -107,6 +107,16 @@ class BuildController {
     return jobStatus(buildService, master, job, buildNumber)
   }
 
+  @RequestMapping(value = '/builds/status/{buildNumber}/{master}')
+  @PreAuthorize("hasPermission(#master, 'BUILD_SERVICE', 'READ')")
+  GenericBuild getJobStatus(
+    @PathVariable String master,
+    @PathVariable Integer buildNumber,
+    @RequestParam("job") String job) {
+    def buildService = getBuildService(master)
+    return jobStatus(buildService, master, job, buildNumber)
+  }
+
   @RequestMapping(value = '/builds/artifacts/{buildNumber}/{master:.+}/**')
   @PreAuthorize("hasPermission(#master, 'BUILD_SERVICE', 'READ')")
   List<Artifact> getBuildResults(@PathVariable String master, @PathVariable
@@ -122,11 +132,25 @@ class BuildController {
     return Collections.emptyList()
   }
 
+
+  @RequestMapping(value = '/builds/artifacts/{buildNumber}/{master}')
+  @PreAuthorize("hasPermission(#master, 'BUILD_SERVICE', 'READ')")
+  List<Artifact> getBuildResults(@PathVariable String master, @PathVariable
+    Integer buildNumber, @RequestParam("job") String job ,@Query("propertyFile") String propertyFile) {
+    def buildService = getBuildService(master)
+    GenericBuild build = jobStatus(buildService, master, job, buildNumber)
+    if (build && buildService instanceof BuildProperties && artifactExtractor != null) {
+      build.properties = buildService.getBuildProperties(job, build, propertyFile)
+      return artifactExtractor.extractArtifacts(build)
+    }
+    return Collections.emptyList()
+  }
+
   @RequestMapping(value = '/builds/queue/{master}/{item}')
   @PreAuthorize("hasPermission(#master, 'BUILD_SERVICE', 'READ')")
   Object getQueueLocation(@PathVariable String master, @PathVariable int item) {
     def buildService = getBuildService(master)
-    return buildService.queuedBuild(master, item);
+    return buildService.queuedBuild(master, item)
   }
 
   @RequestMapping(value = '/builds/all/{master:.+}/**')
@@ -145,7 +169,24 @@ class BuildController {
     @PathVariable String jobName,
     @PathVariable String queuedBuild,
     @PathVariable Integer buildNumber) {
+    stopJob(master, buildNumber, jobName, queuedBuild)
+    "true"
+  }
 
+  @RequestMapping(value = "/masters/{master}/jobs/stop/{queuedBuild}/{buildNumber}", method = RequestMethod.PUT)
+  @PreAuthorize("hasPermission(#master, 'BUILD_SERVICE', 'WRITE')")
+  String stopWithQueryParam(
+    @PathVariable String master,
+    @RequestParam String jobName,
+    @PathVariable String queuedBuild,
+    @PathVariable Integer buildNumber) {
+
+    stopJob(master, buildNumber, jobName, queuedBuild)
+    "true"
+  }
+
+
+  void stopJob(String master, int buildNumber, String jobName, String queuedBuild) {
     def buildService = getBuildService(master)
     if (buildService instanceof JenkinsService) {
       // Jobs that haven't been started yet won't have a buildNumber
@@ -161,15 +202,14 @@ class BuildController {
           if (buildService.metaClass.respondsTo(buildService, 'stopQueuedBuild')) {
             buildService.stopQueuedBuild(queuedBuild)
           }
-        } catch (RetrofitError e) {
-          if (e.response?.status != NOT_FOUND.value()) {
+        } catch (SpinnakerHttpException e) {
+          if (e.getResponseCode() != NOT_FOUND.value()) {
             throw e
           }
         }
       }
     }
 
-    "true"
   }
 
   @RequestMapping(value = "/masters/{name}/jobs/**/update/{buildNumber}", method = RequestMethod.PATCH)
@@ -289,7 +329,7 @@ class BuildController {
       key = key + ":" + parameterDefinition.key + "=" + parameterDefinition.value
     }
 
-    return key;
+    return key
   }
 
   @RequestMapping(value = '/builds/properties/{buildNumber}/{fileName}/{master:.+}/**')
@@ -300,6 +340,22 @@ class BuildController {
       String fileName, HttpServletRequest request) {
     def job = ((String) request.getAttribute(
       HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE)).split('/').drop(6).join('/')
+    def buildService = getBuildService(master)
+    if (buildService instanceof BuildProperties) {
+      BuildProperties buildProperties = (BuildProperties) buildService
+      def genericBuild = buildService.getGenericBuild(job, buildNumber)
+      return buildProperties.getBuildProperties(job, genericBuild, fileName)
+    }
+    return Collections.emptyMap()
+  }
+
+
+  @RequestMapping(value = '/builds/properties/{buildNumber}/{fileName}/{master}')
+  @PreAuthorize("hasPermission(#master, 'BUILD_SERVICE', 'READ')")
+  Map<String, Object> getProperties(
+    @PathVariable String master,
+    @PathVariable Integer buildNumber, @PathVariable
+      String fileName, @RequestParam("job") String job) {
     def buildService = getBuildService(master)
     if (buildService instanceof BuildProperties) {
       BuildProperties buildProperties = (BuildProperties) buildService

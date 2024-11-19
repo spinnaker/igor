@@ -33,7 +33,7 @@ import com.netflix.spinnaker.igor.travis.service.TravisService
 import com.netflix.spinnaker.kork.web.exceptions.ExceptionMessageDecorator
 import com.netflix.spinnaker.kork.web.exceptions.GenericExceptionHandlers
 import com.netflix.spinnaker.kork.web.exceptions.NotFoundException
-import com.squareup.okhttp.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.MockWebServer
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.mock.web.MockHttpServletResponse
@@ -77,6 +77,7 @@ class BuildControllerSpec extends Specification {
   def BUILD_ID = 654321
   def QUEUED_JOB_NUMBER = 123456
   def JOB_NAME = "job/name/can/have/slashes"
+  def SIMPLE_JOB_NAME = "simpleJobName"
   def PENDING_JOB_NAME = "pendingjob"
   def FILE_NAME = "test.yml"
 
@@ -107,7 +108,7 @@ class BuildControllerSpec extends Specification {
     server = new MockWebServer()
     pendingOperationService = Mock(PendingOperationsCache)
     pendingOperationService.getAndSetOperationStatus(_, _, _) >> {
-        return new PendingOperationsCache.OperationState()
+      return new PendingOperationsCache.OperationState()
     }
 
     mockMvc = MockMvcBuilders
@@ -122,6 +123,19 @@ class BuildControllerSpec extends Specification {
 
     when:
     MockHttpServletResponse response = mockMvc.perform(get("/builds/status/${BUILD_NUMBER}/${SERVICE}/${JOB_NAME}")
+      .accept(MediaType.APPLICATION_JSON)).andReturn().response
+
+    then:
+    response.contentAsString == "{\"building\":false,\"number\":${BUILD_NUMBER}}"
+  }
+
+  void 'get the status of a build with job name as query parameter'() {
+    given:
+    1 * service.getGenericBuild(JOB_NAME, BUILD_NUMBER) >> new GenericBuild(building: false, number: BUILD_NUMBER)
+
+    when:
+    MockHttpServletResponse response = mockMvc.perform(get("/builds/status/${BUILD_NUMBER}/${SERVICE}")
+      .param("job", JOB_NAME)
       .accept(MediaType.APPLICATION_JSON)).andReturn().response
 
     then:
@@ -222,6 +236,21 @@ class BuildControllerSpec extends Specification {
         .accept(MediaType.APPLICATION_JSON))
       .andExpect(status().isNotFound())
       .andReturn().response
+  }
+
+  void 'get properties of a build with job Name in query parameters' () {
+    given:
+    1 * jenkinsService.getGenericBuild(JOB_NAME, BUILD_NUMBER) >> genericBuild
+    1 * jenkinsService.getBuildProperties(JOB_NAME, genericBuild, FILE_NAME) >> ['foo': 'bar']
+
+    when:
+    MockHttpServletResponse response = mockMvc.perform(
+      get("/builds/properties/${BUILD_NUMBER}/${FILE_NAME}/${JENKINS_SERVICE}")
+        .param("job", JOB_NAME)
+        .accept(MediaType.APPLICATION_JSON)).andReturn().response
+
+    then:
+    response.contentAsString == "{\"foo\":\"bar\"}"
   }
 
   void 'get properties of a travis build'() {
@@ -410,7 +439,7 @@ class BuildControllerSpec extends Specification {
     MockHttpServletResponse response = mockMvc.perform(
       patch("/masters/${JENKINS_SERVICE}/jobs/${jobName}/update/${BUILD_NUMBER}")
         .contentType(MediaType.APPLICATION_JSON)
-      .content("""
+        .content("""
 {
   "description": "this is my new description"
 }
@@ -428,4 +457,34 @@ class BuildControllerSpec extends Specification {
       "simpleJobName"
     ]
   }
+
+  void "stop a jenkins job with simple name"() {
+
+    when:
+    MockHttpServletResponse response = mockMvc.perform(
+      put("/masters/{master}/jobs/{jobNamePath}/stop/{queue_build}/{build_number}", JENKINS_SERVICE, SIMPLE_JOB_NAME, QUEUED_JOB_NUMBER, BUILD_NUMBER)
+    ).andReturn().response
+
+    then:
+    1 * jenkinsService.stopRunningBuild(SIMPLE_JOB_NAME, BUILD_NUMBER)
+    response.status == 200
+    response.contentAsString == 'true'
+
+  }
+
+  void "stop a jenkins job with name containing slashes"() {
+
+    when:
+    MockHttpServletResponse response = mockMvc.perform(
+      put("/masters/{master}/jobs/stop/{queue_build}/{build_number}", JENKINS_SERVICE, QUEUED_JOB_NUMBER, BUILD_NUMBER)
+      .param('jobName', JOB_NAME)
+    ).andReturn().response
+
+    then:
+    1 * jenkinsService.stopRunningBuild(JOB_NAME, BUILD_NUMBER)
+    response.status == 200
+    response.contentAsString == 'true'
+
+  }
+
 }

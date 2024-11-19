@@ -26,9 +26,9 @@ import com.netflix.spinnaker.igor.jenkins.client.model.Build
 import com.netflix.spinnaker.igor.jenkins.client.model.BuildArtifact
 import com.netflix.spinnaker.igor.jenkins.client.model.BuildsList
 import com.netflix.spinnaker.igor.jenkins.client.model.Project
-import com.squareup.okhttp.mockwebserver.MockResponse
-import com.squareup.okhttp.mockwebserver.MockWebServer
-import io.github.resilience4j.circuitbreaker.CircuitBreaker
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
 import retrofit.RetrofitError
 import retrofit.client.Response
@@ -188,7 +188,7 @@ class JenkinsServiceSpec extends Specification {
         )
         server.start()
         def host = new JenkinsProperties.JenkinsHost(
-            address: server.getUrl('/').toString(),
+            address: server.url('/').toString(),
             username: 'username',
             password: 'password')
         client = new JenkinsConfig().jenkinsClient(host)
@@ -765,12 +765,12 @@ class JenkinsServiceSpec extends Specification {
       build.number = buildNumber
       build.duration = 0L
       build.artifacts = [artifact]
-      def badRequestError = RetrofitError.httpError(
+      def badRequestError = new SpinnakerHttpException(RetrofitError.httpError(
         "http://my.jenkins.net",
         new Response("http://my.jenkins.net", 400, "bad request", [], null),
         null,
         null
-      )
+      ))
 
       when:
       def properties = service.getBuildProperties(jobName, build.genericBuild(jobName), artifact.fileName)

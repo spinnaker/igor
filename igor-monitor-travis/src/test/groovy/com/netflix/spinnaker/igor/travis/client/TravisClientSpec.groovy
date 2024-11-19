@@ -27,8 +27,8 @@ import com.netflix.spinnaker.igor.travis.client.model.v3.V3Build
 import com.netflix.spinnaker.igor.travis.client.model.v3.V3Builds
 import com.netflix.spinnaker.igor.travis.client.model.v3.V3Log
 import com.netflix.spinnaker.igor.travis.config.TravisConfig
-import com.squareup.okhttp.mockwebserver.MockResponse
-import com.squareup.okhttp.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -121,7 +121,7 @@ class TravisClientSpec extends Specification {
                 "delete_log": false
             },
             "id": 1337,
-            "content": "ERROR: An error occured while trying to parse your .travis.yml file.\\n\\nPlease make sure that the file is valid YAML.\\n\\nhttp://lint.travis-ci.org can check your .travis.yml.\\n\\nThe error was \\"undefined method `merge' for false:FalseClass\\".",
+            "content": "ERROR: An error occured while trying to parse your .travis.yml file.\\n\\nPlease make sure that the file is valid YAML.\\n\\nhttp://lint.travis-ci.org can check your .travis.yml.\\n\\nThe error was \\"undefined method `merge' for false:FalseClass\\".\\n\\nDone. Your build exited with 1.",
             "log_parts": [
                 {
                     "content": "ERROR: An error occured while trying to parse your .travis.yml file.\\n\\nPlease make sure that the file is valid YAML.\\n\\n",
@@ -129,7 +129,7 @@ class TravisClientSpec extends Specification {
                     "number": 0
                 },
                 {
-                    "content": "http://lint.travis-ci.org can check your .travis.yml.\\n\\nThe error was \\"undefined method `merge' for false:FalseClass\\".",
+                    "content": "http://lint.travis-ci.org can check your .travis.yml.\\n\\nThe error was \\"undefined method `merge' for false:FalseClass\\".\\n\\nDone. Your build exited with 1.",
                     "final": true,
                     "number": 1
                 }
@@ -825,6 +825,6 @@ class TravisClientSpec extends Specification {
                 .setHeader('Content-Type', 'application/json;charset=utf-8')
         )
         server.start()
-        client = new TravisConfig().travisClient(server.getUrl('/').toString(), 3000, mapper)
+        client = new TravisConfig().travisClient(server.url('/').toString(), 3000, mapper)
     }
 }

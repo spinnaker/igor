@@ -50,6 +50,8 @@ import com.netflix.spinnaker.igor.travis.client.model.v3.V3Build;
 import com.netflix.spinnaker.igor.travis.client.model.v3.V3Builds;
 import com.netflix.spinnaker.igor.travis.client.model.v3.V3Job;
 import com.netflix.spinnaker.igor.travis.client.model.v3.V3Log;
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException;
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerServerException;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.core.SupplierUtils;
@@ -72,7 +74,6 @@ import net.logstash.logback.argument.StructuredArguments;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import retrofit.RetrofitError;
 
 public class TravisService implements BuildOperations, BuildProperties {
 
@@ -265,7 +266,7 @@ public class TravisService implements BuildOperations, BuildProperties {
                 getAccessToken(),
                 repoSlug,
                 branch,
-                "push",
+                "push,api",
                 buildResultLimit,
                 addLogCompleteIfApplicable());
         break;
@@ -428,6 +429,7 @@ public class TravisService implements BuildOperations, BuildProperties {
     return jobIds.stream().map(this::getAndCacheJobLog).allMatch(Optional::isPresent);
   }
 
+  @SuppressWarnings("rawtypes")
   private Optional<String> getAndCacheJobLog(int jobId) {
     log.debug("fetching log by jobId {}", jobId);
     String cachedLog = travisCache.getJobLog(groupKey, jobId);
@@ -435,12 +437,28 @@ public class TravisService implements BuildOperations, BuildProperties {
       log.debug("Found log for jobId {} in the cache", jobId);
       return Optional.of(cachedLog);
     }
-    V3Log v3Log = travisClient.jobLog(getAccessToken(), jobId);
-    if (v3Log != null && v3Log.isReady()) {
-      log.info("Log for jobId {} was ready, caching it", jobId);
-      travisCache.setJobLog(groupKey, jobId, v3Log.getContent());
-      return Optional.of(v3Log.getContent());
+    try {
+      V3Log v3Log = travisClient.jobLog(getAccessToken(), jobId);
+      if (v3Log != null && v3Log.isReady()) {
+        log.info("Log for jobId {} was ready, caching it", jobId);
+        travisCache.setJobLog(groupKey, jobId, v3Log.getContent());
+        return Optional.of(v3Log.getContent());
+      }
+    } catch (SpinnakerServerException e) {
+      if (e instanceof SpinnakerHttpException) { // only SpinnakerHttpException has a response body
+        Map<String, Object> body = ((SpinnakerHttpException) e).getResponseBody();
+        if (body != null && "log_expired".equals(body.get("error_type"))) {
+          log.info(
+              "{}: The log for job id {} has expired and the corresponding build was ignored",
+              groupKey,
+              jobId);
+        } else {
+          log.warn(
+              "{}: Could not get log for job id {}. Error from Travis:\n{}", groupKey, jobId, body);
+        }
+      }
     }
+
     return Optional.empty();
   }
 
@@ -529,7 +547,7 @@ public class TravisService implements BuildOperations, BuildProperties {
   public void syncRepos() {
     try {
       travisClient.usersSync(getAccessToken(), new EmptyObject());
-    } catch (RetrofitError e) {
+    } catch (SpinnakerServerException e) {
       log.error(
           "synchronizing travis repositories for {} failed with error: {}",
           groupKey,
