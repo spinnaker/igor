@@ -45,7 +45,7 @@ public interface BuildOperations extends BuildService {
    * @param buildNumber The build number
    * @return A Spinnaker representation of a build
    */
-  GenericBuild getGenericBuild(String job, int buildNumber);
+  GenericBuild getGenericBuild(String job, String buildNumber);
 
   /**
    * Trigger a build of a given job on the build service host
@@ -71,7 +71,7 @@ public interface BuildOperations extends BuildService {
    * @param buildNumber The build number
    * @param updatedBuild The updated details for the build
    */
-  default void updateBuild(String jobName, Integer buildNumber, UpdatedBuild updatedBuild) {
+  default void updateBuild(String jobName, String buildNumber, UpdatedBuild updatedBuild) {
     // not supported by default
   }
 

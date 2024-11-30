@@ -62,7 +62,7 @@ class JenkinsClientSpec extends Specification {
 
     void 'gets build details'() {
         given:
-        final BUILD_NUMBER = 24
+        final BUILD_NUMBER = '24'
         setResponse '''<freeStyleProject><artifact><displayPath>mayo_1.0-h24.853b2ea_all.deb</displayPath><fileName>mayo_1.0-h24.853b2ea_all.deb</fileName><relativePath>build/distributions/mayo_1.0-h24.853b2ea_all.deb</relativePath></artifact><artifact><displayPath>dependencies.txt</displayPath><fileName>dependencies.txt</fileName><relativePath>build/reports/project/dependencies.txt</relativePath></artifact><artifact><displayPath>igorProperties.txt</displayPath><fileName>igorProperties.txt</fileName><relativePath>build/reports/project/igorProperties.txt</relativePath></artifact><building>false</building><description>No longer used in test.</description><duration>231011</duration><estimatedDuration>231196</estimatedDuration><fullDisplayName>SPINNAKER-igor-netflix #24</fullDisplayName><id>2014-05-29_09-13-59</id><keepLog>false</keepLog><number>24</number><result>SUCCESS</result><timestamp>1401380039000</timestamp><url>http://builds.netflix.com/job/SPINNAKER-igor-netflix/24/</url><builtOn>ssh-dynaslave-3f220763</builtOn><changeSet><kind>git</kind></changeSet></freeStyleProject>'''
         Build build = client.getBuild('SPINNAKER-igor-netflix', BUILD_NUMBER)
 
@@ -139,13 +139,13 @@ class JenkinsClientSpec extends Specification {
     void 'gets a single build'() {
         given:
         setResponse getSingleBuild()
-        Build build = client.getBuild("FOO",2542)
+        Build build = client.getBuild("FOO",'2542')
 
         expect:
         build.artifacts.size() == 4
         !build.building
         build.duration == 532271
-        build.number == 2542
+        build.number == '2542'
         build.result == 'SUCCESS'
         build.timestamp == "1421961940704"
         build.url == "http:///my.jenkins.net/job/FOO/2542/"

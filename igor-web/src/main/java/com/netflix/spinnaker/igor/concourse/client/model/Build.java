@@ -36,8 +36,8 @@ public class Build implements Comparable<Build> {
     return new BigDecimal(name);
   }
 
-  public int getNumber() {
-    return getDecimalNumber().intValue();
+  public String getNumber() {
+    return Integer.toString(getDecimalNumber().intValue());
   }
 
   public boolean isSuccessful() {
