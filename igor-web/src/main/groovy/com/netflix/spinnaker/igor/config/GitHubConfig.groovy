@@ -33,7 +33,7 @@ import retrofit.RequestInterceptor
 import retrofit.RestAdapter
 import retrofit.converter.JacksonConverter
 
-import javax.validation.Valid
+import jakarta.validation.Valid
 
 /**
  * Converts the list of GitHub Configuration properties a collection of clients to access the GitHub hosts
