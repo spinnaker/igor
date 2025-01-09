@@ -22,7 +22,7 @@ import com.netflix.spinnaker.igor.scm.gitlab.client.GitLabMaster;
 import com.netflix.spinnaker.igor.util.RetrofitUtils;
 import com.netflix.spinnaker.kork.retrofit.ErrorHandlingExecutorCallAdapterFactory;
 import java.io.IOException;
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import okhttp3.Interceptor;
 import okhttp3.Request;
 import okhttp3.Response;
