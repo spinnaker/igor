@@ -33,7 +33,7 @@ import retrofit.RestAdapter
 import retrofit.converter.JacksonConverter
 import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerRetrofitErrorHandler;
 
-import javax.validation.Valid
+import jakarta.validation.Valid
 
 /**
  * Converts the list of Stash Configuration properties a collection of clients to access the Stash hosts
