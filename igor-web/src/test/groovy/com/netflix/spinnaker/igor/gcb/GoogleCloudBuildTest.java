@@ -136,6 +136,7 @@ public class GoogleCloudBuildTest {
     assertThat(stubCloudBuildService.findUnmatchedRequests().getRequests()).isEmpty();
   }
 
+  @Test
   public void presentAccountTestWithPoolOption() throws Exception {
     PoolOption poolOption = new PoolOption();
     poolOption.setName(
