@@ -93,10 +93,10 @@ class ConcourseServiceSpec extends Specification {
         eventService.resourceEvents(_) >> eventFixture()
 
         when:
-        GenericBuild genericBuild = service.getGenericBuild('myteam/mypipeline/myjob', 48)
+        GenericBuild genericBuild = service.getGenericBuild('myteam/mypipeline/myjob', '48')
 
         then:
-        genericBuild.number == 48
+        genericBuild.number == '48'
         genericBuild.id == "48.1-id"
         genericBuild.timestamp == "1421717251402000"
         genericBuild.url == "http://my.concourse.ci/teams/myteam/pipelines/mypipeline/jobs/myjob/builds/48.1"
@@ -110,10 +110,10 @@ class ConcourseServiceSpec extends Specification {
         eventService.resourceEvents(_) >> eventFixtureNoBranch()
 
         when:
-        GenericBuild genericBuild = service.getGenericBuild('myteam/mypipeline/myjob', 48)
+        GenericBuild genericBuild = service.getGenericBuild('myteam/mypipeline/myjob', '48')
 
         then:
-        genericBuild.number == 48
+        genericBuild.number == '48'
         genericBuild.id == "48.1-id"
         genericBuild.timestamp == "1421717251402000"
         genericBuild.url == "http://my.concourse.ci/teams/myteam/pipelines/mypipeline/jobs/myjob/builds/48.1"

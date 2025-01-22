@@ -78,13 +78,13 @@ public class GitlabCiService implements BuildOperations, BuildProperties {
   }
 
   @Override
-  public GenericBuild getGenericBuild(String projectId, int pipelineId) {
+  public GenericBuild getGenericBuild(String projectId, String pipelineId) {
     Project project = client.getProject(projectId);
     if (project == null) {
       log.error("Could not find Gitlab CI Project with projectId={}", projectId);
       return null;
     }
-    Pipeline pipeline = client.getPipeline(projectId, pipelineId);
+    Pipeline pipeline = client.getPipeline(projectId, Long.valueOf(pipelineId));
     if (pipeline == null) {
       return null;
     }
@@ -150,12 +150,12 @@ public class GitlabCiService implements BuildOperations, BuildProperties {
     return jobs;
   }
 
-  private Map<String, Object> getPropertyFileFromLog(String projectId, Integer pipelineId) {
+  private Map<String, Object> getPropertyFileFromLog(String projectId, String pipelineId) {
     Map<String, Object> properties = new HashMap<>();
     return retrySupport.retry(
         () -> {
           try {
-            Pipeline pipeline = this.client.getPipeline(projectId, pipelineId);
+            Pipeline pipeline = this.client.getPipeline(projectId, Long.valueOf(pipelineId));
             PipelineStatus status = pipeline.getStatus();
             if (status != PipelineStatus.running) {
               log.error(
@@ -166,7 +166,7 @@ public class GitlabCiService implements BuildOperations, BuildProperties {
             }
             // Pipelines logs are stored within each stage (job), loop all jobs of this pipeline
             // and any jobs of child pipeline's to parse all logs for the pipeline
-            List<Job> jobs = getJobsWithBridges(projectId, pipelineId);
+            List<Job> jobs = getJobsWithBridges(projectId, Integer.valueOf(pipelineId));
             for (Job job : jobs) {
               InputStream logStream = this.client.getJobLog(projectId, job.getId()).getBody().in();
               String log = new String(logStream.readAllBytes(), StandardCharsets.UTF_8);

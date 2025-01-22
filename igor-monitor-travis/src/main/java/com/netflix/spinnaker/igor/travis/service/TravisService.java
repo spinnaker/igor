@@ -169,7 +169,7 @@ public class TravisService implements BuildOperations, BuildProperties {
   }
 
   @Override
-  public GenericBuild getGenericBuild(final String inputRepoSlug, final int buildNumber) {
+  public GenericBuild getGenericBuild(final String inputRepoSlug, final String buildNumber) {
     String repoSlug = cleanRepoSlug(inputRepoSlug);
     Build build = getBuild(repoSlug, buildNumber);
     return getGenericBuild(build, repoSlug);
@@ -216,11 +216,11 @@ public class TravisService implements BuildOperations, BuildProperties {
         getAccessToken(), buildId, addLogCompleteIfApplicable("build.commit"));
   }
 
-  public Builds getBuilds(String repoSlug, int buildNumber) {
+  public Builds getBuilds(String repoSlug, String buildNumber) {
     return travisClient.builds(getAccessToken(), repoSlug, buildNumber);
   }
 
-  public Build getBuild(String repoSlug, int buildNumber) {
+  public Build getBuild(String repoSlug, String buildNumber) {
     Builds builds = getBuilds(repoSlug, buildNumber);
     return !builds.getBuilds().isEmpty() ? builds.getBuilds().get(0) : null;
   }
@@ -523,7 +523,7 @@ public class TravisService implements BuildOperations, BuildProperties {
   }
 
   @Override
-  public Map<String, Integer> queuedBuild(String master, int queueId) {
+  public Map<String, String> queuedBuild(String master, int queueId) {
     Map<String, Integer> queuedJob = travisCache.getQueuedJob(groupKey, queueId);
     Request requestResponse =
         travisClient.request(
@@ -537,7 +537,7 @@ public class TravisService implements BuildOperations, BuildProperties {
           queueId,
           groupKey);
       travisCache.removeQuededJob(groupKey, queueId);
-      LinkedHashMap<String, Integer> map = new LinkedHashMap<>(1);
+      LinkedHashMap<String, String> map = new LinkedHashMap<>(1);
       map.put("number", requestResponse.getBuilds().get(0).getNumber());
       return map;
     }

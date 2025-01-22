@@ -86,7 +86,7 @@ class WerckerService implements BuildOperations {
     }
 
     @Override
-    GenericBuild getGenericBuild(final String job, final int buildNumber) {
+    GenericBuild getGenericBuild(final String job, final String buildNumber) {
         QualifiedPipelineName qPipeline = QualifiedPipelineName.of(job)
         String runId = cache.getRunID(groupKey, job, buildNumber)
         if (runId == null) {
@@ -128,7 +128,7 @@ class WerckerService implements BuildOperations {
         return Result.UNSTABLE
     }
 
-    Response stopRunningBuild (String appAndPipelineName, Integer buildNumber){
+    Response stopRunningBuild (String appAndPipelineName, String buildNumber){
         String runId = cache.getRunID(groupKey, appAndPipelineName, buildNumber)
         if (runId == null) {
             log.warn("Could not cancel build number {} for job {} - no matching run ID!",

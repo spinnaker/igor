@@ -170,13 +170,13 @@ public class JenkinsService implements BuildOperations, BuildProperties {
     return circuitBreaker.executeSupplier(() -> jenkinsClient.getDependencies(encode(jobName)));
   }
 
-  public Build getBuild(String jobName, Integer buildNumber) {
+  public Build getBuild(String jobName, String buildNumber) {
     return circuitBreaker.executeSupplier(
         () -> jenkinsClient.getBuild(encode(jobName), buildNumber));
   }
 
   @Override
-  public GenericBuild getGenericBuild(String jobName, int buildNumber) {
+  public GenericBuild getGenericBuild(String jobName, String buildNumber) {
     return getBuild(jobName, buildNumber).genericBuild(jobName);
   }
 
@@ -208,7 +208,7 @@ public class JenkinsService implements BuildOperations, BuildProperties {
     return permissions;
   }
 
-  private ScmDetails getGitDetails(String jobName, Integer buildNumber) {
+  private ScmDetails getGitDetails(String jobName, String buildNumber) {
     return retrySupport.retry(
         () -> {
           try {
@@ -253,7 +253,7 @@ public class JenkinsService implements BuildOperations, BuildProperties {
   }
 
   @Override
-  public void updateBuild(String jobName, Integer buildNumber, UpdatedBuild updatedBuild) {
+  public void updateBuild(String jobName, String buildNumber, UpdatedBuild updatedBuild) {
     if (updatedBuild.getDescription() != null) {
       circuitBreaker.executeRunnable(
           () ->
@@ -298,7 +298,7 @@ public class JenkinsService implements BuildOperations, BuildProperties {
     return map;
   }
 
-  private String getArtifactPathFromBuild(String job, int buildNumber, String fileName) {
+  private String getArtifactPathFromBuild(String job, String buildNumber, String fileName) {
     return retrySupport.retry(
         () ->
             this.getBuild(job, buildNumber).getArtifacts().stream()
@@ -319,7 +319,7 @@ public class JenkinsService implements BuildOperations, BuildProperties {
         false);
   }
 
-  private Response getPropertyFile(String jobName, Integer buildNumber, String fileName) {
+  private Response getPropertyFile(String jobName, String buildNumber, String fileName) {
     return retrySupport.retry(
         () -> {
           try {
@@ -342,7 +342,7 @@ public class JenkinsService implements BuildOperations, BuildProperties {
         false);
   }
 
-  public Response stopRunningBuild(String jobName, Integer buildNumber) {
+  public Response stopRunningBuild(String jobName, String buildNumber) {
     return circuitBreaker.executeSupplier(
         () -> jenkinsClient.stopRunningBuild(encode(jobName), buildNumber, "", getCrumb()));
   }

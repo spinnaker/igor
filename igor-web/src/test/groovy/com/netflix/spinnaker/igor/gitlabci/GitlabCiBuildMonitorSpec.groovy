@@ -77,24 +77,24 @@ class GitlabCiBuildMonitorSpec extends Specification {
         buildMonitor.pollSingle(new PollContext(MASTER))
 
         then:
-        1 * buildCache.setLastBuild(MASTER, "user1/project1", 101, false, CACHED_JOB_TTL_SECONDS)
-        1 * buildCache.setLastBuild(MASTER, "user1/project1/master", 101, false, CACHED_JOB_TTL_SECONDS)
+        1 * buildCache.setLastBuild(MASTER, "user1/project1", '101', false, CACHED_JOB_TTL_SECONDS)
+        1 * buildCache.setLastBuild(MASTER, "user1/project1/master", '101', false, CACHED_JOB_TTL_SECONDS)
 
         and:
         1 * echoService.postEvent({
             it.content.project.name == "user1/project1"
-            it.content.project.lastBuild.number == 101
+            it.content.project.lastBuild.number == '101'
         })
 
         1 * echoService.postEvent({
             it.content.project.name == "user1/project1/master"
-            it.content.project.lastBuild.number == 101
+            it.content.project.lastBuild.number == '101'
         })
 
         where:
         jobsInCache                 | lastBuildNr
-        []                          | 0
-        ["user1/project1/master"]   | 100
+        []                          | '0'
+        ["user1/project1/master"]   | '100'
     }
 
     def "dont send events if suppressed"() {
@@ -105,21 +105,21 @@ class GitlabCiBuildMonitorSpec extends Specification {
         service.getProjects() >> [project]
         service.getPipelines(project, 5) >> [pipeline]
         buildCache.getJobNames(MASTER) >> jobsInCache
-        buildCache.getLastBuild(MASTER, "999", true) >> lastBuildNr
+        buildCache.getLastBuild(MASTER, "999", false) >> lastBuildNr
 
         when:
         buildMonitor.pollSingle(new PollContext(MASTER).fastForward())
 
         then:
-        1 * buildCache.setLastBuild(MASTER, "999", 101, false, CACHED_JOB_TTL_SECONDS)
+        1 * buildCache.setLastBuild(MASTER, "999", '101', false, CACHED_JOB_TTL_SECONDS)
 
         and:
         0 * echoService.postEvent(_)
 
         where:
         jobsInCache                 | lastBuildNr
-        []                          | 0
-        ["user1/project1/master"]   | 100
+        []                          | '0'
+        ["user1/project1/master"]   | '100'
     }
 
     def "ignore very old events"() {
@@ -149,7 +149,7 @@ class GitlabCiBuildMonitorSpec extends Specification {
         service.getProjects() >> [project]
         service.getPipelines(project, 1) >> [pipeline]
         buildCache.getJobNames(MASTER) >> ["user1/project1/master"]
-        buildCache.getLastBuild(MASTER, "user1/project1/master", false) >> 102
+        buildCache.getLastBuild(MASTER, "user1/project1/master", false) >> '102'
 
         when:
         buildMonitor.pollSingle(new PollContext(MASTER))

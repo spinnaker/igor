@@ -25,7 +25,7 @@ public class GitlabCiPipelineUtils {
     String friendlyName = String.format("%s (%s)", pipeline.getRef(), pipeline.getId());
     GenericBuild genericBuild = new GenericBuild();
     genericBuild.setBuilding(GitlabCiResultConverter.running(pipeline.getStatus()));
-    genericBuild.setNumber(pipeline.getId());
+    genericBuild.setNumber(String.valueOf(pipeline.getId()));
     genericBuild.setResult(
         GitlabCiResultConverter.getResultFromGitlabCiState(pipeline.getStatus()));
     genericBuild.setName(friendlyName);
