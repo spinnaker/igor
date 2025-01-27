@@ -76,7 +76,7 @@ class BuildController {
   }
 
   @Nullable
-  private GenericBuild jobStatus(BuildOperations buildService, String master, String job, Integer buildNumber) {
+  private GenericBuild jobStatus(BuildOperations buildService, String master, String job, Long buildNumber) {
     GenericBuild build = buildService.getGenericBuild(job, buildNumber)
     if (!build)
       return null
