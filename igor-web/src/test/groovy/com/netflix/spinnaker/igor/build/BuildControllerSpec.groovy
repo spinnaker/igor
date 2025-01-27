@@ -74,8 +74,8 @@ class BuildControllerSpec extends Specification {
   def TRAVIS_SERVICE = 'TRAVIS_SERVICE'
   def HTTP_201 = 201
   def BUILD_NUMBER = 123456789012
-  def BUILD_ID = 654321
-  def QUEUED_JOB_NUMBER = 123456
+  def BUILD_ID = 654321098765
+  def QUEUED_JOB_NUMBER = 123456789012
   def JOB_NAME = "job/name/can/have/slashes"
   def SIMPLE_JOB_NAME = "simpleJobName"
   def PENDING_JOB_NAME = "pendingjob"
