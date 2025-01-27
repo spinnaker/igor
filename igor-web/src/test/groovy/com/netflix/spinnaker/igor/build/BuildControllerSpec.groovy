@@ -73,7 +73,7 @@ class BuildControllerSpec extends Specification {
   def JENKINS_SERVICE = 'JENKINS_SERVICE'
   def TRAVIS_SERVICE = 'TRAVIS_SERVICE'
   def HTTP_201 = 201
-  def BUILD_NUMBER = 123
+  def BUILD_NUMBER = 123456789012
   def BUILD_ID = 654321
   def QUEUED_JOB_NUMBER = 123456
   def JOB_NAME = "job/name/can/have/slashes"
