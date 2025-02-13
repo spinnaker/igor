@@ -32,7 +32,7 @@ import retrofit.converter.JacksonConverter
 
 import java.util.concurrent.TimeUnit
 
-import javax.validation.Valid
+import jakarta.validation.Valid
 
 import retrofit.Endpoints
 import retrofit.RestAdapter
