@@ -49,7 +49,7 @@ import org.springframework.web.servlet.HandlerMapping
 import retrofit.http.Query
 
 import javax.annotation.Nullable
-import javax.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletRequest
 
 import static net.logstash.logback.argument.StructuredArguments.kv
 import static org.springframework.http.HttpStatus.NOT_FOUND

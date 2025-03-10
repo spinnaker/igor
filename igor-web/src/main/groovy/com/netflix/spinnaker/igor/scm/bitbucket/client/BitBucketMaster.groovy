@@ -27,7 +27,7 @@ import retrofit.Endpoints
 import retrofit.RequestInterceptor
 import retrofit.RestAdapter
 import retrofit.converter.JacksonConverter
-import javax.validation.Valid
+import jakarta.validation.Valid
 
 /**
  * Wrapper class for a collection of BitBucket clients
