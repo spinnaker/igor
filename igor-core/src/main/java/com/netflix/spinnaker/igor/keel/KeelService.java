@@ -16,8 +16,9 @@
 package com.netflix.spinnaker.igor.keel;
 
 import java.util.Map;
-import retrofit.http.Body;
-import retrofit.http.POST;
+import retrofit2.Call;
+import retrofit2.http.Body;
+import retrofit2.http.POST;
 
 public interface KeelService {
   /**
@@ -25,5 +26,5 @@ public interface KeelService {
    * List<Artifact>, details: Map], eventName: String ]
    */
   @POST("/artifacts/events")
-  Void sendArtifactEvent(@Body Map event);
+  Call<Void> sendArtifactEvent(@Body Map event);
 }
