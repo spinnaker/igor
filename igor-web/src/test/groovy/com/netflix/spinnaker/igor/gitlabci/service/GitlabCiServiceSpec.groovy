@@ -22,6 +22,7 @@ import com.netflix.spinnaker.igor.gitlabci.client.GitlabApiCannedResponses
 import com.netflix.spinnaker.igor.gitlabci.client.GitlabCiClient
 import com.netflix.spinnaker.igor.gitlabci.client.model.Pipeline
 import com.netflix.spinnaker.igor.gitlabci.client.model.Project
+import retrofit2.mock.Calls
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -51,9 +52,9 @@ class GitlabCiServiceSpec extends Specification {
 
     def "verify project pagination"() {
         given:
-        client.getProjects(_, _, 1, _) >> [new Project(pathWithNamespace: "project1", buildsAccessLevel: "enabled")]
-        client.getProjects(_, _, 2, _) >> [new Project(pathWithNamespace: "project2", buildsAccessLevel: "enabled")]
-        client.getProjects(_, _, 3, _) >> []
+        client.getProjects(_, _, 1, _) >> Calls.response([new Project(pathWithNamespace: "project1", buildsAccessLevel: "enabled")])
+        client.getProjects(_, _, 2, _) >> Calls.response([new Project(pathWithNamespace: "project2", buildsAccessLevel: "enabled")])
+        client.getProjects(_, _, 3, _) >> Calls.response([])
 
         when:
         def projects = service.getProjects()
@@ -71,9 +72,9 @@ class GitlabCiServiceSpec extends Specification {
         Project project = new Project(id: PROJECT_ID)
         Pipeline ps1 = new Pipeline(id: PIPELINE_1_ID)
         Pipeline ps2 = new Pipeline(id: PIPELINE_2_ID)
-        client.getPipelineSummaries(String.valueOf(PROJECT_ID), PAGE_SIZE) >> [ps1, ps2]
-        client.getPipeline(String.valueOf(PROJECT_ID), PIPELINE_1_ID) >> new Pipeline(id: PIPELINE_1_ID)
-        client.getPipeline(String.valueOf(PROJECT_ID), PIPELINE_1_ID) >> new Pipeline(id: PIPELINE_1_ID)
+        client.getPipelineSummaries(String.valueOf(PROJECT_ID), PAGE_SIZE) >> Calls.response([ps1, ps2])
+        client.getPipeline(String.valueOf(PROJECT_ID), PIPELINE_1_ID) >> Calls.response(new Pipeline(id: PIPELINE_1_ID))
+        client.getPipeline(String.valueOf(PROJECT_ID), PIPELINE_1_ID) >> Calls.response(new Pipeline(id: PIPELINE_1_ID))
 
         when:
         List<Pipeline> pipelines = service.getPipelines(project, PAGE_SIZE)
@@ -91,6 +92,6 @@ class GitlabCiServiceSpec extends Specification {
         then:
         pipelines.isEmpty()
 
-        1 * client.getPipelineSummaries(_, _) >> []
+        1 * client.getPipelineSummaries(_, _) >> Calls.response([])
     }
 }
