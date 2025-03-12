@@ -24,6 +24,7 @@ import com.netflix.spinnaker.igor.wercker.model.Run
 import com.netflix.spinnaker.kork.discovery.DiscoveryStatusListener
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import org.springframework.scheduling.TaskScheduler
+import retrofit2.mock.Calls
 import spock.lang.Specification
 
 class WerckerBuildMonitorSpec extends Specification {
@@ -132,7 +133,7 @@ class WerckerBuildMonitorSpec extends Specification {
         buildServices.addServices([MASTER: werckerService])
         monitor = monitor(buildServices)
         cache.getBuildNumber(*_) >> 1
-        client.getRunsSince(_, _, _, _, _) >> []
+        client.getRunsSince(_, _, _, _, _) >> Calls.response([])
         mockService.getBuildServiceProvider() >> BuildServiceProvider.WERCKER
 
         when:
@@ -169,7 +170,7 @@ class WerckerBuildMonitorSpec extends Specification {
             runOf('run6', now-10, now-2, apps[0], apps[0].pipelines[0]),
             runOf('run6', now-10, now-3, apps[0], apps[0].pipelines[0]),
         ]
-        client.getRunsSince(_,_,_,_,_) >> runs1
+        client.getRunsSince(_,_,_,_,_) >> Calls.response(runs1)
         cache.getLastPollCycleTimestamp(_, _) >> (now - 1000)
         cache.getBuildNumber(*_) >> 1
         monitor.pollSingle(new PollContext(MASTER))
