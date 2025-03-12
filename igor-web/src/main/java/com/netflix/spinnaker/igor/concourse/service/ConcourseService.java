@@ -24,6 +24,7 @@ import static java.util.stream.Collectors.reducing;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
+import com.netflix.spinnaker.config.OkHttp3ClientConfiguration;
 import com.netflix.spinnaker.fiat.model.resources.Permissions;
 import com.netflix.spinnaker.igor.build.model.GenericArtifact;
 import com.netflix.spinnaker.igor.build.model.GenericBuild;
@@ -41,16 +42,10 @@ import com.netflix.spinnaker.igor.model.BuildServiceProvider;
 import com.netflix.spinnaker.igor.service.ArtifactDecorator;
 import com.netflix.spinnaker.igor.service.BuildOperations;
 import com.netflix.spinnaker.igor.service.BuildProperties;
+import com.netflix.spinnaker.kork.retrofit.Retrofit2SyncCall;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -71,9 +66,12 @@ public class ConcourseService implements BuildOperations, BuildProperties {
   @Nullable private final Pattern resourceFilter;
 
   public ConcourseService(
-      ConcourseProperties.Host host, Optional<ArtifactDecorator> artifactDecorator) {
+      ConcourseProperties.Host host,
+      Optional<ArtifactDecorator> artifactDecorator,
+      OkHttp3ClientConfiguration okHttpClientConfig) {
     this(
-        new ConcourseClient(host.getUrl(), host.getUsername(), host.getPassword()),
+        new ConcourseClient(
+            host.getUrl(), host.getUsername(), host.getPassword(), okHttpClientConfig),
         host,
         artifactDecorator);
   }
@@ -113,14 +111,14 @@ public class ConcourseService implements BuildOperations, BuildProperties {
 
   public Collection<Team> teams() {
     refreshTokenIfNecessary();
-    return client.getTeamService().teams().stream()
+    return Retrofit2SyncCall.execute(client.getTeamService().teams()).stream()
         .filter(team -> host.getTeams() == null || host.getTeams().contains(team.getName()))
         .collect(toList());
   }
 
   public Collection<Pipeline> pipelines() {
     refreshTokenIfNecessary();
-    return client.getPipelineService().pipelines().stream()
+    return Retrofit2SyncCall.execute(client.getPipelineService().pipelines()).stream()
         .filter(
             pipeline -> host.getTeams() == null || host.getTeams().contains(pipeline.getTeamName()))
         .collect(toList());
@@ -128,7 +126,7 @@ public class ConcourseService implements BuildOperations, BuildProperties {
 
   public Collection<Job> getJobs() {
     refreshTokenIfNecessary();
-    return client.getJobService().jobs().stream()
+    return Retrofit2SyncCall.execute(client.getJobService().jobs()).stream()
         .filter(job -> host.getTeams() == null || host.getTeams().contains(job.getTeamName()))
         .collect(toList());
   }
@@ -248,7 +246,7 @@ public class ConcourseService implements BuildOperations, BuildProperties {
 
   private Collection<Resource> getResources(String buildId) {
     Map<String, Resource> resources =
-        client.getBuildService().plan(buildId).getResources().stream()
+        Retrofit2SyncCall.execute(client.getBuildService().plan(buildId)).getResources().stream()
             .filter(
                 r ->
                     resourceFilter == null
@@ -346,26 +344,26 @@ public class ConcourseService implements BuildOperations, BuildProperties {
       return emptyList();
     }
 
-    return client
-        .getBuildService()
-        .builds(
-            job.getTeamName(),
-            job.getPipelineName(),
-            job.getName(),
-            host.getBuildLookbackLimit(),
-            since)
-        .stream()
-        .sorted()
-        .collect(
-            Collectors.toMap(
-                (b) -> b.getNumber(), Function.identity(), (b1, b2) -> b1, LinkedHashMap::new))
-        .values()
-        .stream()
-        .collect(Collectors.toList());
+    return new ArrayList<>(
+        Retrofit2SyncCall.execute(
+                client
+                    .getBuildService()
+                    .builds(
+                        job.getTeamName(),
+                        job.getPipelineName(),
+                        job.getName(),
+                        host.getBuildLookbackLimit(),
+                        since))
+            .stream()
+            .sorted()
+            .collect(
+                Collectors.toMap(
+                    Build::getNumber, Function.identity(), (b1, b2) -> b1, LinkedHashMap::new))
+            .values());
   }
 
   public List<String> getResourceNames(String team, String pipeline) {
-    return client.getResourceService().resources(team, pipeline).stream()
+    return Retrofit2SyncCall.execute(client.getResourceService().resources(team, pipeline)).stream()
         .map(Resource::getName)
         .collect(toList());
   }

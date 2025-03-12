@@ -1,11 +1,14 @@
 package com.netflix.spinnaker.igor.concourse.client
 
+import com.netflix.spinnaker.igor.helpers.TestUtils
+import okhttp3.ResponseBody
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
-import retrofit.client.Response;
 import spock.lang.Shared
 import spock.lang.Specification
+
+import java.time.ZonedDateTime
 
 class ConcourseClientSpec extends Specification {
 
@@ -25,7 +28,7 @@ class ConcourseClientSpec extends Specification {
 
     def "it uses v1 auth for concourse versions < 6.1.0"() {
         given:
-        def expiry = java.time.ZonedDateTime.now().plusSeconds(60).toString()
+        def expiry = ZonedDateTime.now().plusSeconds(60).toString()
         setResponse '''{
                 "cluster_name": "mycluster",
                 "external_url": "https://mycluster.example.com",
@@ -41,7 +44,7 @@ class ConcourseClientSpec extends Specification {
             }'''
 
         when:
-        Response resp = client.userInfo()
+        ResponseBody resp = client.userInfo()
         RecordedRequest req1 = server.takeRequest()
         RecordedRequest req2 = server.takeRequest()
         RecordedRequest req3 = server.takeRequest()
@@ -54,8 +57,6 @@ class ConcourseClientSpec extends Specification {
 
         req3.path == '/sky/userinfo'
         req3.getHeader('Authorization') == "bearer my_token"
-
-        resp.status == 200
     }
 
     def "it uses v2 auth for concourse versions < 6.5.0"() {
@@ -74,7 +75,7 @@ class ConcourseClientSpec extends Specification {
             }'''
 
         when:
-        Response resp = client.userInfo()
+        ResponseBody resp = client.userInfo()
         RecordedRequest req1 = server.takeRequest()
         RecordedRequest req2 = server.takeRequest()
         RecordedRequest req3 = server.takeRequest()
@@ -87,8 +88,6 @@ class ConcourseClientSpec extends Specification {
 
         req3.path == '/api/v1/user'
         req3.getHeader('Authorization') == "bearer my_id_token"
-
-        resp.status == 200
     }
 
     def "it uses v3 auth for concourse versions >= 6.5.0"() {
@@ -110,7 +109,7 @@ class ConcourseClientSpec extends Specification {
             }'''
 
         when:
-        Response resp = client.userInfo()
+        ResponseBody resp = client.userInfo()
         RecordedRequest req1 = server.takeRequest()
         RecordedRequest req2 = server.takeRequest()
         RecordedRequest req3 = server.takeRequest()
@@ -123,8 +122,6 @@ class ConcourseClientSpec extends Specification {
 
         req3.path == '/api/v1/user'
         req3.getHeader('Authorization') == "bearer my_access_token"
-
-        resp.status == 200
     }
 
     private void setResponse(String... body) {
@@ -136,6 +133,6 @@ class ConcourseClientSpec extends Specification {
             )
         }
         server.start()
-        client = new ConcourseClient(server.url('/').toString(), "test-username", "test-password")
+        client = new ConcourseClient(server.url('/').toString(), "test-username", "test-password", TestUtils.makeOkHttpClientConfig())
     }
 }
