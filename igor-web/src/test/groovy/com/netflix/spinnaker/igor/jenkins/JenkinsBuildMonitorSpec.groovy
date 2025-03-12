@@ -30,9 +30,9 @@ import com.netflix.spinnaker.igor.service.BuildServices
 import com.netflix.spinnaker.kork.discovery.DiscoveryStatusListener
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerServerException
+import okhttp3.Request
 import org.slf4j.Logger
 import org.springframework.scheduling.TaskScheduler
-import retrofit.RetrofitError
 import spock.lang.Specification
 /**
  * Tests for JenkinsBuildMonitor
@@ -257,7 +257,7 @@ class   JenkinsBuildMonitorSpec extends Specification {
             new Build(number: 1, timestamp: nowMinus30min, building: false, result: 'SUCCESS', duration: durationOf1min)
         ]
 
-        def spinnakerServerException = new SpinnakerServerException(RetrofitError.unexpectedError("http://retro.fit/mock/error", new Exception('mock root cause')));
+        def spinnakerServerException = new SpinnakerServerException(new Exception("mock root cause"), new Request.Builder().url("http://retro.fit/mock/error").build(), )
         jenkinsService.getBuilds('job2') >> { throw spinnakerServerException }
 
         jenkinsService.getBuilds('job3') >> [
