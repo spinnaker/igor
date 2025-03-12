@@ -137,7 +137,6 @@ public class TravisConfig {
             .readTimeout(timeout, TimeUnit.MILLISECONDS)
             .addInterceptor(new TravisHeader())
             .build();
-    new OkHttpClient.Builder().readTimeout(timeout, TimeUnit.MILLISECONDS).build();
 
     return new Retrofit.Builder()
         .baseUrl(address)
