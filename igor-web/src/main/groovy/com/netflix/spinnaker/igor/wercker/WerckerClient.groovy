@@ -28,25 +28,25 @@ import retrofit2.http.Query
  */
 interface WerckerClient {
 
-    @GET('/api/v3/applications/{owner}')
+    @GET('api/v3/applications/{owner}')
     Call<List<Application>> getApplicationsByOwner(
       @Header('Authorization') String authHeader,
       @Path('owner') owner)
 
-    @GET('/api/spinnaker/v1/applications')
+    @GET('api/spinnaker/v1/applications')
     Call<List<Application>> getApplications(@Header('Authorization') String authHeader, @Query('limit') int limit)
 
-    @GET('/api/v3/runs')
+    @GET('api/v3/runs')
     Call<List<Run>> getRunsForApplication(
             @Header('Authorization') String authHeader,
     @Query('applicationId') String applicationId)
 
-    @GET('/api/v3/runs')
+    @GET('api/v3/runs')
     Call<List<Run>> getRunsForPipeline(
             @Header('Authorization') String authHeader,
     @Query('pipelineId') String pipelineId)
 
-    @GET('/api/spinnaker/v1/runs')
+    @GET('api/spinnaker/v1/runs')
     Call<List<Run>> getRunsSince(
             @Header('Authorization') String authHeader,
             @Query('branch') String branch,
@@ -54,33 +54,33 @@ interface WerckerClient {
             @Query('limit') int limit,
     @Query('since') long since)
 
-    @GET('/api/v3/workflows')
+    @GET('api/v3/workflows')
     Call<List<Workflow>> getWorkflowsForApplication(
             @Header('Authorization') String authHeader,
     @Query('applicationId') String applicationId)
 
-    @GET('/api/v3/applications/{username}/{appName}/pipelines')
+    @GET('api/v3/applications/{username}/{appName}/pipelines')
     Call<List<Pipeline>> getPipelinesForApplication(
             @Header('Authorization') String authHeader,
             @Path('username') username,
     @Path('appName') appName)
 
-    @GET('/api/v3/pipelines/{pipelineId}')
+    @GET('api/v3/pipelines/{pipelineId}')
     Call<Pipeline> getPipeline(
             @Header('Authorization') String authHeader,
     @Path('pipelineId') String pipelineId)
 
-    @POST('/api/v3/runs')
+    @POST('api/v3/runs')
     Call<Map<String, Object>> triggerBuild(
             @Header('Authorization') String authHeader,
             @Body RunPayload runPayload
     )
 
-    @GET('/api/v3/runs/{runId}')
+    @GET('api/v3/runs/{runId}')
     Call<Run> getRunById(@Header('Authorization') String authHeader,
     @Path('runId') String runId)
 
-    @PUT('/api/v3/runs/{runId}/abort')
+    @PUT('api/v3/runs/{runId}/abort')
     Call<Response> abortRun(@Header('Authorization') String authHeader,
                             @Path('runId') String runId,
                             @Body Map body)

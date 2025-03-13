@@ -45,7 +45,14 @@ import com.netflix.spinnaker.igor.service.BuildProperties;
 import com.netflix.spinnaker.kork.retrofit.Retrofit2SyncCall;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -344,22 +351,23 @@ public class ConcourseService implements BuildOperations, BuildProperties {
       return emptyList();
     }
 
-    return new ArrayList<>(
-        Retrofit2SyncCall.execute(
-                client
-                    .getBuildService()
-                    .builds(
-                        job.getTeamName(),
-                        job.getPipelineName(),
-                        job.getName(),
-                        host.getBuildLookbackLimit(),
-                        since))
-            .stream()
-            .sorted()
-            .collect(
-                Collectors.toMap(
-                    Build::getNumber, Function.identity(), (b1, b2) -> b1, LinkedHashMap::new))
-            .values());
+    return Retrofit2SyncCall.execute(
+            client
+                .getBuildService()
+                .builds(
+                    job.getTeamName(),
+                    job.getPipelineName(),
+                    job.getName(),
+                    host.getBuildLookbackLimit(),
+                    since))
+        .stream()
+        .sorted()
+        .collect(
+            Collectors.toMap(
+                Build::getNumber, Function.identity(), (b1, b2) -> b1, LinkedHashMap::new))
+        .values()
+        .stream()
+        .collect(Collectors.toList());
   }
 
   public List<String> getResourceNames(String team, String pipeline) {

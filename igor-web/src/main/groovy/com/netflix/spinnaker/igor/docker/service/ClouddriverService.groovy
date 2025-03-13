@@ -27,12 +27,12 @@ import retrofit2.http.Query
  * Specifically, the interface to docker registry images presented by clouddriver.
  */
 interface ClouddriverService {
-    @GET('/dockerRegistry/images/find')
+    @GET('dockerRegistry/images/find')
     Call<List<TaggedImage>> getImagesByAccount(@Query('account') String account, @Query('includeDetails') Boolean includeDetails)
 
-    @GET('/credentials')
+    @GET('credentials')
     Call<List<ClouddriverAccount>> getAllAccounts()
 
-    @GET('/credentials/{account}')
+    @GET('credentials/{account}')
     Call<Map> getAccountDetails(@Path('account') String account)
 }

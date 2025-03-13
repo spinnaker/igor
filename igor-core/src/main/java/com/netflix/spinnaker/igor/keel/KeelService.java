@@ -25,6 +25,6 @@ public interface KeelService {
    * Events should be sent with this format (inherited from echo events): [ payload: [artifacts:
    * List<Artifact>, details: Map], eventName: String ]
    */
-  @POST("/artifacts/events")
+  @POST("artifacts/events")
   Call<Void> sendArtifactEvent(@Body Map event);
 }

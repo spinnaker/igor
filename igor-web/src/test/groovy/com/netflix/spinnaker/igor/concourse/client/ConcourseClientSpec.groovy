@@ -5,6 +5,7 @@ import okhttp3.ResponseBody
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
+import retrofit2.Response
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -44,7 +45,7 @@ class ConcourseClientSpec extends Specification {
             }'''
 
         when:
-        ResponseBody resp = client.userInfo()
+        Response resp = client.userInfo()
         RecordedRequest req1 = server.takeRequest()
         RecordedRequest req2 = server.takeRequest()
         RecordedRequest req3 = server.takeRequest()
@@ -57,6 +58,8 @@ class ConcourseClientSpec extends Specification {
 
         req3.path == '/sky/userinfo'
         req3.getHeader('Authorization') == "bearer my_token"
+
+        resp.code() == 200
     }
 
     def "it uses v2 auth for concourse versions < 6.5.0"() {
@@ -75,7 +78,7 @@ class ConcourseClientSpec extends Specification {
             }'''
 
         when:
-        ResponseBody resp = client.userInfo()
+        Response resp = client.userInfo()
         RecordedRequest req1 = server.takeRequest()
         RecordedRequest req2 = server.takeRequest()
         RecordedRequest req3 = server.takeRequest()
@@ -88,6 +91,8 @@ class ConcourseClientSpec extends Specification {
 
         req3.path == '/api/v1/user'
         req3.getHeader('Authorization') == "bearer my_id_token"
+
+        resp.code() == 200
     }
 
     def "it uses v3 auth for concourse versions >= 6.5.0"() {
@@ -109,7 +114,7 @@ class ConcourseClientSpec extends Specification {
             }'''
 
         when:
-        ResponseBody resp = client.userInfo()
+        Response resp = client.userInfo()
         RecordedRequest req1 = server.takeRequest()
         RecordedRequest req2 = server.takeRequest()
         RecordedRequest req3 = server.takeRequest()
@@ -122,6 +127,8 @@ class ConcourseClientSpec extends Specification {
 
         req3.path == '/api/v1/user'
         req3.getHeader('Authorization') == "bearer my_access_token"
+
+        resp.code() == 200
     }
 
     private void setResponse(String... body) {

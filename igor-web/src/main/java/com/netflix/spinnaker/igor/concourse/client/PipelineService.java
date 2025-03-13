@@ -22,6 +22,6 @@ import retrofit2.Call;
 import retrofit2.http.GET;
 
 public interface PipelineService {
-  @GET("/api/v1/pipelines")
+  @GET("api/v1/pipelines")
   Call<Collection<Pipeline>> pipelines();
 }

@@ -22,6 +22,6 @@ import retrofit2.http.GET;
 
 public interface Front50Service {
 
-  @GET("/pluginInfo")
+  @GET("pluginInfo")
   Call<List<PluginInfo>> listPluginInfo();
 }

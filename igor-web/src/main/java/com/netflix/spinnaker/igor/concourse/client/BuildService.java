@@ -25,7 +25,7 @@ import retrofit2.http.Path;
 import retrofit2.http.Query;
 
 public interface BuildService {
-  @GET("/api/v1/teams/{team}/pipelines/{pipeline}/jobs/{job}/builds")
+  @GET("api/v1/teams/{team}/pipelines/{pipeline}/jobs/{job}/builds")
   Call<List<Build>> builds(
       @Path("team") String team,
       @Path("pipeline") String pipeline,
@@ -33,6 +33,6 @@ public interface BuildService {
       @Query("limit") Integer limit,
       @Query("since") Long since);
 
-  @GET("/api/v1/builds/{id}/plan")
+  @GET("api/v1/builds/{id}/plan")
   Call<Plan> plan(@Path("id") String id);
 }

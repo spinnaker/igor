@@ -563,7 +563,7 @@ public class TravisService implements BuildOperations, BuildProperties {
 
   public void syncRepos() {
     try {
-      travisClient.usersSync(getAccessToken(), new EmptyObject());
+      Retrofit2SyncCall.execute(travisClient.usersSync(getAccessToken(), new EmptyObject()));
     } catch (SpinnakerServerException e) {
       log.error(
           "synchronizing travis repositories for {} failed with error: {}",

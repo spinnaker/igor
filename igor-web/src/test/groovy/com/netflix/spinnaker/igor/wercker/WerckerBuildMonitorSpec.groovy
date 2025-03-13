@@ -124,7 +124,7 @@ class WerckerBuildMonitorSpec extends Specification {
 
         then:
         1 * cache.setEventPosted('MASTER', 'pipeline', 'init')
-        1 * echoService.postEvent(_)
+        1 * echoService.postEvent(_) >> Calls.response("")
     }
 
     void 'get runs of multiple pipelines'() {
@@ -181,7 +181,7 @@ class WerckerBuildMonitorSpec extends Specification {
         1 * cache.setEventPosted('MASTER', 'myOrg/app1/p11', 'run3')
         1 * cache.setEventPosted('MASTER', 'myOrg/app2/p20', 'run4')
         0 * cache.setEventPosted('MASTER', 'myOrg/app3/p30', 'run5')
-        4 * echoService.postEvent(_)
+        4 * echoService.postEvent(_) >>> [Calls.response(""),Calls.response(""),Calls.response(""),Calls.response("")]
     }
 
     WerckerBuildMonitor monitor(BuildServices buildServices) {

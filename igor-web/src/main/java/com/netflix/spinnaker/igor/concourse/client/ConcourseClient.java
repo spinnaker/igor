@@ -33,6 +33,7 @@ import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.ResponseBody;
+import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
@@ -195,10 +196,10 @@ public class ConcourseClient {
     return token;
   }
 
-  public ResponseBody userInfo() {
+  public Response<ResponseBody> userInfo() {
     return skyServiceV1 != null
-        ? Retrofit2SyncCall.execute(skyServiceV1.userInfo())
-        : Retrofit2SyncCall.execute(skyServiceV2.userInfo());
+        ? Retrofit2SyncCall.executeCall(skyServiceV1.userInfo())
+        : Retrofit2SyncCall.executeCall(skyServiceV2.userInfo());
   }
 
   private <S> S createService(Class<S> serviceClass) {

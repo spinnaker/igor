@@ -22,6 +22,6 @@ import retrofit2.Call;
 import retrofit2.http.GET;
 
 public interface JobService {
-  @GET("/api/v1/jobs")
+  @GET("api/v1/jobs")
   Call<Collection<Job>> jobs();
 }

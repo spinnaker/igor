@@ -23,7 +23,7 @@ import retrofit2.http.GET;
 import retrofit2.http.Path;
 
 public interface ResourceService {
-  @GET("/api/v1/teams/{team}/pipelines/{pipeline}/resources")
+  @GET("api/v1/teams/{team}/pipelines/{pipeline}/resources")
   Call<Collection<Resource>> resources(
       @Path("team") String team, @Path("pipeline") String pipeline);
 }

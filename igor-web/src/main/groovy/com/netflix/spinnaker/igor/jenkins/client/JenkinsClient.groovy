@@ -49,65 +49,65 @@ interface JenkinsClient {
      * Some queries look for jobs within folders with a depth of 10.
      */
 
-    @GET('/api/xml?tree=jobs[name,lastBuild[actions[failCount,skipCount,totalCount,urlName],duration,number,timestamp,result,building,url],jobs[name,lastBuild[actions[failCount,skipCount,totalCount,urlName],duration,number,timestamp,result,building,url],jobs[name,lastBuild[actions[failCount,skipCount,totalCount,urlName],duration,number,timestamp,result,building,url],jobs[name,lastBuild[actions[failCount,skipCount,totalCount,urlName],duration,number,timestamp,result,building,url],jobs[name,lastBuild[actions[failCount,skipCount,totalCount,urlName],duration,number,timestamp,result,building,url],jobs[name,lastBuild[actions[failCount,skipCount,totalCount,urlName],duration,number,timestamp,result,building,url],jobs[name,lastBuild[actions[failCount,skipCount,totalCount,urlName],duration,number,timestamp,result,building,url],jobs[name,lastBuild[actions[failCount,skipCount,totalCount,urlName],duration,number,timestamp,result,building,url],jobs[name,lastBuild[actions[failCount,skipCount,totalCount,urlName],duration,number,timestamp,result,building,url],jobs[name,lastBuild[actions[failCount,skipCount,totalCount,urlName],duration,number,timestamp,result,building,url]]]]]]]]]]]&exclude=/*/*/*/action[not(totalCount)]')
+    @GET('api/xml?tree=jobs[name,lastBuild[actions[failCount,skipCount,totalCount,urlName],duration,number,timestamp,result,building,url],jobs[name,lastBuild[actions[failCount,skipCount,totalCount,urlName],duration,number,timestamp,result,building,url],jobs[name,lastBuild[actions[failCount,skipCount,totalCount,urlName],duration,number,timestamp,result,building,url],jobs[name,lastBuild[actions[failCount,skipCount,totalCount,urlName],duration,number,timestamp,result,building,url],jobs[name,lastBuild[actions[failCount,skipCount,totalCount,urlName],duration,number,timestamp,result,building,url],jobs[name,lastBuild[actions[failCount,skipCount,totalCount,urlName],duration,number,timestamp,result,building,url],jobs[name,lastBuild[actions[failCount,skipCount,totalCount,urlName],duration,number,timestamp,result,building,url],jobs[name,lastBuild[actions[failCount,skipCount,totalCount,urlName],duration,number,timestamp,result,building,url],jobs[name,lastBuild[actions[failCount,skipCount,totalCount,urlName],duration,number,timestamp,result,building,url],jobs[name,lastBuild[actions[failCount,skipCount,totalCount,urlName],duration,number,timestamp,result,building,url]]]]]]]]]]]&exclude=/*/*/*/action[not(totalCount)]')
     Call<ProjectsList> getProjects()
 
-    @GET('/api/xml?tree=jobs[name,jobs[name,jobs[name,jobs[name,jobs[name,jobs[name,jobs[name,jobs[name,jobs[name,jobs[name]]]]]]]]]]')
+    @GET('api/xml?tree=jobs[name,jobs[name,jobs[name,jobs[name,jobs[name,jobs[name,jobs[name,jobs[name,jobs[name,jobs[name]]]]]]]]]]')
     Call<JobList> getJobs()
 
-    @GET('/job/{jobName}/api/xml?exclude=/*/build/action[not(totalCount)]&tree=builds[number,url,duration,timestamp,result,building,url,fullDisplayName,actions[failCount,skipCount,totalCount]]')
+    @GET('job/{jobName}/api/xml?exclude=/*/build/action[not(totalCount)]&tree=builds[number,url,duration,timestamp,result,building,url,fullDisplayName,actions[failCount,skipCount,totalCount]]')
     Call<BuildsList> getBuilds(@Path(value = 'jobName', encoded = true) String jobName)
 
-    @GET('/job/{jobName}/api/xml?tree=name,url,actions[processes[name]],downstreamProjects[name,url],upstreamProjects[name,url]')
+    @GET('job/{jobName}/api/xml?tree=name,url,actions[processes[name]],downstreamProjects[name,url],upstreamProjects[name,url]')
     Call<BuildDependencies> getDependencies(@Path(value = 'jobName', encoded = true) String jobName)
 
-    @GET('/job/{jobName}/{buildNumber}/api/xml?exclude=/*/action[not(totalCount)]&tree=actions[failCount,skipCount,totalCount,urlName],duration,number,timestamp,result,building,url,fullDisplayName,artifacts[displayPath,fileName,relativePath]')
+    @GET('job/{jobName}/{buildNumber}/api/xml?exclude=/*/action[not(totalCount)]&tree=actions[failCount,skipCount,totalCount,urlName],duration,number,timestamp,result,building,url,fullDisplayName,artifacts[displayPath,fileName,relativePath]')
     Call<Build> getBuild(@Path(value = 'jobName', encoded = true) String jobName, @Path('buildNumber') Long buildNumber)
 
     // The location of the SCM details in the build xml changed in version 4.0.0 of the jenkins-git plugin; see the
     // header comment in com.netflix.spinnaker.igor.jenkins.client.model.ScmDetails for more information.
     // The exclude and tree parameters to this call must continue to support both formats to remain compatible with
     // all versions of the plugin.
-    @GET('/job/{jobName}/{buildNumber}/api/xml?exclude=/*/action[not(build|lastBuiltRevision)]&tree=actions[remoteUrls,lastBuiltRevision[branch[name,SHA1]],build[revision[branch[name,SHA1]]]]')
+    @GET('job/{jobName}/{buildNumber}/api/xml?exclude=/*/action[not(build|lastBuiltRevision)]&tree=actions[remoteUrls,lastBuiltRevision[branch[name,SHA1]],build[revision[branch[name,SHA1]]]]')
     Call<ScmDetails> getGitDetails(@Path(value = 'jobName', encoded = true) String jobName, @Path('buildNumber') Long buildNumber)
 
-    @GET('/job/{jobName}/lastCompletedBuild/api/xml')
+    @GET('job/{jobName}/lastCompletedBuild/api/xml')
     Call<Build> getLatestBuild(@Path(value = 'jobName', encoded = true) String jobName)
 
-    @GET('/job/{jobName}/lastCompletedBuild/consoleText')
+    @GET('job/{jobName}/lastCompletedBuild/consoleText')
     Call<ResponseBody> getLatestBuildOutput(@Path(value = 'jobName', encoded = true) String jobName)
 
-    @GET('/job/{jobName}/{buildNumber}/consoleText')
+    @GET('job/{jobName}/{buildNumber}/consoleText')
     Call<ResponseBody> getBuildOutput(@Path(value = 'jobName', encoded = true) String jobName, @Path('buildNumber') String buildNumber)
 
-    @GET('/queue/item/{itemNumber}/api/xml')
+    @GET('queue/item/{itemNumber}/api/xml')
     Call<QueuedJob> getQueuedItem(@Path('itemNumber') Long item)
 
-    @POST('/job/{jobName}/build')
+    @POST('job/{jobName}/build')
     Call<Response<ResponseBody>> build(@Path(value = 'jobName', encoded = true) String jobName, @Body String emptyRequest, @Header("Jenkins-Crumb") String crumb)
 
-    @POST('/job/{jobName}/buildWithParameters')
+    @POST('job/{jobName}/buildWithParameters')
     Call<Response<ResponseBody>> buildWithParameters(@Path(value = 'jobName', encoded = true) String jobName, @QueryMap Map<String, String> queryParams, @Body String EmptyRequest, @Header("Jenkins-Crumb") String crumb)
 
     @FormUrlEncoded
-    @POST('/job/{jobName}/{buildNumber}/submitDescription')
+    @POST('job/{jobName}/{buildNumber}/submitDescription')
     Call<ResponseBody> submitDescription(@Path(value = 'jobName', encoded = true) String jobName, @Path('buildNumber') Long buildNumber, @Field("description") String description, @Header("Jenkins-Crumb") String crumb)
 
-    @POST('/job/{jobName}/{buildNumber}/stop')
+    @POST('job/{jobName}/{buildNumber}/stop')
     Call<ResponseBody> stopRunningBuild(@Path(value = 'jobName', encoded = true) String jobName, @Path('buildNumber') Long buildNumber,  @Body String EmptyRequest, @Header("Jenkins-Crumb") String crumb)
 
-    @POST('/queue/cancelItem')
+    @POST('queue/cancelItem')
     Call<ResponseBody> stopQueuedBuild(@Query('id') String queuedBuild, @Body String emptyRequest, @Header("Jenkins-Crumb") String crumb)
 
-    @GET('/job/{jobName}/api/xml?exclude=/*/action&exclude=/*/build&exclude=/*/property[not(parameterDefinition)]')
+    @GET('job/{jobName}/api/xml?exclude=/*/action&exclude=/*/build&exclude=/*/property[not(parameterDefinition)]')
     Call<JobConfig> getJobConfig(@Path(value = 'jobName', encoded = true) String jobName)
 
     @Streaming
-    @GET('/job/{jobName}/{buildNumber}/artifact/{fileName}')
+    @GET('job/{jobName}/{buildNumber}/artifact/{fileName}')
     Call<ResponseBody> getPropertyFile(
         @Path(value = 'jobName', encoded = true) String jobName,
         @Path('buildNumber') Long buildNumber, @Path(value = 'fileName', encoded = true) String fileName)
 
-    @GET('/crumbIssuer/api/xml')
+    @GET('crumbIssuer/api/xml')
     Call<Crumb> getCrumb()
 }

@@ -264,8 +264,9 @@ public class JenkinsService implements BuildOperations, BuildProperties {
     if (updatedBuild.getDescription() != null) {
       circuitBreaker.executeRunnable(
           () ->
-              jenkinsClient.submitDescription(
-                  encode(jobName), buildNumber, updatedBuild.getDescription(), getCrumb()));
+              Retrofit2SyncCall.execute(
+                  jenkinsClient.submitDescription(
+                      encode(jobName), buildNumber, updatedBuild.getDescription(), getCrumb())));
     }
   }
 

@@ -47,43 +47,43 @@ public interface TravisClient {
    *
    * @return The root object, describing the API
    */
-  @GET("/v3/")
+  @GET("v3/")
   @Headers("Travis-API-Version: 3")
   public Call<Root> getRoot();
 
-  @POST("/auth/github")
+  @POST("auth/github")
   public abstract Call<AccessToken> accessToken(@Body GithubAuth gitHubAuth);
 
-  @GET("/builds")
+  @GET("builds")
   public abstract Call<Builds> builds(
       @Header("Authorization") String accessToken,
       @Query("slug") String repoSlug,
       @Query("number") long buildNumber);
 
-  @POST("/repo/{repoSlug}/requests")
+  @POST("repo/{repoSlug}/requests")
   @Headers("Travis-API-Version: 3")
   public abstract Call<TriggerResponse> triggerBuild(
       @Header("Authorization") String accessToken,
       @Path("repoSlug") String repoSlug,
       @Body RepoRequest repoRequest);
 
-  @POST("/users/sync")
+  @POST("users/sync")
   public abstract Call<ResponseBody> usersSync(
       @Header("Authorization") String accessToken, @Body EmptyObject empty);
 
   @Headers({"Travis-API-Version: 3", "Accept: text/plain"})
-  @GET("/job/{jobId}/log")
+  @GET("job/{jobId}/log")
   public abstract Call<V3Log> jobLog(
       @Header("Authorization") String accessToken, @Path("jobId") int jobId);
 
-  @GET("/build/{build_id}")
+  @GET("build/{build_id}")
   @Headers("Travis-API-Version: 3")
   public abstract Call<V3Build> v3build(
       @Header("Authorization") String accessToken,
       @Path("build_id") long buildId,
       @Query("include") String include);
 
-  @GET("/repo/{repository_id}/builds")
+  @GET("repo/{repository_id}/builds")
   @Headers("Travis-API-Version: 3")
   public abstract Call<V3Builds> builds(
       @Header("Authorization") String accessToken,
@@ -91,7 +91,7 @@ public interface TravisClient {
       @Query("limit") int limit,
       @Query("include") String include);
 
-  @GET("/repo/{repository_slug}/builds")
+  @GET("repo/{repository_slug}/builds")
   @Headers("Travis-API-Version: 3")
   public abstract Call<V3Builds> v3builds(
       @Header("Authorization") String accessToken,
@@ -99,7 +99,7 @@ public interface TravisClient {
       @Query("limit") int limit,
       @Query("include") String include);
 
-  @GET("/repo/{repository_slug}/builds")
+  @GET("repo/{repository_slug}/builds")
   @Headers("Travis-API-Version: 3")
   public abstract Call<V3Builds> v3builds(
       @Header("Authorization") String accessToken,
@@ -108,7 +108,7 @@ public interface TravisClient {
       @Query("limit") int limit,
       @Query("include") String include);
 
-  @GET("/repo/{repository_slug}/builds")
+  @GET("repo/{repository_slug}/builds")
   @Headers("Travis-API-Version: 3")
   public abstract Call<V3Builds> v3builds(
       @Header("Authorization") String accessToken,
@@ -118,7 +118,7 @@ public interface TravisClient {
       @Query("limit") int limit,
       @Query("include") String include);
 
-  @GET("/repo/{repository_slug}/builds")
+  @GET("repo/{repository_slug}/builds")
   @Headers("Travis-API-Version: 3")
   public abstract Call<V3Builds> v3buildsByEventType(
       @Header("Authorization") String accessToken,
@@ -127,14 +127,14 @@ public interface TravisClient {
       @Query("limit") int limit,
       @Query("include") String include);
 
-  @GET("/repo/{repository_id}/request/{request_id}")
+  @GET("repo/{repository_id}/request/{request_id}")
   @Headers("Travis-API-Version: 3")
   public abstract Call<Request> request(
       @Header("Authorization") String accessToken,
       @Path("repository_id") long repositoryId,
       @Path("request_id") long requestId);
 
-  @GET("/jobs")
+  @GET("jobs")
   @Headers("Travis-API-Version: 3")
   public abstract Call<V3Jobs> jobs(
       @Header("Authorization") String accessToken,

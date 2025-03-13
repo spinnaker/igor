@@ -30,14 +30,14 @@ import retrofit2.http.QueryMap
  * https://developer.atlassian.com/static/rest/stash/3.9.1/stash-rest.html
  */
 interface StashClient {
-    @GET('/rest/api/1.0/projects/{projectKey}/repos/{repositorySlug}/compare/commits')
+    @GET('rest/api/1.0/projects/{projectKey}/repos/{repositorySlug}/compare/commits')
     Call<CompareCommitsResponse> getCompareCommits(
         @Path('projectKey') String projectKey,
         @Path('repositorySlug') String repositorySlug,
         @QueryMap Map<String,String> queryMap)
 
   // TODO: pagination support
-  @GET('/rest/api/1.0/projects/{projectKey}/repos/{repositorySlug}/browse/{dirPath}')
+  @GET('rest/api/1.0/projects/{projectKey}/repos/{repositorySlug}/browse/{dirPath}')
   Call<DirectoryListingResponse> listDirectory(
     @Path('projectKey') String projectKey,
     @Path('repositorySlug') String repositorySlug,
@@ -45,7 +45,7 @@ interface StashClient {
     @Query('at') String at
   )
 
-  @GET('/rest/api/1.0/projects/{projectKey}/repos/{repositorySlug}/browse/{filePath}')
+  @GET('rest/api/1.0/projects/{projectKey}/repos/{repositorySlug}/browse/{filePath}')
   Call<TextLinesResponse> getTextFileContents(
     @Path('projectKey') String projectKey,
     @Path('repositorySlug') String repositorySlug,

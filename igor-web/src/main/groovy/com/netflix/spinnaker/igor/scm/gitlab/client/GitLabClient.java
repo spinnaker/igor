@@ -27,7 +27,7 @@ import retrofit2.http.QueryMap;
 public interface GitLabClient {
 
   /** https://docs.gitlab.com/ce/api/repositories.html#compare-branches-tags-or-commits */
-  @GET("/api/v4/projects/{projectKey}%2F{repositorySlug}/repository/compare")
+  @GET("api/v4/projects/{projectKey}%2F{repositorySlug}/repository/compare")
   Call<CompareCommitsResponse> getCompareCommits(
       @Path("projectKey") String projectKey,
       @Path("repositorySlug") String repositorySlug,

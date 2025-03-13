@@ -27,7 +27,7 @@ import retrofit2.http.QueryMap
  * https://developer.atlassian.com/bitbucket/api/2/reference/resource/repositories/%7Busername%7D/%7Brepo_slug%7D/commits
  */
 interface BitBucketClient {
-  @GET('/2.0/repositories/{projectKey}/{repositorySlug}/commits')
+  @GET('2.0/repositories/{projectKey}/{repositorySlug}/commits')
   Call<CompareCommitsResponse> getCompareCommits(
     @Path('projectKey') String projectKey,
     @Path('repositorySlug') String repositorySlug,

@@ -23,6 +23,6 @@ import retrofit2.http.POST;
 
 /** Posts new build executions to echo */
 public interface EchoService {
-  @POST("/")
+  @POST(".")
   Call<String> postEvent(@Body Event event);
 }

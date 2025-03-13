@@ -21,6 +21,6 @@ import retrofit2.Call;
 import retrofit2.http.GET;
 
 public interface SkyService {
-  @GET("/sky/userinfo")
+  @GET("sky/userinfo")
   Call<ResponseBody> userInfo();
 }

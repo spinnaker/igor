@@ -123,7 +123,7 @@ class JenkinsConfig {
 
         Interceptor requestInterceptor = (jenkinsRetrofitRequestInterceptorProvider != null) ? jenkinsRetrofitRequestInterceptorProvider.provide(host): null
         OkHttpClient.Builder clientBuilder = okHttpClientConfig.createForRetrofit2().readTimeout(timeout, TimeUnit.MILLISECONDS)
-        if(requestInterceptor != null){
+        if (requestInterceptor != null) {
           clientBuilder.addInterceptor(requestInterceptor)
         }
         clientBuilder.addInterceptor(new Interceptor() {

@@ -22,6 +22,6 @@ import retrofit2.Call;
 import retrofit2.http.GET;
 
 public interface TeamService {
-  @GET("/api/v1/teams")
+  @GET("api/v1/teams")
   Call<Collection<Team>> teams();
 }

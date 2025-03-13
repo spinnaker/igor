@@ -24,7 +24,7 @@ import retrofit2.http.POST;
 
 public interface TokenServiceV3 {
   @FormUrlEncoded
-  @POST("/sky/issuer/token")
+  @POST("sky/issuer/token")
   Call<TokenV3> passwordToken(
       @Field("grant_type") String grantType,
       @Field("username") String username,

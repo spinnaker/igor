@@ -26,10 +26,10 @@ import retrofit2.http.PUT;
 
 public interface HelmAccountsService {
   // Fetches Helm accounts from Clouddriver
-  @GET("/artifacts/credentials")
+  @GET("artifacts/credentials")
   Call<List<ArtifactAccount>> getAllAccounts();
 
   @Headers("Content-Type: application/json")
-  @PUT("/artifacts/fetch")
+  @PUT("artifacts/fetch")
   Call<String> getIndex(@Body Map<String, String> body);
 }

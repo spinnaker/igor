@@ -21,6 +21,6 @@ import retrofit2.Call;
 import retrofit2.http.GET;
 
 public interface ClusterInfoService {
-  @GET("/api/v1/info")
+  @GET("api/v1/info")
   Call<ClusterInfo> clusterInfo();
 }

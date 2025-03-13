@@ -28,14 +28,14 @@ import retrofit2.http.Query
  * Interface for interacting with a GitHub REST API
  */
 interface GitHubClient {
-  @GET('/repos/{projectKey}/{repositorySlug}/compare/{fromCommit}...{toCommit}')
+  @GET('repos/{projectKey}/{repositorySlug}/compare/{fromCommit}...{toCommit}')
   Call<CompareCommitsResponse> getCompareCommits(
     @Path('projectKey') String projectKey,
     @Path('repositorySlug') String repositorySlug,
     @Path('fromCommit') String fromCommit,
     @Path('toCommit') String toCommit)
 
-  @GET('/repos/{projectKey}/{repositorySlug}/contents/{path}')
+  @GET('repos/{projectKey}/{repositorySlug}/contents/{path}')
   Call<GetRepositoryContentResponse> getFileContent(
     @Path('projectKey') String projectKey,
     @Path('repositorySlug') String repositorySlug,
@@ -43,7 +43,7 @@ interface GitHubClient {
     @Query('ref') String ref
   )
 
-  @GET('/repos/{projectKey}/{repositorySlug}/contents/{path}')
+  @GET('repos/{projectKey}/{repositorySlug}/contents/{path}')
   Call<List<GetRepositoryContentResponse>> listDirectory(
     @Path('projectKey') String projectKey,
     @Path('repositorySlug') String repositorySlug,
@@ -51,7 +51,7 @@ interface GitHubClient {
     @Query('ref') String ref
   )
 
-  @GET('/repos/{projectKey}/{repositorySlug}/git/commits/{sha}')
+  @GET('repos/{projectKey}/{repositorySlug}/git/commits/{sha}')
   Call<Commit> commitInfo(
     @Path('projectKey') String projectKey,
     @Path('repositorySlug') String repositorySlug,
