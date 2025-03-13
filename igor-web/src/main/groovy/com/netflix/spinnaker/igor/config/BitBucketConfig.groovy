@@ -18,6 +18,7 @@ package com.netflix.spinnaker.igor.config
 
 import com.netflix.spinnaker.igor.scm.bitbucket.client.BitBucketClient
 import com.netflix.spinnaker.igor.scm.bitbucket.client.BitBucketMaster
+import com.netflix.spinnaker.igor.util.RetrofitUtils
 import com.netflix.spinnaker.kork.retrofit.ErrorHandlingExecutorCallAdapterFactory;
 import com.netflix.spinnaker.config.OkHttp3ClientConfiguration;
 import groovy.transform.CompileStatic
@@ -54,7 +55,7 @@ class BitBucketConfig {
 
   BitBucketClient bitBucketClient(String address, String username, String password, OkHttp3ClientConfiguration okHttpClientConfig) {
     new Retrofit.Builder()
-      .baseUrl(address)
+      .baseUrl(RetrofitUtils.getBaseUrl(address))
       .client(okHttpClientConfig.createForRetrofit2().addInterceptor(new BasicAuthRequestInterceptor(username, password)).build())
       .addConverterFactory(JacksonConverterFactory.create())
       .addCallAdapterFactory(ErrorHandlingExecutorCallAdapterFactory.getInstance())

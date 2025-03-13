@@ -28,6 +28,7 @@ import com.netflix.spinnaker.igor.config.client.JenkinsRetrofitRequestIntercepto
 import com.netflix.spinnaker.igor.jenkins.client.JenkinsClient
 import com.netflix.spinnaker.igor.jenkins.service.JenkinsService
 import com.netflix.spinnaker.igor.service.BuildServices
+import com.netflix.spinnaker.igor.util.RetrofitUtils
 import com.netflix.spinnaker.kork.retrofit.ErrorHandlingExecutorCallAdapterFactory
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -177,7 +178,7 @@ class JenkinsConfig {
         }
 
         new Retrofit.Builder()
-            .baseUrl(host.address)
+            .baseUrl(RetrofitUtils.getBaseUrl(host.address))
             .client(clientBuilder.build())
             .addConverterFactory(JacksonConverterFactory.create(getObjectMapper()))
             .addCallAdapterFactory(ErrorHandlingExecutorCallAdapterFactory.getInstance())

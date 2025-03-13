@@ -20,6 +20,7 @@ package com.netflix.spinnaker.igor.helpers
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.netflix.spinnaker.config.OkHttp3ClientConfiguration
+import com.netflix.spinnaker.igor.util.RetrofitUtils
 import com.netflix.spinnaker.kork.retrofit.ErrorHandlingExecutorCallAdapterFactory
 import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException
 import com.netflix.spinnaker.okhttp.OkHttpClientConfigurationProperties
@@ -41,7 +42,7 @@ class TestUtils {
 
     Retrofit retrofit =
       new Retrofit.Builder()
-        .baseUrl(url)
+        .baseUrl(RetrofitUtils.getBaseUrl(url))
         .addConverterFactory(JacksonConverterFactory.create())
         .addCallAdapterFactory(ErrorHandlingExecutorCallAdapterFactory.getInstance())
         .build()

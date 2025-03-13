@@ -19,6 +19,7 @@ package com.netflix.spinnaker.igor.config
 import com.netflix.spinnaker.config.OkHttp3ClientConfiguration
 import com.netflix.spinnaker.igor.scm.stash.client.StashClient
 import com.netflix.spinnaker.igor.scm.stash.client.StashMaster
+import com.netflix.spinnaker.igor.util.RetrofitUtils
 import com.netflix.spinnaker.kork.retrofit.ErrorHandlingExecutorCallAdapterFactory
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -56,7 +57,7 @@ class StashConfig {
 
     StashClient stashClient(String address, String username, String password, OkHttp3ClientConfiguration okHttpClientConfig) {
         new Retrofit.Builder()
-            .baseUrl(address)
+            .baseUrl(RetrofitUtils.getBaseUrl(address))
             .client(okHttpClientConfig.createForRetrofit2().addInterceptor(new BasicAuthRequestInterceptor(username, password)).build())
             .addConverterFactory(JacksonConverterFactory.create())
             .addCallAdapterFactory(ErrorHandlingExecutorCallAdapterFactory.getInstance())

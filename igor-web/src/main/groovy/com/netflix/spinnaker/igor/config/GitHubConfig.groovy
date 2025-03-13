@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.config.OkHttp3ClientConfiguration
 import com.netflix.spinnaker.igor.scm.github.client.GitHubClient
 import com.netflix.spinnaker.igor.scm.github.client.GitHubMaster
+import com.netflix.spinnaker.igor.util.RetrofitUtils
 import com.netflix.spinnaker.kork.retrofit.ErrorHandlingExecutorCallAdapterFactory
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -53,7 +54,7 @@ class GitHubConfig {
 
     GitHubClient gitHubClient(OkHttp3ClientConfiguration okHttpClientConfig, String address, String accessToken, ObjectMapper mapper = new ObjectMapper()) {
         new Retrofit.Builder()
-            .baseUrl(address)
+            .baseUrl(RetrofitUtils.getBaseUrl(address))
             .client(okHttpClientConfig.createForRetrofit2().addInterceptor(new BasicAuthRequestInterceptor(accessToken)).build())
             .addConverterFactory(JacksonConverterFactory.create(mapper))
             .addCallAdapterFactory(ErrorHandlingExecutorCallAdapterFactory.getInstance())

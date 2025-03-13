@@ -19,6 +19,7 @@ package com.netflix.spinnaker.igor.config;
 import com.netflix.spinnaker.config.OkHttp3ClientConfiguration;
 import com.netflix.spinnaker.igor.scm.gitlab.client.GitLabClient;
 import com.netflix.spinnaker.igor.scm.gitlab.client.GitLabMaster;
+import com.netflix.spinnaker.igor.util.RetrofitUtils;
 import com.netflix.spinnaker.kork.retrofit.ErrorHandlingExecutorCallAdapterFactory;
 import java.io.IOException;
 import javax.validation.Valid;
@@ -53,7 +54,7 @@ public class GitLabConfig {
   public GitLabClient gitLabClient(
       String address, String privateToken, OkHttp3ClientConfiguration okHttpClientConfig) {
     return new Retrofit.Builder()
-        .baseUrl(address)
+        .baseUrl(RetrofitUtils.getBaseUrl(address))
         .client(
             okHttpClientConfig
                 .createForRetrofit2()

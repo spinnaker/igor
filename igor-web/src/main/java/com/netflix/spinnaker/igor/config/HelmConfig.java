@@ -20,6 +20,7 @@ import com.netflix.spinnaker.config.OkHttp3ClientConfiguration;
 import com.netflix.spinnaker.igor.IgorConfigurationProperties;
 import com.netflix.spinnaker.igor.helm.accounts.HelmAccounts;
 import com.netflix.spinnaker.igor.helm.accounts.HelmAccountsService;
+import com.netflix.spinnaker.igor.util.RetrofitUtils;
 import com.netflix.spinnaker.kork.retrofit.ErrorHandlingExecutorCallAdapterFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -49,7 +50,7 @@ public class HelmConfig {
     }
 
     return new Retrofit.Builder()
-        .baseUrl(address)
+        .baseUrl(RetrofitUtils.getBaseUrl(address))
         .client(okHttp3ClientConfig.createForRetrofit2().build())
         .addCallAdapterFactory(ErrorHandlingExecutorCallAdapterFactory.getInstance())
         .addConverterFactory(new HelmConverterFactory())

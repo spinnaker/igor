@@ -22,6 +22,7 @@ import com.netflix.spinnaker.igor.IgorConfigurationProperties;
 import com.netflix.spinnaker.igor.gitlabci.client.GitlabCiClient;
 import com.netflix.spinnaker.igor.gitlabci.service.GitlabCiService;
 import com.netflix.spinnaker.igor.service.BuildServices;
+import com.netflix.spinnaker.igor.util.RetrofitUtils;
 import com.netflix.spinnaker.kork.retrofit.ErrorHandlingExecutorCallAdapterFactory;
 import java.io.IOException;
 import java.util.Map;
@@ -96,7 +97,7 @@ public class GitlabCiConfig {
       OkHttp3ClientConfiguration okHttpClientConfig) {
 
     return new Retrofit.Builder()
-        .baseUrl(address)
+        .baseUrl(RetrofitUtils.getBaseUrl(address))
         .client(
             okHttpClientConfig
                 .createForRetrofit2()

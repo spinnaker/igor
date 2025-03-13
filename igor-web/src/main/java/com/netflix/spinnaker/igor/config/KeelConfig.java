@@ -17,6 +17,7 @@ package com.netflix.spinnaker.igor.config;
 
 import com.netflix.spinnaker.config.OkHttp3ClientConfiguration;
 import com.netflix.spinnaker.igor.keel.KeelService;
+import com.netflix.spinnaker.igor.util.RetrofitUtils;
 import com.netflix.spinnaker.kork.retrofit.ErrorHandlingExecutorCallAdapterFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -34,7 +35,7 @@ public class KeelConfig {
       @Value("${keel.base-url}") String keelBaseUrl,
       OkHttp3ClientConfiguration okHttpClientConfig) {
     return new Retrofit.Builder()
-        .baseUrl(keelBaseUrl)
+        .baseUrl(RetrofitUtils.getBaseUrl(keelBaseUrl))
         .addConverterFactory(JacksonConverterFactory.create())
         .client(okHttpClientConfig.createForRetrofit2().build())
         .addCallAdapterFactory(ErrorHandlingExecutorCallAdapterFactory.getInstance())

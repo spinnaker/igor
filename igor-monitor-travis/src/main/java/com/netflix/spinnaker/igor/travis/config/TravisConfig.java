@@ -26,6 +26,7 @@ import com.netflix.spinnaker.igor.travis.TravisCache;
 import com.netflix.spinnaker.igor.travis.client.TravisClient;
 import com.netflix.spinnaker.igor.travis.client.model.v3.Root;
 import com.netflix.spinnaker.igor.travis.service.TravisService;
+import com.netflix.spinnaker.igor.util.RetrofitUtils;
 import com.netflix.spinnaker.kork.retrofit.ErrorHandlingExecutorCallAdapterFactory;
 import com.netflix.spinnaker.kork.retrofit.Retrofit2SyncCall;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
@@ -139,7 +140,7 @@ public class TravisConfig {
             .build();
 
     return new Retrofit.Builder()
-        .baseUrl(address)
+        .baseUrl(RetrofitUtils.getBaseUrl(address))
         .client(client)
         .addConverterFactory(JacksonConverterFactory.create(objectMapper))
         .addCallAdapterFactory(ErrorHandlingExecutorCallAdapterFactory.getInstance())

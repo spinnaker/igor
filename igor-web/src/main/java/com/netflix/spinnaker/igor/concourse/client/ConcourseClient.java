@@ -23,6 +23,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.netflix.spinnaker.config.OkHttp3ClientConfiguration;
 import com.netflix.spinnaker.igor.concourse.client.model.ClusterInfo;
 import com.netflix.spinnaker.igor.concourse.client.model.Token;
+import com.netflix.spinnaker.igor.util.RetrofitUtils;
 import com.netflix.spinnaker.kork.retrofit.ErrorHandlingExecutorCallAdapterFactory;
 import com.netflix.spinnaker.kork.retrofit.Retrofit2SyncCall;
 import com.vdurmont.semver4j.Semver;
@@ -114,14 +115,14 @@ public class ConcourseClient {
 
     Retrofit.Builder tokenRestBuilder =
         new Retrofit.Builder()
-            .baseUrl(host)
+            .baseUrl(RetrofitUtils.getBaseUrl(host))
             .client(tokenClient)
             .addConverterFactory(jacksonConverterFactory)
             .addCallAdapterFactory(ErrorHandlingExecutorCallAdapterFactory.getInstance());
 
     this.clusterInfoService =
         new Retrofit.Builder()
-            .baseUrl(host)
+            .baseUrl(RetrofitUtils.getBaseUrl(host))
             .client(
                 OkHttpClientBuilder.retryingClient3(okHttpClientConfig, this::refreshToken).build())
             .addConverterFactory(jacksonConverterFactory)
@@ -197,9 +198,8 @@ public class ConcourseClient {
   }
 
   public Response<ResponseBody> userInfo() {
-    return skyServiceV1 != null
-        ? Retrofit2SyncCall.executeCall(skyServiceV1.userInfo())
-        : Retrofit2SyncCall.executeCall(skyServiceV2.userInfo());
+    return Retrofit2SyncCall.executeCall(
+        skyServiceV1 != null ? skyServiceV1.userInfo() : skyServiceV2.userInfo());
   }
 
   private <S> S createService(Class<S> serviceClass) {
@@ -209,7 +209,7 @@ public class ConcourseClient {
             .build();
 
     return new Retrofit.Builder()
-        .baseUrl(host)
+        .baseUrl(RetrofitUtils.getBaseUrl(host))
         .client(okHttpClient)
         .addConverterFactory(jacksonConverterFactory)
         .addCallAdapterFactory(ErrorHandlingExecutorCallAdapterFactory.getInstance())

@@ -13,6 +13,7 @@ import com.netflix.spinnaker.config.OkHttp3ClientConfiguration
 import com.netflix.spinnaker.igor.IgorConfigurationProperties
 import com.netflix.spinnaker.igor.config.WerckerProperties.WerckerHost
 import com.netflix.spinnaker.igor.service.BuildServices
+import com.netflix.spinnaker.igor.util.RetrofitUtils
 import com.netflix.spinnaker.igor.wercker.WerckerCache
 import com.netflix.spinnaker.igor.wercker.WerckerClient
 import com.netflix.spinnaker.igor.wercker.WerckerService
@@ -66,7 +67,7 @@ class WerckerConfig {
     ) {
 
         return new Retrofit.Builder()
-                .baseUrl(host.address)
+                .baseUrl(RetrofitUtils.getBaseUrl(host.address))
                 .client(okHttpClientConfig.createForRetrofit2().readTimeout(timeout, TimeUnit.MILLISECONDS).build())
                 .addCallAdapterFactory(ErrorHandlingExecutorCallAdapterFactory.getInstance())
                 .addConverterFactory(JacksonConverterFactory.create(objectMapper))

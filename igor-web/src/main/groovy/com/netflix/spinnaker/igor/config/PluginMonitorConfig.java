@@ -27,6 +27,7 @@ import com.netflix.spinnaker.igor.plugins.RedisPluginCache;
 import com.netflix.spinnaker.igor.plugins.front50.Front50Service;
 import com.netflix.spinnaker.igor.plugins.front50.PluginReleaseService;
 import com.netflix.spinnaker.igor.polling.LockService;
+import com.netflix.spinnaker.igor.util.RetrofitUtils;
 import com.netflix.spinnaker.kork.discovery.DiscoveryStatusListener;
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
 import com.netflix.spinnaker.kork.jedis.RedisClientDelegate;
@@ -58,7 +59,7 @@ public class PluginMonitorConfig {
 
     Front50Service front50Service =
         new Retrofit.Builder()
-            .baseUrl(address)
+            .baseUrl(RetrofitUtils.getBaseUrl(address))
             .client(okHttp3ClientConfig.createForRetrofit2().build())
             .addCallAdapterFactory(ErrorHandlingExecutorCallAdapterFactory.getInstance())
             .addConverterFactory(JacksonConverterFactory.create(objectMapper))

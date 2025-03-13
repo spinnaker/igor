@@ -19,6 +19,7 @@ package com.netflix.spinnaker.igor.scm.bitbucket.client
 import com.netflix.spinnaker.config.OkHttp3ClientConfiguration
 import com.netflix.spinnaker.igor.config.BitBucketProperties
 import com.netflix.spinnaker.igor.scm.AbstractScmMaster
+import com.netflix.spinnaker.igor.util.RetrofitUtils
 import com.netflix.spinnaker.kork.retrofit.ErrorHandlingExecutorCallAdapterFactory
 import okhttp3.Credentials
 import okhttp3.Interceptor
@@ -49,7 +50,7 @@ class BitBucketMaster extends AbstractScmMaster {
 
   BitBucketClient bitBucketClient(String address, String username, String password, OkHttp3ClientConfiguration okHttpClientConfig) {
     new Retrofit.Builder()
-      .baseUrl(address)
+      .baseUrl(RetrofitUtils.getBaseUrl(address))
       .client(okHttpClientConfig.createForRetrofit2().addInterceptor(new BasicAuthRequestInterceptor(username, password)).build())
       .addConverterFactory(JacksonConverterFactory.create())
       .addCallAdapterFactory(ErrorHandlingExecutorCallAdapterFactory.getInstance())
