@@ -25,43 +25,44 @@ import java.io.IOException;
 import okhttp3.OkHttpClient;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import retrofit2.Call;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.http.GET;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class RetrofitUtilsTest {
   MockWebServer server;
   RetrofitService service;
-  String baseUrl = "http://localhost/v1";
+  String baseUrl;
 
-  @BeforeEach
+  @BeforeAll
   void setup() throws IOException {
+    server = new MockWebServer();
+    server.start();
+    baseUrl = server.url("/v1").toString();
     service =
         new Retrofit.Builder()
             .baseUrl(RetrofitUtils.getBaseUrl(baseUrl))
             .client(new OkHttpClient())
             .build()
             .create(RetrofitService.class);
-    server = new MockWebServer();
-    server.start();
   }
 
-  @AfterEach
+  @AfterAll
   void teardown() throws IOException {
-    server.close();
+    server.shutdown();
   }
 
   @Test
   void urlWithoutTrailingSlashFailsWithoutUtilsFunc() {
     assertThrows(
         IllegalArgumentException.class,
-        () -> {
-          new Retrofit.Builder().baseUrl(baseUrl).build().create(RetrofitService.class);
-        });
+        () -> new Retrofit.Builder().baseUrl(baseUrl).build().create(RetrofitService.class));
   }
 
   @Test
