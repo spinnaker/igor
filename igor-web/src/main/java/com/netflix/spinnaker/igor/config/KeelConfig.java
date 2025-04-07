@@ -50,7 +50,7 @@ public class KeelConfig {
         .setClient(
             new Ok3Client(
                 clientProvider.getClient(
-                    new DefaultServiceEndpoint("keel", keelEndpoint.getUrl()))))
+                    new DefaultServiceEndpoint("keel", keelEndpoint.getUrl()), true)))
         .setLogLevel(retrofitLogLevel)
         .setLog(new Slf4jRetrofitLogger(KeelService.class))
         .setErrorHandler(SpinnakerRetrofitErrorHandler.getInstance())

@@ -66,7 +66,7 @@ public class PluginMonitorConfig {
             .setEndpoint(Endpoints.newFixedEndpoint(address))
             .setClient(
                 new Ok3Client(
-                    clientProvider.getClient(new DefaultServiceEndpoint("front50", address))))
+                    clientProvider.getClient(new DefaultServiceEndpoint("front50", address), true)))
             .setLogLevel(retrofitLogLevel)
             .setLog(new Slf4jRetrofitLogger(Front50Service.class))
             .setConverter(new JacksonConverter(objectMapper))

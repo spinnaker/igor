@@ -58,7 +58,7 @@ class DockerRegistryConfig {
 
         new RestAdapter.Builder()
                 .setEndpoint(Endpoints.newFixedEndpoint(address))
-                .setClient(new Ok3Client(clientProvider.getClient(new DefaultServiceEndpoint("clouddriver", address))))
+                .setClient(new Ok3Client(clientProvider.getClient(new DefaultServiceEndpoint("clouddriver", address), true)))
                 .setLogLevel(retrofitLogLevel)
                 .setConverter(new JacksonConverter(objectMapper))
                 .setLog(new Slf4jRetrofitLogger(ClouddriverService))
