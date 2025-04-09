@@ -52,7 +52,7 @@ class EchoConfig {
 
         new RestAdapter.Builder()
             .setEndpoint(Endpoints.newFixedEndpoint(address))
-            .setClient(new Ok3Client(okHttpClientProvider.getClient(new DefaultServiceEndpoint("echo", address))))
+            .setClient(new Ok3Client(okHttpClientProvider.getClient(new DefaultServiceEndpoint("echo", address), true)))
             .setConverter(new JacksonConverter(objectMapper))
             .setLogLevel(retrofitLogLevel)
             .setLog(new Slf4jRetrofitLogger(EchoService))
