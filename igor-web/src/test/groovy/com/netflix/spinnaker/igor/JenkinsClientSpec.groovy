@@ -22,19 +22,21 @@ import com.netflix.spinnaker.igor.config.JenkinsConfig
 import com.netflix.spinnaker.igor.config.client.JenkinsOkHttpClientProvider
 import com.netflix.spinnaker.igor.service.BuildServices
 import com.netflix.spinnaker.okhttp.Retrofit2EncodeCorrectionInterceptor
+import com.netflix.spinnaker.config.OkHttp3ClientConfiguration
+import com.netflix.spinnaker.config.okhttp3.RawOkHttpClientConfiguration;
+import com.netflix.spinnaker.igor.config.JenkinsProperties
+import com.netflix.spinnaker.config.OkHttpClientComponents
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
-import io.github.resilience4j.circuitbreaker.internal.InMemoryCircuitBreakerRegistry;
+import io.github.resilience4j.circuitbreaker.internal.InMemoryCircuitBreakerRegistry
+import okhttp3.logging.HttpLoggingInterceptor;
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.task.TaskExecutorBuilder;
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.annotation.Bean;
-import com.netflix.spinnaker.config.okhttp3.RawOkHttpClientConfiguration;
-import com.netflix.spinnaker.igor.config.JenkinsProperties
-import com.netflix.spinnaker.config.OkHttpClientComponents
 import retrofit.RestAdapter
 import spock.lang.Specification;
 
-@SpringBootTest(classes = [JenkinsConfig, RawOkHttpClientConfiguration, OkHttpClientComponents, TestConfiguration],
+@SpringBootTest(classes = [JenkinsConfig, RawOkHttpClientConfiguration, OkHttpClientComponents, TestConfiguration, OkHttp3ClientConfiguration],
     properties = ["jenkins.enabled=true"])
 class JenkinsClientSpec extends Specification {
 
@@ -51,8 +53,7 @@ class JenkinsClientSpec extends Specification {
 
     then:
     interceptors.size() != 0
-    //TODO: Fix this. Retrofit2EncodeCorrectionInterceptor should not be added to a retrofit1 client
-    interceptors.any { it instanceof Retrofit2EncodeCorrectionInterceptor }
+    !interceptors.any { it instanceof Retrofit2EncodeCorrectionInterceptor }
   }
 }
 
@@ -101,5 +102,10 @@ class TestConfiguration {
   @Bean
   RestAdapter.LogLevel retrofitLogLevel() {
     return RestAdapter.LogLevel.BASIC
+  }
+
+  @Bean
+  HttpLoggingInterceptor.Level retrofitInterceptorLogLevel() {
+    return HttpLoggingInterceptor.Level.BODY
   }
 }
