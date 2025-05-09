@@ -28,13 +28,13 @@ import com.netflix.spinnaker.igor.config.JenkinsProperties
 import com.netflix.spinnaker.config.OkHttpClientComponents
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
 import io.github.resilience4j.circuitbreaker.internal.InMemoryCircuitBreakerRegistry
-import okhttp3.logging.HttpLoggingInterceptor;
+import okhttp3.logging.HttpLoggingInterceptor
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.task.TaskExecutorBuilder;
+import org.springframework.boot.task.TaskExecutorBuilder
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Bean
 import retrofit.RestAdapter
-import spock.lang.Specification;
+import spock.lang.Specification
 
 @SpringBootTest(classes = [JenkinsConfig, RawOkHttpClientConfiguration, OkHttpClientComponents, TestConfiguration, OkHttp3ClientConfiguration],
     properties = ["jenkins.enabled=true"])
