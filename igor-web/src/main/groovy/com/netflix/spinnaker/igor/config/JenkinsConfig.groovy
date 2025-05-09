@@ -22,6 +22,7 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import com.fasterxml.jackson.module.jaxb.JaxbAnnotationModule
 import com.jakewharton.retrofit.Ok3Client
 import com.netflix.spectator.api.Registry
+import com.netflix.spinnaker.config.OkHttp3ClientConfiguration
 import com.netflix.spinnaker.fiat.model.resources.Permissions
 import com.netflix.spinnaker.igor.IgorConfigurationProperties
 import com.netflix.spinnaker.igor.config.client.DefaultJenkinsOkHttpClientProvider
@@ -68,6 +69,11 @@ import java.util.concurrent.TimeUnit
 @ConditionalOnProperty("jenkins.enabled")
 @EnableConfigurationProperties(JenkinsProperties)
 class JenkinsConfig {
+
+    @Bean
+    OkHttpClient okHttpClient(OkHttp3ClientConfiguration okHttpClientConfig) {
+        return okHttpClientConfig.create().build();
+    }
 
     @Bean
     @ConditionalOnMissingBean
